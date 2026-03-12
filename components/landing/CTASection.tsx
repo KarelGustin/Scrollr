@@ -16,13 +16,13 @@ export function CTASection() {
       <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
         <ScrollReveal>
           <h2 className="text-5xl sm:text-6xl lg:text-7xl font-display font-bold tracking-tight leading-[0.95]">
-            Ready to turn
+            Monetize your work
             <br />
-            <span className="gradient-text">scrolls into sales?</span>
+            <span className="gradient-text">for social media.</span>
           </h2>
 
           <p className="mt-6 text-lg text-muted max-w-lg mx-auto leading-relaxed">
-            Join thousands of creators who stopped polluting their feed and started actually converting. Free to start, upgrade when you grow.
+            Your followers already want what you have. Give them a beautiful way to find it — and get paid every time they do.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">

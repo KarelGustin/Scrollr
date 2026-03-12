@@ -1,7 +1,7 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
-import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
+import { MicroActionShowcase } from "@/components/landing/MicroActionShowcase";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
 import { ComparisonSection } from "@/components/landing/ComparisonSection";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
@@ -14,7 +14,7 @@ export default function HomePage() {
       <Navbar />
       <HeroSection />
       <ProblemSection />
-      <HowItWorksSection />
+      <MicroActionShowcase />
       <BenefitsSection />
       <ComparisonSection />
       <TestimonialsSection />

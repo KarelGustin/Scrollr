@@ -4,42 +4,42 @@ import { ScrollReveal } from "./ScrollReveal";
 
 const BENEFITS = [
   {
-    label: "For Creators",
+    label: "Share everything",
     items: [
       {
         stat: "3.2x",
-        description: "Higher conversion than link-in-bio",
-        detail: "Full-screen video builds intent. They don't just click — they watch, want, then buy.",
+        description: "More clicks than link-in-bio",
+        detail: "Full-screen video builds intent. They don't just click — they watch, want, then buy. Stop gatekeeping your favorites.",
       },
       {
         stat: "0",
-        description: "Salesy posts on your main feed",
-        detail: "Your Reels stay authentic. Scrollr lives on a separate link — your followers only see it when they choose to.",
+        description: "Cringe \"use my code\" posts",
+        detail: "Your main feed stays you. Scrollr lives on a separate link — sharing your essentials without polluting your content.",
       },
       {
-        stat: "Real",
-        description: "Revenue data you can actually use",
-        detail: "See exactly which products convert, which videos drive clicks, and what your CTR looks like — not vanity likes.",
+        stat: "Fun",
+        description: "The way sharing should feel",
+        detail: "Your followers browse your picks like they scroll TikTok. It's not a sales pitch — it's a curated experience they'll actually thank you for.",
       },
     ],
   },
   {
-    label: "For Brands",
+    label: "Monetize effortlessly",
     items: [
       {
         stat: "8.2%",
         description: "Average click-through rate",
-        detail: "The swipe-to-shop format keeps attention. Brands see click rates 4x higher than traditional affiliate pages.",
+        detail: "The swipe-to-shop format holds attention. Brands see click rates 4x higher than traditional affiliate pages.",
       },
       {
-        stat: "Full",
-        description: "Funnel visibility for sponsors",
-        detail: "Views, watch time, clicks, conversions — all in one dashboard. Share reports with brands in seconds.",
+        stat: "$$$",
+        description: "Real revenue, not vanity metrics",
+        detail: "Views, watch time, clicks, conversions — see exactly which products earn. Share reports with brands in seconds.",
       },
       {
-        stat: "Native",
-        description: "Experience that feels like social",
-        detail: "No jarring redirects to ugly landing pages. Followers stay in a format they already love — short-form video.",
+        stat: "Any",
+        description: "Affiliate network, any brand",
+        detail: "Amazon, LTK, ShareASale, direct brand deals — paste any link and we track it. No platform lock-in, ever.",
       },
     ],
   },
@@ -57,9 +57,9 @@ export function BenefitsSection() {
           <div className="text-center mb-20">
             <p className="text-accent text-sm font-medium tracking-widest uppercase mb-4">Why Scrollr</p>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight">
-              Better for creators.
+              Don&apos;t gatekeep
               <br />
-              <span className="text-muted">Better for brands.</span>
+              <span className="text-muted">your essentials.</span>
             </h2>
           </div>
         </ScrollReveal>

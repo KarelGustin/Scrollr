@@ -29,15 +29,15 @@ export function HeroSection() {
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-display font-bold leading-[0.95] tracking-tight">
-            Your feed.
+            Make affiliate
             <br />
-            <span className="gradient-text">Your store.</span>
+            marketing
+            <br />
+            <span className="gradient-text">fun again.</span>
           </h1>
 
           <p className="mt-6 text-lg sm:text-xl text-muted max-w-xl leading-relaxed">
-            One link. Full-screen shoppable videos.
-            <br className="hidden sm:block" />
-            Your followers swipe, watch, and buy — without ever leaving your feed.
+            Don&apos;t gatekeep your essentials. Share them in a full-screen, swipeable feed your followers actually love.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">

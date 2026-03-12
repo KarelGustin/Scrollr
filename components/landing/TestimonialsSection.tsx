@@ -4,21 +4,21 @@ import { ScrollReveal } from "./ScrollReveal";
 
 const TESTIMONIALS = [
   {
-    quote: "I replaced my Linktree with Scrollr and my affiliate revenue tripled in a month. The video format just hits different.",
+    quote: "I used to get 50 DMs a day asking 'where'd you get that?' Now I just send them my Scrollr link. Revenue tripled and I stopped gatekeeping.",
     name: "Luna Martinez",
     handle: "@lunabeauty",
     gradient: "from-pink-500 to-rose-400",
     metric: "3.2x revenue",
   },
   {
-    quote: "Finally, my brand deals come with actual data. I can show sponsors exactly how many people watched, clicked, and bought.",
+    quote: "Affiliate marketing finally feels fun. My followers swipe through my picks like it's TikTok — and I can see every click in real time.",
     name: "Jake Chen",
     handle: "@jakefits",
     gradient: "from-blue-500 to-cyan-400",
     metric: "12% avg CTR",
   },
   {
-    quote: "My followers actually thank me for the recommendations now. It feels like browsing, not selling. That's the magic.",
+    quote: "I'm monetizing my content without a single cringe 'use my code' post. My audience actually thanks me for the recs. That's the dream.",
     name: "Ava Williams",
     handle: "@avastyle",
     gradient: "from-violet-500 to-purple-400",
