@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String?  @unique
+  name      String?
+  avatarUrl String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products     Product[]
+  events       Event[]
+  subscription Subscription?
+  accounts     Account[]
+  sessions     Session[]
+}
+
+model Product {
+  id           String  @id @default(cuid())
+  userId       String
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  brand        String?
+  price        String?
+  description  String?
+  affiliateUrl String
+  position     Int     @default(0)
+  published    Boolean @default(true)
+
+  video   Video?
+  clicks  Click[]
+  events  Event[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, position])
+}
+
+model Video {
+  id                 String      @id @default(cuid())
+  productId          String      @unique
+  product            Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cloudflareStreamId String      @unique
+  thumbnailUrl       String?
+  hlsUrl             String?
+  dashUrl            String?
+  duration           Float?
+  status             VideoStatus @default(PROCESSING)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+}
+
+enum VideoStatus {
+  PROCESSING
+  READY
+  ERROR
+}
+
+model Click {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  visitorId String
+  referrer  String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([productId, createdAt])
+}
+
+model Event {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  type      EventType
+  metadata  Json?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([productId, type])
+}
+
+enum EventType {
+  PAGE_VIEW
+  VIDEO_START
+  VIDEO_COMPLETE
+  SWIPE_NEXT
+  SWIPE_PREV
+  SHOP_CLICK
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String    @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  plan                 Plan      @default(FREE)
+  status               String    @default("active")
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+enum Plan {
+  FREE
+  CREATOR
+  PRO
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
