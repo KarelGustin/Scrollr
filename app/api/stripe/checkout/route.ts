@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe, getPriceIdForPlan } from "@/lib/stripe";
+import { getStripe, getPriceIdForPlan } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   if (existingSub?.stripeCustomerId) {
     stripeCustomerId = existingSub.stripeCustomerId;
   } else {
-    const customer = await stripe.customers.create({
+    const customer = await getStripe().customers.create({
       email: session.user.email,
       metadata: { userId: session.user.id },
     });
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const priceId = getPriceIdForPlan(plan);
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? req.nextUrl.origin;
 
-  const checkoutSession = await stripe.checkout.sessions.create({
+  const checkoutSession = await getStripe().checkout.sessions.create({
     customer: stripeCustomerId,
     mode: "subscription",
     payment_method_types: ["card"],

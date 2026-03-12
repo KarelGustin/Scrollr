@@ -3,7 +3,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import EmailProvider from "next-auth/providers/email";
 import { prisma } from "./prisma";
-import { resend } from "./resend";
+import { getResend } from "./resend";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
     EmailProvider({
       from: "Scrollr <noreply@scrollr.io>",
       sendVerificationRequest: async ({ identifier: email, url }) => {
-        await resend.emails.send({
+        await getResend().emails.send({
           from: "Scrollr <noreply@scrollr.io>",
           to: email,
           subject: "Sign in to Scrollr",

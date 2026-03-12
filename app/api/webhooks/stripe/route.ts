@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import type Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
       let stripePriceId: string | null = null;
       if (subscriptionId) {
-        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        const sub = await getStripe().subscriptions.retrieve(subscriptionId);
         stripePriceId = sub.items.data[0]?.price.id ?? null;
       }
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
           currentPeriodEnd: subscriptionId
             ? new Date(
                 (
-                  await stripe.subscriptions.retrieve(subscriptionId)
+                  await getStripe().subscriptions.retrieve(subscriptionId)
                 ).current_period_end * 1000
               )
             : null,
