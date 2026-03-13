@@ -163,11 +163,11 @@ export default function ProductsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-text">
-            Products
+            Linked Products
           </h1>
           <p className="text-sm text-muted mt-1">
             {displayProducts.length} product
-            {displayProducts.length !== 1 ? "s" : ""} — drag to reorder
+            {displayProducts.length !== 1 ? "s" : ""} linked — drag to reorder
           </p>
         </div>
         <Button onClick={() => setUploadOpen(true)}>
@@ -184,13 +184,13 @@ export default function ProductsPage() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Add Product
+          Link Product
         </Button>
       </div>
 
       {/* Import from URL */}
       <div className="bg-card rounded-xl border border-border p-5">
-        <h2 className="text-sm font-medium text-muted mb-3">Import from URL</h2>
+        <h2 className="text-sm font-medium text-muted mb-3">Link from Store URL</h2>
         <ImportProductForm />
       </div>
 
@@ -214,11 +214,10 @@ export default function ProductsPage() {
             </svg>
           </div>
           <h2 className="text-lg font-display font-semibold text-text mb-1">
-            No products yet
+            No linked products yet
           </h2>
           <p className="text-sm text-muted mb-6 max-w-sm">
-            Add your first product with a short video to start building your
-            shoppable feed.
+            Link your first product from any store to start tagging your videos.
           </p>
           <Button onClick={() => setUploadOpen(true)}>
             <svg
@@ -234,7 +233,7 @@ export default function ProductsPage() {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Add Your First Product
+            Link Your First Product
           </Button>
         </div>
       ) : (

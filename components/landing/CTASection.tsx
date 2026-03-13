@@ -5,32 +5,43 @@ import { ScrollReveal } from "./ScrollReveal";
 
 export function CTASection() {
   return (
-    <section className="py-32 px-6 bg-[#0a0a0a]">
-      <div className="max-w-3xl mx-auto text-center">
+    <section className="py-24 sm:py-32 px-6 coral-gradient-bg relative overflow-hidden">
+      {/* Subtle pattern overlay */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-10 left-[10%] w-32 h-32 rounded-full border-2 border-white/30" />
+        <div className="absolute bottom-16 right-[15%] w-24 h-24 rounded-full border-2 border-white/20" />
+        <div className="absolute top-1/2 left-[60%] w-16 h-16 rounded-full border-2 border-white/25" />
+      </div>
+
+      <div className="max-w-3xl mx-auto text-center relative z-10">
         <ScrollReveal>
           <h2 className="text-4xl sm:text-5xl font-display font-bold text-white leading-tight">
-            Content that inspires.
-            <br />
-            <span className="text-white/50">Commerce that feels natural.</span>
+            Ready to start?
           </h2>
         </ScrollReveal>
 
         <ScrollReveal delay={100}>
-          <p className="mt-8 text-lg text-white/60 leading-relaxed max-w-xl mx-auto">
-            Welcome to the next generation of creator-led shopping.
+          <p className="mt-6 text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
+            Whether you&apos;re here to discover or to create — your feed is waiting.
           </p>
         </ScrollReveal>
 
         <ScrollReveal delay={200}>
-          <div className="mt-10">
+          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/register"
-              className="inline-flex items-center justify-center px-8 py-4 bg-white text-[#0a0a0a] font-semibold text-base rounded-full transition-all duration-300 hover:bg-white/90 hover:scale-[1.02]"
+              href="/discover"
+              className="inline-flex items-center justify-center px-8 py-4 bg-white text-coral font-semibold text-base rounded-full transition-all duration-300 hover:bg-white/90 hover:scale-[1.02] shadow-lg"
             >
-              Apply for early creator access
+              Browse Now
               <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>
+            </Link>
+            <Link
+              href="/apply"
+              className="inline-flex items-center justify-center px-8 py-4 text-white font-medium text-base rounded-full border-2 border-white/40 hover:border-white hover:bg-white/10 transition-all duration-300"
+            >
+              Join as Creator
             </Link>
           </div>
         </ScrollReveal>

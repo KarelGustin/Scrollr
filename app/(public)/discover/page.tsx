@@ -56,6 +56,8 @@ export default async function DiscoverPage({
                 priceDisplay: true,
                 imageUrl: true,
                 affiliateUrl: true,
+                description: true,
+                sizes: true,
                 published: true,
               },
             },
@@ -88,6 +90,8 @@ export default async function DiscoverPage({
         priceDisplay: vp.product.priceDisplay,
         imageUrl: vp.product.imageUrl,
         affiliateUrl: vp.product.affiliateUrl,
+        description: vp.product.description,
+        sizes: (vp.product.sizes as string[] | null) ?? null,
       })),
   }));
 

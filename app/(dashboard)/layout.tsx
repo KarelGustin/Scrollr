@@ -18,11 +18,17 @@ export default function DashboardLayout({
     if (status === "unauthenticated") {
       router.replace("/login");
     }
-    // Redirect new users without username to onboarding
-    if (status === "authenticated" && user && !user.username) {
-      router.replace("/onboarding");
+    if (status === "authenticated" && user) {
+      // Redirect new users without username to onboarding
+      if (!user.username) {
+        router.replace("/onboarding");
+      }
+      // Redirect consumers to discover — dashboard is for creators/admins only
+      else if (user.role === "USER") {
+        router.replace("/discover");
+      }
     }
-  }, [status, router]);
+  }, [status, user, router]);
 
   if (status === "loading") {
     return (

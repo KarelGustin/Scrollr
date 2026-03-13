@@ -85,7 +85,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   if (action === "change_role") {
-    if (role !== "ADMIN" && role !== "USER") {
+    if (role !== "ADMIN" && role !== "USER" && role !== "CREATOR") {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 

@@ -6,25 +6,50 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        bg: "#09090b",
-        surface: "#18181b",
-        card: "#27272a",
-        border: "rgba(255,255,255,0.08)",
-        text: "#fafafa",
-        muted: "#71717a",
-        accent: "#c8ff00",
-        "accent-fg": "#000000",
-        destructive: "#ef4444",
+        // Semantic tokens — adapt to light/dark via CSS variables
+        bg: "rgb(var(--c-bg) / <alpha-value>)",
+        surface: "rgb(var(--c-surface) / <alpha-value>)",
+        card: "rgb(var(--c-card) / <alpha-value>)",
+        border: "rgb(var(--c-border) / <alpha-value>)",
+        text: "rgb(var(--c-text) / <alpha-value>)",
+        muted: "rgb(var(--c-muted) / <alpha-value>)",
+        accent: "rgb(var(--c-accent) / <alpha-value>)",
+        "accent-fg": "rgb(var(--c-accent-fg) / <alpha-value>)",
+        destructive: "rgb(var(--c-destructive) / <alpha-value>)",
+
+        // Landing page warm palette (fixed, not theme-dependent)
+        "warm-bg": "#FAFAF8",
+        "warm-surface": "#F3F2EE",
+        "warm-card": "#FFFFFF",
+        "warm-text": "#1A1A1A",
+        "warm-secondary": "#6B6B6B",
+        "warm-muted": "#A3A3A0",
+        "warm-border": "#E8E7E3",
+
+        // Coral accent scale (fixed)
+        coral: {
+          DEFAULT: "#FF6B4A",
+          hover: "#FF5533",
+          tint: "#FFF0EB",
+          soft: "#FFD4C8",
+        },
+
+        // Secondary (fixed)
+        social: "#8B5CF6",
+        success: "#22C55E",
+        warning: "#F59E0B",
       },
       borderRadius: {
-        DEFAULT: "12px",
+        DEFAULT: "14px",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
-        display: ["Syne", "system-ui", "-apple-system", "sans-serif"],
+        display: ["'Plus Jakarta Sans'", "system-ui", "-apple-system", "sans-serif"],
+        accent: ["Syne", "system-ui", "-apple-system", "sans-serif"],
       },
       keyframes: {
         "slide-up": {
@@ -63,74 +88,9 @@ const config: Config = {
           "0%": { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(360deg)" },
         },
-        "counter-notification": {
-          "0%": { transform: "translateY(8px)", opacity: "0" },
-          "15%": { transform: "translateY(0)", opacity: "1" },
-          "85%": { transform: "translateY(0)", opacity: "1" },
-          "100%": { transform: "translateY(-8px)", opacity: "0" },
-        },
         "swipe-hint": {
           "0%, 100%": { transform: "translateY(0)", opacity: "0.5" },
           "50%": { transform: "translateY(-16px)", opacity: "1" },
-        },
-        "cursor-move": {
-          "0%": { transform: "translate(0, 0)", opacity: "0" },
-          "10%": { opacity: "1" },
-          "30%": { transform: "translate(60px, 30px)" },
-          "50%": { transform: "translate(60px, 30px)" },
-          "70%": { transform: "translate(120px, -10px)" },
-          "90%": { opacity: "1" },
-          "100%": { transform: "translate(120px, -10px)", opacity: "0" },
-        },
-        "typing": {
-          "0%": { width: "0" },
-          "100%": { width: "100%" },
-        },
-        "blink": {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0" },
-        },
-        "progress-fill": {
-          "0%": { width: "0%" },
-          "80%": { width: "100%" },
-          "100%": { width: "100%" },
-        },
-        "drop-in": {
-          "0%": { transform: "translateY(-20px) scale(0.9)", opacity: "0" },
-          "60%": { transform: "translateY(4px) scale(1.02)", opacity: "1" },
-          "100%": { transform: "translateY(0) scale(1)", opacity: "1" },
-        },
-        "swipe-card": {
-          "0%": { transform: "translateY(0)", opacity: "1" },
-          "40%": { transform: "translateY(-100%)", opacity: "0" },
-          "41%": { transform: "translateY(100%)", opacity: "0" },
-          "70%": { transform: "translateY(0)", opacity: "1" },
-          "100%": { transform: "translateY(0)", opacity: "1" },
-        },
-        "click-ring": {
-          "0%": { transform: "scale(0)", opacity: "0.8" },
-          "100%": { transform: "scale(2.5)", opacity: "0" },
-        },
-        "counter-tick": {
-          "0%": { transform: "translateY(100%)", opacity: "0" },
-          "20%": { transform: "translateY(0)", opacity: "1" },
-          "80%": { transform: "translateY(0)", opacity: "1" },
-          "100%": { transform: "translateY(-100%)", opacity: "0" },
-        },
-        "bar-grow": {
-          "0%": { height: "0%" },
-          "100%": { height: "var(--bar-height)" },
-        },
-        "pulse-dot": {
-          "0%, 100%": { transform: "scale(1)", opacity: "0.6" },
-          "50%": { transform: "scale(1.6)", opacity: "1" },
-        },
-        "hand-swipe": {
-          "0%": { transform: "translateY(40px)", opacity: "0" },
-          "15%": { transform: "translateY(0px)", opacity: "1" },
-          "45%": { transform: "translateY(-80px)", opacity: "1" },
-          "55%": { transform: "translateY(-80px)", opacity: "0" },
-          "100%": { transform: "translateY(40px)", opacity: "0" },
         },
         "slide-in-products": {
           "0%": { transform: "translateY(100%)", opacity: "0" },
@@ -150,9 +110,9 @@ const config: Config = {
           "0%": { transform: "translateY(8px)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
         },
-        "panel-slide": {
-          "0%": { transform: "translateX(40px)", opacity: "0" },
-          "100%": { transform: "translateX(0)", opacity: "1" },
+        "scroll-left": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
         },
       },
       animation: {
@@ -165,24 +125,12 @@ const config: Config = {
         "morph": "morph 8s ease-in-out infinite",
         "shimmer": "shimmer 3s ease-in-out infinite",
         "spin-slow": "spin-slow 20s linear infinite",
-        "counter-notification": "counter-notification 3s ease-in-out forwards",
         "swipe-hint": "swipe-hint 2s ease-in-out infinite",
-        "cursor-move": "cursor-move 4s ease-in-out infinite",
-        "typing": "typing 2s steps(20, end) infinite alternate",
-        "blink": "blink 1s step-end infinite",
-        "progress-fill": "progress-fill 3s ease-in-out infinite",
-        "drop-in": "drop-in 0.6s ease-out forwards",
-        "swipe-card": "swipe-card 4s ease-in-out infinite",
-        "click-ring": "click-ring 0.6s ease-out forwards",
-        "counter-tick": "counter-tick 3s ease-in-out infinite",
-        "bar-grow": "bar-grow 1.5s ease-out forwards",
-        "pulse-dot": "pulse-dot 2s ease-in-out infinite",
-        "hand-swipe": "hand-swipe 3s ease-in-out infinite",
         "slide-in-products": "slide-in-products 0.6s ease-out forwards",
         "add-to-cart-pop": "add-to-cart-pop 0.4s ease-out forwards",
         "dot-appear": "dot-appear 0.3s ease-out forwards",
         "count-up-tick": "count-up-tick 0.4s ease-out forwards",
-        "panel-slide": "panel-slide 0.6s ease-out forwards",
+        "scroll-left": "scroll-left 30s linear infinite",
       },
     },
   },

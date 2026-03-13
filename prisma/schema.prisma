@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -32,12 +33,18 @@ model User {
   merchant       Merchant?
   commissions    Commission[]
   orders         Order[]
-  reports        Report[]       @relation("ReporterReports")
-  moderationLogs ModerationLog[]
+  reports             Report[]       @relation("ReporterReports")
+  moderationLogs      ModerationLog[]
+  creatorApplications CreatorApplication[]
+  following           Follow[]       @relation("UserFollowing")
+  followers           Follow[]       @relation("UserFollowers")
+  savedItems          SavedItem[]
+  adminMessages       AdminMessage[]
 }
 
 enum UserRole {
   USER
+  CREATOR
   ADMIN
 }
 
@@ -67,6 +74,7 @@ model Video {
   score              VideoScore?
   reports            Report[]
   moderationLogs     ModerationLog[]
+  savedBy            SavedItem[]
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -106,6 +114,7 @@ model Product {
   imageUrl     String?
   description  String?
   affiliateUrl String
+  sizes        Json?          // Array of available sizes, e.g. ["S", "M", "L", "XL"]
   tags         String?
   position     Int            @default(0)
   published    Boolean        @default(true)
@@ -115,6 +124,7 @@ model Product {
   events          Event[]
   cartItems       CartItem[]
   merchantProduct MerchantProduct?
+  savedBy         SavedItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -279,7 +289,11 @@ model Order {
   orderNumber       String      @unique @default(cuid())
   buyerEmail        String
   buyerName         String
+  buyerUserId       String?     // links to User if buyer is logged in
   shippingAddress   Json        // { line1, line2, city, state, zip, country }
+  trackingNumber    String?
+  trackingUrl       String?
+  estimatedDelivery DateTime?
   merchantId        String
   merchant          Merchant    @relation(fields: [merchantId], references: [id])
   creatorId         String?
@@ -300,6 +314,7 @@ model Order {
   items       OrderItem[]
   commissions Commission[]
 
+  @@index([buyerUserId, createdAt(sort: Desc)])
   @@index([merchantId, createdAt(sort: Desc)])
   @@index([creatorId, createdAt(sort: Desc)])
 }
@@ -414,6 +429,75 @@ enum ModerationAction {
   RESTORED
   USER_WARNED
   USER_BANNED
+}
+
+// ── Creator Application Models ──
+
+model CreatorApplication {
+  id          String                   @id @default(cuid())
+  userId      String
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      CreatorApplicationStatus @default(PENDING)
+  category    String
+  socialLinks Json
+  pitch       String
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  adminNote   String?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+enum CreatorApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ── Social Models ──
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model SavedItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String?
+  video     Video?   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@unique([userId, productId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model AdminMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  sentBy    String
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
 }
 
 // ── Discovery Models ──

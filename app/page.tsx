@@ -1,27 +1,27 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { ProblemSection } from "@/components/landing/ProblemSection";
-import { WhatSection } from "@/components/landing/WhatSection";
+import { SocialProofBar } from "@/components/landing/SocialProofBar";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
-import { BenefitsSection } from "@/components/landing/BenefitsSection";
-import { AudienceSection } from "@/components/landing/AudienceSection";
+import { ForCreatorsSection } from "@/components/landing/ForCreatorsSection";
 import { CategoriesSection } from "@/components/landing/CategoriesSection";
-import { EarlyAccessSection } from "@/components/landing/EarlyAccessSection";
+import { FeedDemo } from "@/components/landing/FeedDemo";
+import { TrustSection } from "@/components/landing/TrustSection";
+import { TestimonialSection } from "@/components/landing/TestimonialSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
 
 export default function HomePage() {
   return (
-    <main className="relative landing-light">
+    <main className="relative landing-warm">
       <Navbar />
       <HeroSection />
-      <ProblemSection />
-      <WhatSection />
+      <SocialProofBar />
       <HowItWorksSection />
-      <BenefitsSection />
-      <AudienceSection />
+      <ForCreatorsSection />
       <CategoriesSection />
-      <EarlyAccessSection />
+      <FeedDemo />
+      <TrustSection />
+      <TestimonialSection />
       <CTASection />
       <Footer />
     </main>

@@ -158,6 +158,13 @@ export default function VideoSlide({
         </div>
       )}
 
+      {/* Scrollr watermark */}
+      <div className="absolute top-4 right-4 z-20 pointer-events-none">
+        <span className="text-[11px] font-bold text-white/50 tracking-widest drop-shadow-md">
+          SCROLLR
+        </span>
+      </div>
+
       {/* Right side actions */}
       <div className="absolute right-3 bottom-24 z-20 flex flex-col gap-3">
         <ShareButton

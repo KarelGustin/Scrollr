@@ -1,88 +1,157 @@
-export const dynamic = "force-dynamic";
+"use client";
 
-import { prisma } from "@/lib/prisma";
+import { useQuery } from "@tanstack/react-query";
+import { Spinner } from "@/components/ui/Spinner";
+import Link from "next/link";
 
-async function getAdminStats() {
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  const [totalUsers, totalVideos, pendingReviews, openReports, rejectedToday] =
-    await Promise.all([
-      prisma.user.count(),
-      prisma.video.count(),
-      prisma.video.count({ where: { status: "PENDING_REVIEW" } }),
-      prisma.report.count({ where: { status: "PENDING" } }),
-      prisma.video.count({
-        where: {
-          status: "REJECTED",
-          updatedAt: { gte: startOfDay },
-        },
-      }),
-    ]);
-
-  return { totalUsers, totalVideos, pendingReviews, openReports, rejectedToday };
+interface Stats {
+  totalUsers: number;
+  totalCreators: number;
+  totalMerchants: number;
+  totalOrders: number;
+  totalVideos: number;
+  totalProducts: number;
+  pendingApplications: number;
+  totalRevenue: number;
+  scrollrEarnings: number;
+  creatorPayouts: number;
+  recentOrders: {
+    id: string;
+    orderNumber: string;
+    buyerName: string;
+    total: number;
+    currency: string;
+    status: string;
+    createdAt: string;
+    merchant: { storeName: string | null };
+  }[];
+  recentUsers: {
+    id: string;
+    email: string;
+    username: string | null;
+    name: string | null;
+    role: string;
+    createdAt: string;
+  }[];
 }
 
-export default async function AdminOverviewPage() {
-  const stats = await getAdminStats();
+const fmt = (n: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 
-  const statCards = [
-    {
-      label: "Total Users",
-      value: stats.totalUsers,
-      color: "text-accent",
-      bg: "bg-accent/10",
+export default function AdminOverviewPage() {
+  const { data: stats, isLoading } = useQuery<Stats>({
+    queryKey: ["admin-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/stats");
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
     },
-    {
-      label: "Total Videos",
-      value: stats.totalVideos,
-      color: "text-blue-400",
-      bg: "bg-blue-400/10",
-    },
-    {
-      label: "Pending Reviews",
-      value: stats.pendingReviews,
-      color: "text-yellow-400",
-      bg: "bg-yellow-400/10",
-    },
-    {
-      label: "Open Reports",
-      value: stats.openReports,
-      color: "text-destructive",
-      bg: "bg-destructive/10",
-    },
-    {
-      label: "Rejected Today",
-      value: stats.rejectedToday,
-      color: "text-orange-400",
-      bg: "bg-orange-400/10",
-    },
+  });
+
+  if (isLoading || !stats) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Spinner size="lg" className="text-accent" />
+      </div>
+    );
+  }
+
+  const kpis = [
+    { label: "Total Users", value: stats.totalUsers.toLocaleString(), color: "text-accent", bg: "bg-accent/10" },
+    { label: "Creators", value: stats.totalCreators.toLocaleString(), color: "text-social", bg: "bg-social/10" },
+    { label: "Merchants", value: stats.totalMerchants.toLocaleString(), color: "text-warning", bg: "bg-warning/10" },
+    { label: "Total Revenue", value: fmt(stats.totalRevenue), color: "text-success", bg: "bg-success/10" },
+    { label: "Scrollr Earnings", value: fmt(stats.scrollrEarnings), color: "text-accent", bg: "bg-accent/10" },
+    { label: "Creator Payouts", value: fmt(stats.creatorPayouts), color: "text-social", bg: "bg-social/10" },
+    { label: "Orders", value: stats.totalOrders.toLocaleString(), color: "text-text", bg: "bg-surface" },
+    { label: "Videos", value: stats.totalVideos.toLocaleString(), color: "text-text", bg: "bg-surface" },
+    { label: "Products", value: stats.totalProducts.toLocaleString(), color: "text-text", bg: "bg-surface" },
+    { label: "Pending Apps", value: stats.pendingApplications.toLocaleString(), color: "text-warning", bg: "bg-warning/10", href: "/admin/applications" },
   ];
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-display font-bold text-text">Admin Overview</h1>
-        <p className="text-sm text-muted mt-1">Platform statistics and quick actions</p>
+        <p className="text-sm text-muted mt-1">Platform statistics at a glance</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {statCards.map((card) => (
-          <div
-            key={card.label}
-            className="bg-surface border border-border rounded-xl p-5"
-          >
-            <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg ${card.bg} mb-3`}>
-              <span className={`text-lg font-bold ${card.color}`}>
-                {card.value > 99 ? "99+" : card.value}
-              </span>
+      {/* KPI Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+        {kpis.map((kpi) => {
+          const Card = (
+            <div className={`${kpi.bg} border border-border rounded-xl p-4`}>
+              <p className="text-xs text-muted mb-1">{kpi.label}</p>
+              <p className={`text-xl font-bold ${kpi.color}`}>{kpi.value}</p>
             </div>
-            <p className="text-sm text-muted">{card.label}</p>
-            <p className={`text-2xl font-bold ${card.color} mt-1`}>
-              {card.value.toLocaleString()}
-            </p>
+          );
+          return kpi.href ? (
+            <Link key={kpi.label} href={kpi.href}>{Card}</Link>
+          ) : (
+            <div key={kpi.label}>{Card}</div>
+          );
+        })}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Recent Orders */}
+        <div className="bg-card rounded-xl border border-border">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-sm font-medium text-text">Recent Orders</h2>
+            <span className="text-xs text-muted">{stats.totalOrders} total</span>
           </div>
-        ))}
+          {stats.recentOrders.length === 0 ? (
+            <p className="text-sm text-muted text-center py-8">No orders yet</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {stats.recentOrders.map((order) => (
+                <div key={order.id} className="px-5 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-text">{order.buyerName}</p>
+                    <p className="text-xs text-muted">
+                      {order.merchant.storeName} &middot; #{order.orderNumber.slice(-6)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-text">
+                      {new Intl.NumberFormat("en-US", { style: "currency", currency: order.currency }).format(order.total)}
+                    </p>
+                    <p className="text-xs text-muted">{order.status}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Users */}
+        <div className="bg-card rounded-xl border border-border">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-sm font-medium text-text">Recent Users</h2>
+            <Link href="/admin/users" className="text-xs text-accent font-medium">View all</Link>
+          </div>
+          {stats.recentUsers.length === 0 ? (
+            <p className="text-sm text-muted text-center py-8">No users yet</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {stats.recentUsers.map((u) => (
+                <div key={u.id} className="px-5 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-text">{u.name || u.username || u.email}</p>
+                    <p className="text-xs text-muted">{u.email}</p>
+                  </div>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    u.role === "ADMIN" ? "bg-destructive/10 text-destructive" :
+                    u.role === "CREATOR" ? "bg-accent/10 text-accent" :
+                    "bg-surface text-muted"
+                  }`}>
+                    {u.role}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

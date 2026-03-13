@@ -8,15 +8,15 @@ function wrapHtml(content: string): string {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
-<body style="margin:0;padding:0;background-color:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#09090b;padding:40px 20px;">
+<body style="margin:0;padding:0;background-color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;padding:40px 20px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#18181b;border-radius:12px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
           <!-- Logo -->
           <tr>
             <td style="padding:32px 32px 0 32px;">
-              <span style="font-size:24px;font-weight:700;color:#c8ff00;letter-spacing:-0.5px;">Scrollr</span>
+              <span style="font-size:24px;font-weight:700;color:#FF6B4A;letter-spacing:-0.5px;">Scrollr</span>
             </td>
           </tr>
           <!-- Content -->
@@ -29,7 +29,7 @@ function wrapHtml(content: string): string {
           <tr>
             <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.08);color:#71717a;font-size:12px;line-height:1.5;">
               You're receiving this because you have an account on Scrollr.<br />
-              <a href="https://scrollr.io" style="color:#c8ff00;text-decoration:none;">scrollr.io</a>
+              <a href="https://scrollr.io" style="color:#FF6B4A;text-decoration:none;">scrollr.io</a>
             </td>
           </tr>
         </table>
@@ -94,7 +94,7 @@ export async function sendOrderConfirmation(
         </tr>
         <tr>
           <td style="padding:8px 0 0 0;color:#fafafa;font-size:15px;font-weight:700;border-top:1px solid rgba(255,255,255,0.08);">Total</td>
-          <td style="padding:8px 0 0 0;color:#c8ff00;font-size:15px;font-weight:700;text-align:right;border-top:1px solid rgba(255,255,255,0.08);">${fmt(total)}</td>
+          <td style="padding:8px 0 0 0;color:#FF6B4A;font-size:15px;font-weight:700;text-align:right;border-top:1px solid rgba(255,255,255,0.08);">${fmt(total)}</td>
         </tr>
       </table>
     `;
@@ -170,24 +170,24 @@ export async function sendWelcomeEmail(email: string, name: string) {
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
         <tr>
           <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-            <strong style="color:#c8ff00;">1.</strong>
+            <strong style="color:#FF6B4A;">1.</strong>
             <span style="color:#fafafa;margin-left:8px;">Upload your first video</span>
           </td>
         </tr>
         <tr>
           <td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-            <strong style="color:#c8ff00;">2.</strong>
+            <strong style="color:#FF6B4A;">2.</strong>
             <span style="color:#fafafa;margin-left:8px;">Tag products to make it shoppable</span>
           </td>
         </tr>
         <tr>
           <td style="padding:12px 0;">
-            <strong style="color:#c8ff00;">3.</strong>
+            <strong style="color:#FF6B4A;">3.</strong>
             <span style="color:#fafafa;margin-left:8px;">Share your feed and earn commissions</span>
           </td>
         </tr>
       </table>
-      <a href="https://scrollr.io/dashboard" style="display:inline-block;background-color:#c8ff00;color:#09090b;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">Go to Dashboard</a>
+      <a href="https://scrollr.io/dashboard" style="display:inline-block;background-color:#FF6B4A;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">Go to Dashboard</a>
     `;
 
     await resend.emails.send({
@@ -198,6 +198,54 @@ export async function sendWelcomeEmail(email: string, name: string) {
     });
   } catch (err) {
     console.error("Failed to send welcome email:", err);
+  }
+}
+
+interface CreatorApplicationResultParams {
+  name: string;
+  status: "approved" | "rejected";
+  adminNote?: string;
+}
+
+/**
+ * Send creator application result email (approved/rejected).
+ */
+export async function sendCreatorApplicationResult(
+  email: string,
+  { name, status, adminNote }: CreatorApplicationResultParams
+) {
+  try {
+    const resend = getResend();
+
+    const isApproved = status === "approved";
+    const statusColor = isApproved ? "#22c55e" : "#ef4444";
+
+    const content = isApproved
+      ? `
+      <h2 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#fafafa;">Welcome to Scrollr Creators!</h2>
+      <p style="margin:0 0 16px 0;">Hey ${name}, great news — your creator application has been <strong style="color:${statusColor};">approved</strong>.</p>
+      <p style="margin:0 0 24px 0;color:#71717a;">You can now upload videos, add products, and start earning. Head to your dashboard to get started.</p>
+      <a href="https://scrollr.io/dashboard" style="display:inline-block;background-color:#FF6B4A;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">Go to Dashboard</a>
+    `
+      : `
+      <h2 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#fafafa;">Application Update</h2>
+      <p style="margin:0 0 16px 0;">Hey ${name}, thank you for applying to become a creator on Scrollr.</p>
+      <p style="margin:0 0 16px 0;">Unfortunately, your application was <strong style="color:${statusColor};">not approved</strong> at this time.</p>
+      ${adminNote ? `<p style="margin:0 0 16px 0;color:#71717a;font-size:13px;"><strong style="color:#fafafa;">Feedback:</strong> ${adminNote}</p>` : ""}
+      <p style="margin:0 0 24px 0;color:#71717a;">You're welcome to reapply at any time. We'd love to see you on the platform.</p>
+      <a href="https://scrollr.io/apply" style="display:inline-block;background-color:#FF6B4A;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">Apply Again</a>
+    `;
+
+    await resend.emails.send({
+      from: FROM_ADDRESS,
+      to: email,
+      subject: isApproved
+        ? "You're in! Creator application approved"
+        : "Creator application update",
+      html: wrapHtml(content),
+    });
+  } catch (err) {
+    console.error("Failed to send creator application result email:", err);
   }
 }
 
@@ -238,7 +286,7 @@ export async function sendStrikeNotice(
         </table>
       </div>
       <p style="margin:0 0 8px 0;color:#71717a;font-size:13px;"><strong style="color:#fafafa;">Reason:</strong> ${reason}</p>
-      ${strikeCount >= 3 ? '<p style="margin:16px 0 0 0;padding:12px;background-color:rgba(239,68,68,0.1);border-radius:8px;color:#ef4444;font-size:13px;font-weight:500;">Your account has been suspended due to repeated violations. Please contact support to appeal.</p>' : '<p style="margin:16px 0 0 0;color:#71717a;font-size:13px;">Please review our <a href="https://scrollr.io/guidelines" style="color:#c8ff00;text-decoration:none;">community guidelines</a> to avoid further strikes.</p>'}
+      ${strikeCount >= 3 ? '<p style="margin:16px 0 0 0;padding:12px;background-color:rgba(239,68,68,0.1);border-radius:8px;color:#ef4444;font-size:13px;font-weight:500;">Your account has been suspended due to repeated violations. Please contact support to appeal.</p>' : '<p style="margin:16px 0 0 0;color:#71717a;font-size:13px;">Please review our <a href="https://scrollr.io/guidelines" style="color:#FF6B4A;text-decoration:none;">community guidelines</a> to avoid further strikes.</p>'}
     `;
 
     await resend.emails.send({

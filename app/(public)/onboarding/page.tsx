@@ -117,7 +117,11 @@ export default function OnboardingPage() {
   };
 
   const handleFinish = () => {
-    router.push("/dashboard");
+    if (user?.role === "CREATOR" || user?.role === "ADMIN") {
+      router.push("/dashboard");
+    } else {
+      router.push("/discover");
+    }
   };
 
   return (
@@ -148,7 +152,7 @@ export default function OnboardingPage() {
             <div className="space-y-4">
               <div>
                 <label className="text-xs text-muted block mb-1.5">Username</label>
-                <div className="flex items-center bg-surface border border-border rounded-lg overflow-hidden focus-within:border-accent/50">
+                <div className="flex items-center bg-surface border border-border rounded-xl overflow-hidden focus-within:border-accent/50">
                   <span className="px-3 text-sm text-muted">@</span>
                   <input
                     type="text"
@@ -169,7 +173,7 @@ export default function OnboardingPage() {
               <button
                 onClick={handleSetUsername}
                 disabled={loading || !username || username.length < 3 || usernameAvailable === false}
-                className="w-full py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-lg disabled:opacity-50 hover:bg-accent/90 transition-colors"
+                className="w-full py-2.5 bg-accent text-white text-sm font-semibold rounded-xl disabled:opacity-50 hover:bg-accent/90 transition-colors"
               >
                 {loading ? "Setting up..." : "Continue"}
               </button>
@@ -186,7 +190,7 @@ export default function OnboardingPage() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your display name"
                   maxLength={50}
-                  className="w-full bg-surface border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-accent/50"
+                  className="w-full bg-surface border border-border rounded-xl px-3 py-2.5 text-sm text-text focus:outline-none focus:border-accent/50"
                 />
               </div>
               <div>
@@ -197,7 +201,7 @@ export default function OnboardingPage() {
                   placeholder="Tell people about yourself..."
                   maxLength={160}
                   rows={3}
-                  className="w-full bg-surface border border-border rounded-lg px-3 py-2.5 text-sm text-text resize-none focus:outline-none focus:border-accent/50"
+                  className="w-full bg-surface border border-border rounded-xl px-3 py-2.5 text-sm text-text resize-none focus:outline-none focus:border-accent/50"
                 />
                 <p className="text-xs text-muted mt-1">{bio.length}/160</p>
               </div>
@@ -205,14 +209,14 @@ export default function OnboardingPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => { setStep(2); refreshUser(); }}
-                  className="flex-1 py-2.5 bg-card border border-border text-text text-sm font-semibold rounded-lg hover:bg-surface transition-colors"
+                  className="flex-1 py-2.5 bg-card border border-border text-text text-sm font-semibold rounded-xl hover:bg-surface transition-colors"
                 >
                   Skip
                 </button>
                 <button
                   onClick={handleSetProfile}
                   disabled={loading}
-                  className="flex-1 py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-lg disabled:opacity-50 hover:bg-accent/90 transition-colors"
+                  className="flex-1 py-2.5 bg-accent text-white text-sm font-semibold rounded-xl disabled:opacity-50 hover:bg-accent/90 transition-colors"
                 >
                   {loading ? "Saving..." : "Continue"}
                 </button>
@@ -223,7 +227,7 @@ export default function OnboardingPage() {
           {step === 2 && (
             <div className="text-center py-4">
               <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-4">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c8ff00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF6B4A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
@@ -233,13 +237,13 @@ export default function OnboardingPage() {
               <div className="space-y-3">
                 <button
                   onClick={handleFinish}
-                  className="w-full py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-lg hover:bg-accent/90 transition-colors"
+                  className="w-full py-2.5 bg-accent text-white text-sm font-semibold rounded-xl hover:bg-accent/90 transition-colors"
                 >
                   Go to Dashboard
                 </button>
                 <button
                   onClick={() => router.push("/discover")}
-                  className="w-full py-2.5 bg-card border border-border text-text text-sm font-semibold rounded-lg hover:bg-surface transition-colors"
+                  className="w-full py-2.5 bg-card border border-border text-text text-sm font-semibold rounded-xl hover:bg-surface transition-colors"
                 >
                   Explore Content
                 </button>

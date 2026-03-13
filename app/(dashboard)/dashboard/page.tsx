@@ -6,6 +6,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { useProducts } from "@/hooks/useProducts";
 import { useQuery } from "@tanstack/react-query";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { CreatorApplicationStatus } from "@/components/dashboard/CreatorApplicationStatus";
 import { Spinner } from "@/components/ui/Spinner";
 import { Button } from "@/components/ui/Button";
 import type { UploadQuota } from "@/types";
@@ -92,6 +93,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Creator application status */}
+      <CreatorApplicationStatus />
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-display font-bold text-text">
@@ -214,7 +218,7 @@ export default function DashboardPage() {
               </div>
               <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-purple-400 rounded-full transition-all"
+                  className="h-full bg-social rounded-full transition-all"
                   style={{
                     width: `${Math.min(100, (quota.weekly.used / quota.weekly.limit) * 100)}%`,
                   }}
@@ -242,11 +246,11 @@ export default function DashboardPage() {
             <LineChart data={chartData}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.05)"
+                stroke="var(--border)"
               />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 11, fill: "#71717a" }}
+                tick={{ fontSize: 11, fill: "var(--muted)" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(val) => {
@@ -255,31 +259,32 @@ export default function DashboardPage() {
                 }}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "#71717a" }}
+                tick={{ fontSize: 11, fill: "var(--muted)" }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#18181b",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "8px",
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "12px",
                   fontSize: "12px",
+                  color: "var(--text)",
                 }}
-                labelStyle={{ color: "#71717a" }}
-                itemStyle={{ color: "#fafafa" }}
+                labelStyle={{ color: "var(--muted)" }}
+                itemStyle={{ color: "var(--text)" }}
               />
               <Line
                 type="monotone"
                 dataKey="views"
-                stroke="#c8ff00"
+                stroke="#FF6B4A"
                 strokeWidth={2}
                 dot={false}
               />
               <Line
                 type="monotone"
                 dataKey="clicks"
-                stroke="#a78bfa"
+                stroke="#8B5CF6"
                 strokeWidth={2}
                 dot={false}
               />
@@ -291,7 +296,7 @@ export default function DashboardPage() {
               Views
             </span>
             <span className="flex items-center gap-1.5 text-xs text-muted">
-              <span className="w-3 h-0.5 bg-purple-400 rounded" />
+              <span className="w-3 h-0.5 bg-social rounded" />
               Clicks
             </span>
           </div>
@@ -381,7 +386,7 @@ export default function DashboardPage() {
                     height="12"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#000"
+                    stroke="white"
                     strokeWidth="3"
                     strokeLinecap="round"
                     strokeLinejoin="round"
