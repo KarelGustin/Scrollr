@@ -12,9 +12,16 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/events") ||
     pathname.startsWith("/api/webhooks") ||
+    pathname.startsWith("/api/categories") ||
+    pathname.startsWith("/api/search") ||
+    pathname.startsWith("/api/feed") ||
+    pathname.startsWith("/api/cart") ||
     pathname === "/login" ||
     pathname === "/register" ||
     pathname === "/" ||
+    pathname === "/search" ||
+    pathname === "/discover" ||
+    pathname === "/onboarding" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
   ) {
@@ -51,12 +58,20 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protected dashboard routes
+  // Protected routes — require auth
   if (
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/products") ||
     pathname.startsWith("/analytics") ||
-    pathname.startsWith("/settings")
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/earnings") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/api/admin") ||
+    pathname.startsWith("/api/upload") ||
+    pathname.startsWith("/api/earnings") ||
+    pathname.startsWith("/api/stripe/connect") ||
+    pathname.startsWith("/api/refunds") ||
+    pathname.startsWith("/api/shopify/callback")
   ) {
     if (!user) {
       const loginUrl = new URL("/login", request.url);

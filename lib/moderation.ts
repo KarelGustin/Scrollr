@@ -28,6 +28,7 @@ interface ModerationResult {
   passed: boolean;
   reason?: string;
   category?: string;
+  confidence?: number;
 }
 
 /**
@@ -50,11 +51,26 @@ export async function moderateVideo(videoId: string): Promise<ModerationResult> 
       cloudflareStreamId: true,
       thumbnailUrl: true,
       duration: true,
+      title: true,
+      description: true,
     },
   });
 
   if (!video) {
     return { passed: false, reason: "Video not found" };
+  }
+
+  // Text moderation for title and description
+  const textResult = await moderateText(
+    openai,
+    [video.title, video.description].filter(Boolean).join(" ")
+  );
+  if (textResult && !textResult.passed) {
+    await prisma.video.update({
+      where: { id: videoId },
+      data: { status: "REJECTED" },
+    });
+    return textResult;
   }
 
   // Generate frame URLs from Cloudflare Stream
@@ -66,25 +82,48 @@ export async function moderateVideo(videoId: string): Promise<ModerationResult> 
   }
 
   // Analyze each frame
+  let maxConfidence = 0;
+  let flaggedResult: ModerationResult | null = null;
+
   for (const frameUrl of frameUrls) {
     try {
       const result = await analyzeFrame(openai, frameUrl);
-      if (result.violates) {
-        // Update video status to REJECTED
-        await prisma.video.update({
-          where: { id: videoId },
-          data: { status: "REJECTED" },
-        });
-
-        return {
+      if (result.violates && (result.confidence ?? 0) > maxConfidence) {
+        maxConfidence = result.confidence ?? 0;
+        flaggedResult = {
           passed: false,
           reason: `Content violation detected: ${result.category}`,
           category: result.category,
+          confidence: result.confidence,
         };
       }
     } catch {
-      // If frame analysis fails, continue to next frame
       continue;
+    }
+  }
+
+  if (flaggedResult) {
+    const confidence = flaggedResult.confidence ?? 0;
+
+    if (confidence > 0.85) {
+      // Auto-reject
+      await prisma.video.update({
+        where: { id: videoId },
+        data: { status: "REJECTED" },
+      });
+      return flaggedResult;
+    } else if (confidence >= 0.5) {
+      // Hold for review
+      await prisma.video.update({
+        where: { id: videoId },
+        data: { status: "PENDING_REVIEW" },
+      });
+      return {
+        passed: false,
+        reason: `Held for review: ${flaggedResult.category}`,
+        category: flaggedResult.category,
+        confidence,
+      };
     }
   }
 
@@ -92,8 +131,53 @@ export async function moderateVideo(videoId: string): Promise<ModerationResult> 
 }
 
 /**
+ * Moderate text content (titles, descriptions, product names) using OpenAI Moderation API.
+ */
+export async function moderateText(
+  openai: OpenAI,
+  text: string
+): Promise<ModerationResult | null> {
+  if (!text || text.trim().length === 0) return null;
+
+  try {
+    const response = await openai.moderations.create({ input: text });
+    const result = response.results[0];
+
+    if (result.flagged) {
+      const categories = Object.entries(result.categories)
+        .filter(([, flagged]) => flagged)
+        .map(([category]) => category);
+
+      const scores = Object.entries(result.category_scores);
+      const maxScore = Math.max(...scores.map(([, score]) => score));
+
+      return {
+        passed: false,
+        reason: `Text violation: ${categories.join(", ")}`,
+        category: categories[0],
+        confidence: maxScore,
+      };
+    }
+
+    return { passed: true };
+  } catch {
+    return null; // Graceful degradation
+  }
+}
+
+/**
+ * Standalone text moderation check (for product names, etc.)
+ */
+export async function moderateTextContent(text: string): Promise<ModerationResult> {
+  const openai = getOpenAIClient();
+  if (!openai) return { passed: true };
+
+  const result = await moderateText(openai, text);
+  return result ?? { passed: true };
+}
+
+/**
  * Generate frame URLs at even intervals across the video duration.
- * Uses Cloudflare Stream's thumbnail endpoint with time parameter.
  */
 function getFrameUrls(
   streamId: string | null,
@@ -101,18 +185,16 @@ function getFrameUrls(
   duration: number | null
 ): string[] {
   if (!streamId) {
-    // No Cloudflare Stream ID — use thumbnail if available
     return thumbnailUrl ? [thumbnailUrl] : [];
   }
 
-  const videoDuration = duration ?? 30; // default to 30s if unknown
+  const videoDuration = duration ?? 30;
   const frameCount = Math.min(6, Math.max(2, Math.floor(videoDuration / 5)));
   const interval = videoDuration / (frameCount + 1);
 
   const urls: string[] = [];
   for (let i = 1; i <= frameCount; i++) {
     const time = Math.floor(interval * i);
-    // Cloudflare Stream thumbnail API
     urls.push(
       `https://customer-${process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_HASH ?? "unknown"}.cloudflarestream.com/${streamId}/thumbnails/thumbnail.jpg?time=${time}s&width=640`
     );
@@ -155,7 +237,6 @@ async function analyzeFrame(
       confidence: parsed.confidence,
     };
   } catch {
-    // If we can't parse the response, assume safe
     return { violates: false };
   }
 }

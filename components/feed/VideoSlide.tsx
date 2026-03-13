@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import Hls from "hls.js";
 import type { FeedVideo, FeedVideoProduct } from "@/types";
 import ProductRow from "./ProductRow";
 import ShareButton from "./ShareButton";
+import ReportButton from "./ReportButton";
 
 interface VideoSlideProps {
   video: FeedVideo;
@@ -163,6 +164,7 @@ export default function VideoSlide({
           url={video.user?.username ? `/@${video.user.username}/${video.id}` : `/discover`}
           title={`Check out this video on Scrollr`}
         />
+        <ReportButton videoId={video.id} />
       </div>
 
       {/* Product row */}

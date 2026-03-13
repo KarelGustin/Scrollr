@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useProducts } from "@/hooks/useProducts";
+import { useQuery } from "@tanstack/react-query";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Spinner } from "@/components/ui/Spinner";
 import { Button } from "@/components/ui/Button";
+import type { UploadQuota } from "@/types";
 import {
   LineChart,
   Line,
@@ -21,6 +23,14 @@ export default function DashboardPage() {
   const { user: session } = useAuth();
   const { data: analytics, isLoading: analyticsLoading } = useAnalytics("7d");
   const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: quota } = useQuery<UploadQuota>({
+    queryKey: ["upload-quota"],
+    queryFn: async () => {
+      const res = await fetch("/api/upload/quota");
+      if (!res.ok) throw new Error("Failed to fetch quota");
+      return res.json();
+    },
+  });
   const [copied, setCopied] = useState(false);
 
   const [checklistState, setChecklistState] = useState<Record<string, boolean>>(
@@ -171,6 +181,56 @@ export default function DashboardPage() {
           }
         />
       </div>
+
+      {/* Upload quota */}
+      {quota && (
+        <div className="bg-card rounded-xl border border-border p-5">
+          <h2 className="text-sm font-medium text-muted mb-4">
+            Upload Quota
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-muted">Today</span>
+                <span className="text-xs text-text font-medium">
+                  {quota.daily.used}/{quota.daily.limit}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-accent rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, (quota.daily.used / quota.daily.limit) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-muted">This Week</span>
+                <span className="text-xs text-text font-medium">
+                  {quota.weekly.used}/{quota.weekly.limit}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-400 rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, (quota.weekly.used / quota.weekly.limit) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 mt-3 text-[11px] text-muted">
+            <span>Max duration: {quota.maxDurationSeconds}s</span>
+            <span>Max size: {quota.maxFileSizeMB}MB</span>
+            <span className="ml-auto uppercase tracking-wider font-semibold text-accent/70">
+              {quota.plan} plan
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Sparkline chart */}
       {chartData.length > 0 && (

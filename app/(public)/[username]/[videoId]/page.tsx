@@ -55,13 +55,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? `Shop ${productNames} from @${data.user.username} on Scrollr`
     : `Watch @${data.user.username}'s video on Scrollr`;
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://scrollr.io";
+
   return {
     title: `@${data.user.username} on Scrollr`,
     description,
     openGraph: {
       title: `@${data.user.username} on Scrollr`,
       description,
-      ...(data.video.thumbnailUrl ? { images: [{ url: data.video.thumbnailUrl }] } : {}),
+      url: `${appUrl}/@${data.user.username}/${videoId}`,
+      siteName: "Scrollr",
+      type: "video.other",
+      ...(data.video.thumbnailUrl ? { images: [{ url: data.video.thumbnailUrl, width: 640, height: 360 }] } : {}),
+    },
+    twitter: {
+      card: data.video.thumbnailUrl ? "summary_large_image" : "summary",
+      title: `@${data.user.username} on Scrollr`,
+      description,
+      ...(data.video.thumbnailUrl ? { images: [data.video.thumbnailUrl] } : {}),
     },
   };
 }

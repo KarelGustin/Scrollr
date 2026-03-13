@@ -18,6 +18,10 @@ export default function DashboardLayout({
     if (status === "unauthenticated") {
       router.replace("/login");
     }
+    // Redirect new users without username to onboarding
+    if (status === "authenticated" && user && !user.username) {
+      router.replace("/onboarding");
+    }
   }, [status, router]);
 
   if (status === "loading") {

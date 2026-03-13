@@ -62,13 +62,25 @@ export async function generateMetadata({
   const firstVideo = user.videos[0];
   const thumbnail = firstVideo?.thumbnailUrl ?? undefined;
 
+  const desc = user.bio ?? `Check out @${user.username}'s shoppable video feed on Scrollr`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://scrollr.io";
+
   return {
     title: `@${user.username} on Scrollr`,
-    description: user.bio ?? `Check out @${user.username}'s shoppable video feed on Scrollr`,
+    description: desc,
     openGraph: {
       title: `@${user.username} on Scrollr`,
-      description: user.bio ?? `Check out @${user.username}'s shoppable video feed on Scrollr`,
-      ...(thumbnail ? { images: [{ url: thumbnail }] } : {}),
+      description: desc,
+      url: `${appUrl}/@${user.username}`,
+      siteName: "Scrollr",
+      type: "profile",
+      ...(thumbnail ? { images: [{ url: thumbnail, width: 640, height: 360 }] } : {}),
+    },
+    twitter: {
+      card: thumbnail ? "summary_large_image" : "summary",
+      title: `@${user.username} on Scrollr`,
+      description: desc,
+      ...(thumbnail ? { images: [thumbnail] } : {}),
     },
   };
 }
