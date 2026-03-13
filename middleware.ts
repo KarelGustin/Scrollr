@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -21,6 +21,36 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Create Supabase client with cookie access
+  let response = NextResponse.next({
+    request: { headers: request.headers },
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            response = NextResponse.next({
+              request: { headers: request.headers },
+            });
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   // Protected dashboard routes
   if (
     pathname.startsWith("/dashboard") ||
@@ -28,24 +58,14 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/analytics") ||
     pathname.startsWith("/settings")
   ) {
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    if (!token) {
+    if (!user) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
-
-    // If user has no username, redirect to register
-    if (!token.username && pathname !== "/register") {
-      return NextResponse.redirect(new URL("/register", request.url));
-    }
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

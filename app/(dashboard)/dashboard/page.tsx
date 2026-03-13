@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useProducts } from "@/hooks/useProducts";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -18,7 +18,7 @@ import {
 } from "recharts";
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { user: session } = useAuth();
   const { data: analytics, isLoading: analyticsLoading } = useAnalytics("7d");
   const { data: products, isLoading: productsLoading } = useProducts();
   const [copied, setCopied] = useState(false);
@@ -28,7 +28,7 @@ export default function DashboardPage() {
   );
 
   const username =
-    (session?.user as { username?: string } | undefined)?.username ?? "you";
+    session?.username ?? "you";
   const feedUrl = `scrollr.io/@${username}`;
 
   // Compute today's stats from analytics
@@ -88,7 +88,7 @@ export default function DashboardPage() {
           Dashboard
         </h1>
         <p className="text-sm text-muted mt-1">
-          Welcome back, {session?.user?.name ?? "Creator"}
+          Welcome back, {session?.name ?? "Creator"}
         </p>
       </div>
 

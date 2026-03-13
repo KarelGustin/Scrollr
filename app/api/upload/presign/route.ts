@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createDirectUploadUrl } from "@/lib/cloudflare";
 import { canCreateProduct } from "@/lib/planLimits";
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const allowed = await canCreateProduct(session.user.id);
+  const allowed = await canCreateProduct(user.id);
   if (!allowed) {
     return NextResponse.json(
       { error: "Product limit reached for your plan" },
@@ -35,7 +34,7 @@ export async function POST(req: NextRequest) {
     select: { userId: true },
   });
 
-  if (!product || product.userId !== session.user.id) {
+  if (!product || product.userId !== user.id) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 

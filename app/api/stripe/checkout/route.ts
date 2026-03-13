@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStripe, getPriceIdForPlan } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -23,7 +22,7 @@ export async function POST(req: NextRequest) {
   // Get or create Stripe customer
   let stripeCustomerId: string;
   const existingSub = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: user.id },
     select: { stripeCustomerId: true },
   });
 
@@ -31,8 +30,8 @@ export async function POST(req: NextRequest) {
     stripeCustomerId = existingSub.stripeCustomerId;
   } else {
     const customer = await getStripe().customers.create({
-      email: session.user.email,
-      metadata: { userId: session.user.id },
+      email: user.email,
+      metadata: { userId: user.id },
     });
     stripeCustomerId = customer.id;
   }
@@ -48,7 +47,7 @@ export async function POST(req: NextRequest) {
     success_url: `${baseUrl}/dashboard?upgraded=true`,
     cancel_url: `${baseUrl}/pricing`,
     metadata: {
-      userId: session.user.id,
+      userId: user.id,
       plan,
     },
   });

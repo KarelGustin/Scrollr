@@ -1,25 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 
 export default function SettingsPage() {
-  const { data: session, update: updateSession } = useSession();
+  const { user, refreshUser } = useAuth();
   const router = useRouter();
-
-  const user = session?.user as
-    | {
-        name?: string | null;
-        image?: string | null;
-        username?: string;
-        plan?: string;
-        bio?: string;
-      }
-    | undefined;
 
   const [profile, setProfile] = useState({
     name: "",
@@ -41,17 +31,17 @@ export default function SettingsPage() {
 
   const currentPlan = user?.plan ?? "FREE";
 
-  // Initialize form from session
+  // Initialize form from user
   useEffect(() => {
     if (user) {
       setProfile({
         name: user.name ?? "",
-        avatarUrl: user.image ?? "",
+        avatarUrl: user.avatarUrl ?? "",
         bio: user.bio ?? "",
         username: user.username ?? "",
       });
     }
-  }, [user?.name, user?.image, user?.bio, user?.username]);
+  }, [user?.name, user?.avatarUrl, user?.bio, user?.username]);
 
   const validateProfile = (): boolean => {
     const errors: Record<string, string> = {};
@@ -115,7 +105,7 @@ export default function SettingsPage() {
         setProfileErrors({ general: err.error ?? "Failed to save profile" });
       } else {
         setProfileSaved(true);
-        await updateSession();
+        await refreshUser();
         setTimeout(() => setProfileSaved(false), 3000);
       }
     } catch {

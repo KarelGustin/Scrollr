@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
 
 const navItems = [
   {
@@ -58,11 +58,11 @@ const planColors: Record<string, string> = {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { user } = useAuth();
 
-  const plan = (session?.user as { plan?: string } | undefined)?.plan ?? "FREE";
-  const userName = session?.user?.name ?? "User";
-  const avatarUrl = session?.user?.image;
+  const plan = user?.plan ?? "FREE";
+  const userName = user?.name ?? "User";
+  const avatarUrl = user?.avatarUrl;
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";

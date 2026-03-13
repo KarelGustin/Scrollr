@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canCreateProduct } from "@/lib/planLimits";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const products = await prisma.product.findMany({
-    where: { userId: session.user.id },
+    where: { userId: user.id },
     include: { video: true },
     orderBy: { position: "asc" },
   });
@@ -20,12 +19,12 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const allowed = await canCreateProduct(session.user.id);
+  const allowed = await canCreateProduct(user.id);
   if (!allowed) {
     return NextResponse.json(
       { error: "Product limit reached for your plan" },
@@ -61,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   // Get next position
   const lastProduct = await prisma.product.findFirst({
-    where: { userId: session.user.id },
+    where: { userId: user.id },
     orderBy: { position: "desc" },
     select: { position: true },
   });
@@ -69,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   const product = await prisma.product.create({
     data: {
-      userId: session.user.id,
+      userId: user.id,
       name,
       brand: brand ?? null,
       price: price ?? null,

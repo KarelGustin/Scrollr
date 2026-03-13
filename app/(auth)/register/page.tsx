@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/Input";
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 
 export default function RegisterPage() {
-  const { data: session } = useSession();
+  const { status } = useAuth();
   const router = useRouter();
 
   const [username, setUsername] = useState("");
@@ -92,6 +92,12 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Redirect to login if not authenticated
+  if (status === "unauthenticated") {
+    router.replace("/login");
+    return null;
   }
 
   return (

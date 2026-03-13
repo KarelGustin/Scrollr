@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { getAnalytics } from "@/lib/analytics";
 import { getUserPlan, getAnalyticsDaysLimit } from "@/lib/planLimits";
 import type { TimeRange } from "@/types";
@@ -12,8 +11,8 @@ const RANGE_DAYS: Record<TimeRange, number> = {
 };
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -22,7 +21,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid range" }, { status: 400 });
   }
 
-  const plan = await getUserPlan(session.user.id);
+  const plan = await getUserPlan(user.id);
   const maxDays = getAnalyticsDaysLimit(plan);
   const requestedDays = RANGE_DAYS[range];
 
@@ -33,7 +32,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const data = await getAnalytics(session.user.id, range);
+  const data = await getAnalytics(user.id, range);
 
   return NextResponse.json(data);
 }
