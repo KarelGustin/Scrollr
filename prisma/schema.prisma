@@ -8,20 +8,25 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String?  @unique
-  name      String?
-  avatarUrl String?
-  bio       String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String?  @unique
+  name              String?
+  avatarUrl         String?
+  bio               String?
+  stripeConnectId   String?  @unique
+  stripeConnectOnboarded Boolean @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   products     Product[]
   videos       Video[]
   events       Event[]
   subscription Subscription?
   carts        Cart[]
+  merchant     Merchant?
+  commissions  Commission[]
+  orders       Order[]
 }
 
 model Video {
@@ -79,10 +84,11 @@ model Product {
   position     Int            @default(0)
   published    Boolean        @default(true)
 
-  videos    VideoProduct[]
-  clicks    Click[]
-  events    Event[]
-  cartItems CartItem[]
+  videos          VideoProduct[]
+  clicks          Click[]
+  events          Event[]
+  cartItems       CartItem[]
+  merchantProduct MerchantProduct?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -187,4 +193,139 @@ enum Plan {
   FREE
   CREATOR
   PRO
+}
+
+// ── Marketplace Models ──
+
+model Merchant {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopifyDomain     String   @unique    // e.g. "mystore.myshopify.com"
+  shopifyAccessToken String
+  shopifyShopId     String?  @unique
+  storeName         String?
+  storeLogoUrl      String?
+  shippingPolicy    String?
+  returnPolicy      String?
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  merchantProducts MerchantProduct[]
+  orders           Order[]
+}
+
+model MerchantProduct {
+  id                 String   @id @default(cuid())
+  merchantId         String
+  merchant           Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  shopifyProductId   String
+  shopifyVariantId   String?
+  title              String
+  description        String?
+  imageUrl           String?
+  price              Float
+  compareAtPrice     Float?
+  currency           String   @default("USD")
+  sku                String?
+  inventoryQuantity  Int?
+  available          Boolean  @default(true)
+  productUrl         String?
+  tags               String?
+  productType        String?
+  vendor             String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Link to Scrollr products (many creators can tag the same merchant product)
+  productId String?  @unique
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  orderItems OrderItem[]
+
+  @@unique([merchantId, shopifyProductId, shopifyVariantId])
+  @@index([merchantId, available])
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  orderNumber       String      @unique @default(cuid())
+  buyerEmail        String
+  buyerName         String
+  shippingAddress   Json        // { line1, line2, city, state, zip, country }
+  merchantId        String
+  merchant          Merchant    @relation(fields: [merchantId], references: [id])
+  creatorId         String?
+  creator           User?       @relation(fields: [creatorId], references: [id])
+  videoId           String?     // Which video drove the sale
+  subtotal          Float       // Product total before shipping
+  shippingCost      Float       @default(0)
+  total             Float       // subtotal + shipping
+  platformFee       Float       // 1% to Scrollr
+  creatorCommission Float       @default(0) // 3% to creator
+  currency          String      @default("USD")
+  stripePaymentId   String?     @unique
+  shopifyOrderId    String?     @unique
+  status            OrderStatus @default(PENDING)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  items       OrderItem[]
+  commissions Commission[]
+
+  @@index([merchantId, createdAt(sort: Desc)])
+  @@index([creatorId, createdAt(sort: Desc)])
+}
+
+model OrderItem {
+  id                String          @id @default(cuid())
+  orderId           String
+  order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  merchantProductId String
+  merchantProduct   MerchantProduct @relation(fields: [merchantProductId], references: [id])
+  quantity          Int             @default(1)
+  unitPrice         Float
+  total             Float
+
+  @@index([orderId])
+}
+
+model Commission {
+  id        String           @id @default(cuid())
+  orderId   String
+  order     Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId    String           // Creator who earned it
+  user      User             @relation(fields: [userId], references: [id])
+  amount    Float
+  currency  String           @default("USD")
+  type      CommissionType
+  status    CommissionStatus @default(PENDING)
+  stripeTransferId String?
+  paidAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, status])
+  @@index([orderId])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum CommissionType {
+  CREATOR_SALE    // 3% to creator
+  PLATFORM_FEE   // 1% to Scrollr
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+  FAILED
 }
