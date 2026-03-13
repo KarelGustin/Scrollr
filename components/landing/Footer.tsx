@@ -1,16 +1,25 @@
+import Link from "next/link";
+
 export function Footer() {
   return (
-    <footer className="border-t border-border py-12">
-      <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-display font-bold text-text">Scrollr</span>
-          <span className="text-xs text-muted">Beta</span>
+    <footer className="border-t border-black/[0.06] py-12 bg-white">
+      <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-display font-bold text-[#0a0a0a]">Scroller</span>
         </div>
-        <div className="flex items-center gap-8 text-sm text-muted">
-          <a href="#how-it-works" className="hover:text-text transition-colors">How it works</a>
-          <a href="/login" className="hover:text-text transition-colors">Sign in</a>
+
+        <div className="flex items-center gap-6">
+          <Link href="/login" className="text-sm text-[#6b7280] hover:text-[#0a0a0a] transition-colors">
+            Sign in
+          </Link>
+          <Link href="/register" className="text-sm text-[#6b7280] hover:text-[#0a0a0a] transition-colors">
+            Join as a Creator
+          </Link>
         </div>
-        <p className="text-xs text-muted/50">&copy; 2026 Scrollr. All rights reserved.</p>
+
+        <p className="text-xs text-[#9ca3af]">
+          &copy; {new Date().getFullYear()} Scroller
+        </p>
       </div>
     </footer>
   );

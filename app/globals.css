@@ -192,3 +192,39 @@ body {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(200, 255, 0, 0.2), transparent);
 }
+
+/* ========== Light landing page ========== */
+
+.landing-light {
+  --landing-bg: #ffffff;
+  --landing-text: #0a0a0a;
+  --landing-muted: #6b7280;
+  --landing-border: rgba(0, 0, 0, 0.06);
+  --landing-surface: #f9fafb;
+  --landing-accent: #0a0a0a;
+  background: var(--landing-bg);
+  color: var(--landing-text);
+}
+
+.landing-light .phone-frame {
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.landing-light .phone-frame::before {
+  background: #0a0a0a;
+}
+
+/* Landing scroll reveal (light) */
+.landing-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+
+.landing-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

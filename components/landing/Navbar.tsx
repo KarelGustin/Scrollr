@@ -16,36 +16,36 @@ export function Navbar() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-bg/80 backdrop-blur-xl border-b border-border"
+          ? "bg-white/80 backdrop-blur-xl border-b border-black/[0.06]"
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-display font-bold text-text">Scrollr</span>
+          <span className="text-xl font-display font-bold text-[#0a0a0a]">Scroller</span>
         </Link>
 
         <div className="hidden sm:flex items-center gap-8">
-          <a href="#how-it-works" className="text-sm text-muted hover:text-text transition-colors">
+          <a href="#how-it-works" className="text-sm text-[#6b7280] hover:text-[#0a0a0a] transition-colors">
             How it works
           </a>
-          <Link href="/login" className="text-sm text-muted hover:text-text transition-colors">
+          <Link href="/login" className="text-sm text-[#6b7280] hover:text-[#0a0a0a] transition-colors">
             Sign in
           </Link>
           <Link
             href="/register"
-            className="text-sm font-medium px-5 py-2 bg-accent text-accent-fg rounded-xl hover:bg-accent/90 transition-all duration-200 hover:shadow-[0_0_20px_rgba(200,255,0,0.2)]"
+            className="text-sm font-medium px-5 py-2.5 bg-[#0a0a0a] text-white rounded-full hover:bg-[#1a1a1a] transition-all duration-200"
           >
-            Get started
+            Join as a Creator
           </Link>
         </div>
 
         {/* Mobile */}
         <Link
           href="/register"
-          className="sm:hidden text-sm font-medium px-4 py-2 bg-accent text-accent-fg rounded-xl"
+          className="sm:hidden text-sm font-medium px-4 py-2 bg-[#0a0a0a] text-white rounded-full"
         >
-          Get started
+          Join as a Creator
         </Link>
       </div>
     </nav>

@@ -2,100 +2,88 @@
 
 import { ScrollReveal } from "./ScrollReveal";
 
-const BENEFITS = [
+const benefits = [
   {
-    label: "Share everything",
-    items: [
-      {
-        stat: "3.2x",
-        description: "More clicks than link-in-bio",
-        detail: "Full-screen video builds intent. They don't just click — they watch, want, then buy. Stop gatekeeping your favorites.",
-      },
-      {
-        stat: "0",
-        description: "Cringe \"use my code\" posts",
-        detail: "Your main feed stays you. Scrollr lives on a separate link — sharing your essentials without polluting your content.",
-      },
-      {
-        stat: "Fun",
-        description: "The way sharing should feel",
-        detail: "Your followers browse your picks like they scroll TikTok. It's not a sales pitch — it's a curated experience they'll actually thank you for.",
-      },
-    ],
+    title: "No promo clutter",
+    description: 'No "use my code". No awkward captions. Your content stays clean.',
   },
   {
-    label: "Monetize effortlessly",
-    items: [
-      {
-        stat: "8.2%",
-        description: "Average click-through rate",
-        detail: "The swipe-to-shop format holds attention. Brands see click rates 4x higher than traditional affiliate pages.",
-      },
-      {
-        stat: "$$$",
-        description: "Real revenue, not vanity metrics",
-        detail: "Views, watch time, clicks, conversions — see exactly which products earn. Share reports with brands in seconds.",
-      },
-      {
-        stat: "Any",
-        description: "Affiliate network, any brand",
-        detail: "Amazon, LTK, ShareASale, direct brand deals — paste any link and we track it. No platform lock-in, ever.",
-      },
-    ],
+    title: "Monetize what you already post",
+    description: "Your fitchecks, styling clips and product videos already inspire people. Scroller simply captures that moment.",
+  },
+  {
+    title: "Earn through real discovery",
+    description: "Your audience doesn't need to search. They see it. They want it. They add it.",
+  },
+  {
+    title: "Simple creator dashboard",
+    description: "Upload videos. Add products. Track what performs. That's it.",
   },
 ];
 
 export function BenefitsSection() {
   return (
-    <section className="relative py-32 overflow-hidden">
-      <div className="section-divider mb-32" />
-
-      <div className="orb w-[500px] h-[500px] bg-purple-500/5 bottom-[10%] right-[-200px]" />
-
-      <div className="max-w-6xl mx-auto px-6">
+    <section className="py-32 px-6 bg-[#f9fafb]">
+      <div className="max-w-4xl mx-auto">
         <ScrollReveal>
-          <div className="text-center mb-20">
-            <p className="text-accent text-sm font-medium tracking-widest uppercase mb-4">Why Scrollr</p>
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight">
-              Don&apos;t gatekeep
-              <br />
-              <span className="text-muted">your essentials.</span>
-            </h2>
-          </div>
+          <p className="text-sm font-medium text-[#9ca3af] tracking-wider uppercase mb-6">
+            Why creators love it
+          </p>
         </ScrollReveal>
 
-        <div className="space-y-20">
-          {BENEFITS.map((group, gi) => (
-            <div key={gi}>
-              <ScrollReveal>
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="h-px flex-1 bg-border" />
-                  <span className="text-xs font-medium text-muted tracking-widest uppercase px-4">{group.label}</span>
-                  <div className="h-px flex-1 bg-border" />
-                </div>
-              </ScrollReveal>
+        <ScrollReveal delay={100}>
+          <h2 className="text-4xl sm:text-5xl font-display font-bold text-[#0a0a0a] leading-tight mb-20">
+            Finally, a cleaner way to monetize.
+          </h2>
+        </ScrollReveal>
 
-              <div className="grid gap-6 md:grid-cols-3">
-                {group.items.map((item, i) => (
-                  <ScrollReveal key={i} delay={i * 120}>
-                    <div className="glass-card rounded-2xl p-8 h-full group hover:border-accent/20 transition-all duration-500 relative overflow-hidden">
-                      {/* Subtle glow on hover */}
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-br from-accent/5 to-transparent" />
+        <div className="grid sm:grid-cols-2 gap-12">
+          {benefits.map((benefit, i) => (
+            <ScrollReveal key={benefit.title} delay={200 + i * 120}>
+              <div>
+                <h3 className="text-lg font-display font-bold text-[#0a0a0a] mb-3">
+                  {benefit.title}
+                </h3>
+                <p className="text-[#6b7280] leading-relaxed">
+                  {benefit.description}
+                </p>
+              </div>
+            </ScrollReveal>
+          ))}
+        </div>
 
-                      <div className="relative">
-                        <div className="text-4xl font-display font-bold gradient-text mb-2 inline-block">
-                          {item.stat}
-                        </div>
-                        <h3 className="text-base font-semibold text-text mb-3">{item.description}</h3>
-                        <p className="text-sm text-muted leading-relaxed">{item.detail}</p>
-                      </div>
-                    </div>
-                  </ScrollReveal>
+        {/* Dashboard animation */}
+        <ScrollReveal delay={700}>
+          <div className="mt-20 max-w-md mx-auto">
+            <div className="bg-white rounded-2xl border border-black/[0.06] p-6 shadow-sm">
+              <div className="grid grid-cols-4 gap-4 text-center">
+                {[
+                  { label: "Views", value: "12.4k" },
+                  { label: "Clicks", value: "1.8k" },
+                  { label: "Add to cart", value: "340" },
+                  { label: "Earnings", value: "\u20AC284" },
+                ].map((stat) => (
+                  <div key={stat.label}>
+                    <p className="text-xl font-display font-bold text-[#0a0a0a]">{stat.value}</p>
+                    <p className="text-[10px] text-[#9ca3af] mt-1">{stat.label}</p>
+                  </div>
                 ))}
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        </ScrollReveal>
+
+        {/* CTA */}
+        <ScrollReveal delay={800}>
+          <div className="mt-16 text-center">
+            <a
+              href="/register"
+              className="inline-flex items-center justify-center px-8 py-4 bg-[#0a0a0a] text-white font-semibold text-base rounded-full transition-all duration-300 hover:bg-[#1a1a1a] hover:scale-[1.02]"
+            >
+              Join as a Creator
+            </a>
+          </div>
+        </ScrollReveal>
       </div>
     </section>
   );

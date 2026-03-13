@@ -32,7 +32,7 @@ export function ScrollReveal({ children, className = "", delay = 0 }: ScrollReve
   }, [delay]);
 
   return (
-    <div ref={ref} className={`reveal ${className}`}>
+    <div ref={ref} className={`landing-reveal ${className}`}>
       {children}
     </div>
   );

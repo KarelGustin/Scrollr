@@ -132,6 +132,28 @@ const config: Config = {
           "55%": { transform: "translateY(-80px)", opacity: "0" },
           "100%": { transform: "translateY(40px)", opacity: "0" },
         },
+        "slide-in-products": {
+          "0%": { transform: "translateY(100%)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        "add-to-cart-pop": {
+          "0%": { transform: "scale(0.8)", opacity: "0" },
+          "50%": { transform: "scale(1.05)", opacity: "1" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        "dot-appear": {
+          "0%": { transform: "scale(0)", opacity: "0" },
+          "60%": { transform: "scale(1.3)", opacity: "1" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        "count-up-tick": {
+          "0%": { transform: "translateY(8px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        "panel-slide": {
+          "0%": { transform: "translateX(40px)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
       },
       animation: {
         "slide-up": "slide-up 300ms ease-out",
@@ -156,6 +178,11 @@ const config: Config = {
         "bar-grow": "bar-grow 1.5s ease-out forwards",
         "pulse-dot": "pulse-dot 2s ease-in-out infinite",
         "hand-swipe": "hand-swipe 3s ease-in-out infinite",
+        "slide-in-products": "slide-in-products 0.6s ease-out forwards",
+        "add-to-cart-pop": "add-to-cart-pop 0.4s ease-out forwards",
+        "dot-appear": "dot-appear 0.3s ease-out forwards",
+        "count-up-tick": "count-up-tick 0.4s ease-out forwards",
+        "panel-slide": "panel-slide 0.6s ease-out forwards",
       },
     },
   },

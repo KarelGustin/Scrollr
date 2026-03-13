@@ -1,23 +1,27 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
-import { MicroActionShowcase } from "@/components/landing/MicroActionShowcase";
+import { WhatSection } from "@/components/landing/WhatSection";
+import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
-import { ComparisonSection } from "@/components/landing/ComparisonSection";
-import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
+import { AudienceSection } from "@/components/landing/AudienceSection";
+import { CategoriesSection } from "@/components/landing/CategoriesSection";
+import { EarlyAccessSection } from "@/components/landing/EarlyAccessSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
 
 export default function HomePage() {
   return (
-    <main className="relative bg-bg noise-overlay">
+    <main className="relative landing-light">
       <Navbar />
       <HeroSection />
       <ProblemSection />
-      <MicroActionShowcase />
+      <WhatSection />
+      <HowItWorksSection />
       <BenefitsSection />
-      <ComparisonSection />
-      <TestimonialsSection />
+      <AudienceSection />
+      <CategoriesSection />
+      <EarlyAccessSection />
       <CTASection />
       <Footer />
     </main>
