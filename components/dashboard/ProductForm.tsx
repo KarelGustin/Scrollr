@@ -12,6 +12,7 @@ interface ProductFormProps {
     affiliateUrl: string;
     description?: string;
     imageUrl?: string;
+    tags?: string;
   }) => Promise<void>;
   loading?: boolean;
   submitLabel?: string;
@@ -25,6 +26,7 @@ export function ProductForm({ onSubmit, loading, submitLabel = "Add Product" }: 
     affiliateUrl: "",
     description: "",
     imageUrl: "",
+    tags: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -58,9 +60,10 @@ export function ProductForm({ onSubmit, loading, submitLabel = "Add Product" }: 
       affiliateUrl: form.affiliateUrl.trim(),
       description: form.description.trim() || undefined,
       imageUrl: form.imageUrl.trim() || undefined,
+      tags: form.tags.trim() || undefined,
     });
 
-    setForm({ name: "", brand: "", price: "", affiliateUrl: "", description: "", imageUrl: "" });
+    setForm({ name: "", brand: "", price: "", affiliateUrl: "", description: "", imageUrl: "", tags: "" });
   };
 
   return (
@@ -98,6 +101,12 @@ export function ProductForm({ onSubmit, loading, submitLabel = "Add Product" }: 
         placeholder="https://... (optional)"
         value={form.imageUrl}
         onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+      />
+      <Input
+        label="Tags"
+        placeholder="e.g. dresses, summer, casual"
+        value={form.tags}
+        onChange={(e) => setForm({ ...form, tags: e.target.value })}
       />
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-muted">

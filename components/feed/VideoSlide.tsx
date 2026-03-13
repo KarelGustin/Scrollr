@@ -24,6 +24,7 @@ export default function VideoSlide({
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const hasStartedRef = useRef(false);
+  const watchStartRef = useRef<number>(0);
 
   // Set up HLS playback
   useEffect(() => {
@@ -52,18 +53,35 @@ export default function VideoSlide({
     };
   }, [video.hlsUrl]);
 
-  // Play/pause based on isActive
+  // Play/pause based on isActive + track watch duration
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
 
     if (isActive) {
+      watchStartRef.current = Date.now();
       el.play().catch(() => {});
     } else {
+      // Fire watch duration when user scrolls away
+      if (hasStartedRef.current) {
+        const watchDuration = (Date.now() - watchStartRef.current) / 1000;
+        const videoDuration = el.duration || video.duration || 1;
+        const watchPercentage = Math.min(watchDuration / videoDuration, 1);
+
+        fetch("/api/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify([{
+            type: "VIDEO_COMPLETE",
+            videoId: video.id,
+            metadata: { watchDuration, watchPercentage },
+          }]),
+        }).catch(() => {});
+      }
       el.pause();
       hasStartedRef.current = false;
     }
-  }, [isActive]);
+  }, [isActive, video.id, video.duration]);
 
   const handlePlay = useCallback(() => {
     if (!hasStartedRef.current) {

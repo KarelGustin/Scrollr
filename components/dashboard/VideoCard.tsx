@@ -55,11 +55,11 @@ export function VideoCard({ video }: VideoCardProps) {
               ? video.published
                 ? "bg-green-500/20 text-green-400"
                 : "bg-yellow-500/20 text-yellow-400"
-              : video.status === "ERROR"
+              : video.status === "ERROR" || video.status === "REJECTED"
                 ? "bg-red-500/20 text-red-400"
                 : "bg-blue-500/20 text-blue-400"
           }`}>
-            {isReady ? (video.published ? "Live" : "Draft") : video.status}
+            {isReady ? (video.published ? "Live" : "Draft") : video.status === "REJECTED" ? "Rejected" : video.status}
           </span>
         </div>
         {video.duration && (

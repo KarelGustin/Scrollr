@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Read viewer session from cart cookie for personalization tracking
+  const viewerSessionId = req.cookies.get("cart_session")?.value ?? null;
+
   const body = await req.json();
   const events = body as {
     type: string;
@@ -104,6 +107,7 @@ export async function POST(req: NextRequest) {
         videoId: e.videoId ?? null,
         productId: e.productId ?? null,
         metadata: (e.metadata as Prisma.InputJsonValue) ?? undefined,
+        viewerSessionId,
         userId,
       };
     })

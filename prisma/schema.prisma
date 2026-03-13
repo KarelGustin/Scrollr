@@ -37,6 +37,7 @@ model Video {
   published          Boolean        @default(false)
   products           VideoProduct[]
   events             Event[]
+  score              VideoScore?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -46,6 +47,7 @@ model Video {
 enum VideoStatus {
   PROCESSING
   READY
+  REJECTED
   ERROR
 }
 
@@ -73,6 +75,7 @@ model Product {
   imageUrl     String?
   description  String?
   affiliateUrl String
+  tags         String?
   position     Int            @default(0)
   published    Boolean        @default(true)
 
@@ -100,20 +103,37 @@ model Click {
 }
 
 model Event {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videoId   String?
-  video     Video?    @relation(fields: [videoId], references: [id], onDelete: SetNull)
-  productId String?
-  product   Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
-  type      EventType
-  metadata  Json?
-  createdAt DateTime  @default(now())
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  viewerSessionId String?
+  videoId         String?
+  video           Video?    @relation(fields: [videoId], references: [id], onDelete: SetNull)
+  productId       String?
+  product         Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  type            EventType
+  metadata        Json?
+  createdAt       DateTime  @default(now())
 
   @@index([userId, createdAt])
   @@index([productId, type])
   @@index([videoId, type])
+  @@index([viewerSessionId, type])
+}
+
+model VideoScore {
+  id              String   @id @default(cuid())
+  videoId         String   @unique
+  video           Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  avgWatchPercent Float    @default(0)
+  cartRate        Float    @default(0)
+  shareRate       Float    @default(0)
+  shopClickRate   Float    @default(0)
+  totalViews      Int      @default(0)
+  score           Float    @default(0)
+  computedAt      DateTime @default(now())
+
+  @@index([score(sort: Desc)])
 }
 
 enum EventType {
