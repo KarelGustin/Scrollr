@@ -2,37 +2,45 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
-import type { FeedProduct } from "@/types";
-import ProductTag from "./ProductTag";
+import type { FeedVideo, FeedVideoProduct } from "@/types";
+import ProductRow from "./ProductRow";
+import ShareButton from "./ShareButton";
 
 interface VideoSlideProps {
-  product: FeedProduct;
+  video: FeedVideo;
   isActive: boolean;
   index: number;
+  showCreator?: boolean;
+  onProductClick: (product: FeedVideoProduct) => void;
 }
 
-export default function VideoSlide({ product, isActive, index }: VideoSlideProps) {
+export default function VideoSlide({
+  video,
+  isActive,
+  index,
+  showCreator = false,
+  onProductClick,
+}: VideoSlideProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const hasStartedRef = useRef(false);
 
   // Set up HLS playback
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    const el = videoRef.current;
+    if (!el) return;
 
-    const src = product.video.hlsUrl;
+    const src = video.hlsUrl;
 
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Native HLS support (Safari)
-      video.src = src;
+    if (el.canPlayType("application/vnd.apple.mpegurl")) {
+      el.src = src;
     } else if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         startLevel: -1,
       });
       hls.loadSource(src);
-      hls.attachMedia(video);
+      hls.attachMedia(el);
       hlsRef.current = hls;
     }
 
@@ -42,17 +50,17 @@ export default function VideoSlide({ product, isActive, index }: VideoSlideProps
         hlsRef.current = null;
       }
     };
-  }, [product.video.hlsUrl]);
+  }, [video.hlsUrl]);
 
   // Play/pause based on isActive
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    const el = videoRef.current;
+    if (!el) return;
 
     if (isActive) {
-      video.play().catch(() => {});
+      el.play().catch(() => {});
     } else {
-      video.pause();
+      el.pause();
       hasStartedRef.current = false;
     }
   }, [isActive]);
@@ -63,23 +71,22 @@ export default function VideoSlide({ product, isActive, index }: VideoSlideProps
       fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify([{ type: "VIDEO_START", productId: product.id }]),
+        body: JSON.stringify([{ type: "VIDEO_START", videoId: video.id }]),
       }).catch(() => {});
     }
-  }, [product.id]);
+  }, [video.id]);
 
   const handleTap = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // Don't toggle if clicking inside the ProductTag area
     const target = e.target as HTMLElement;
     if (target.closest("button") || target.closest("a")) return;
 
-    const video = videoRef.current;
-    if (!video) return;
+    const el = videoRef.current;
+    if (!el) return;
 
-    if (video.paused) {
-      video.play().catch(() => {});
+    if (el.paused) {
+      el.play().catch(() => {});
     } else {
-      video.pause();
+      el.pause();
     }
   }, []);
 
@@ -93,7 +100,7 @@ export default function VideoSlide({ product, isActive, index }: VideoSlideProps
       <video
         ref={videoRef}
         className="absolute inset-0 h-full w-full object-cover"
-        poster={product.video.thumbnailUrl ?? undefined}
+        poster={video.thumbnailUrl ?? undefined}
         autoPlay={isActive}
         muted
         playsInline
@@ -110,8 +117,38 @@ export default function VideoSlide({ product, isActive, index }: VideoSlideProps
         }}
       />
 
-      {/* Product info */}
-      <ProductTag product={product} />
+      {/* Creator info */}
+      {showCreator && video.user && (
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+          {video.user.avatarUrl ? (
+            <img
+              src={video.user.avatarUrl}
+              alt={video.user.username}
+              className="w-8 h-8 rounded-full object-cover border-2 border-white/20"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center border-2 border-white/20">
+              <span className="text-xs font-medium text-muted">
+                {(video.user.name ?? video.user.username ?? "?").charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+          <span className="text-sm font-semibold text-white drop-shadow-md">
+            @{video.user.username}
+          </span>
+        </div>
+      )}
+
+      {/* Right side actions */}
+      <div className="absolute right-3 bottom-24 z-20 flex flex-col gap-3">
+        <ShareButton
+          url={video.user?.username ? `/@${video.user.username}/${video.id}` : `/discover`}
+          title={`Check out this video on Scrollr`}
+        />
+      </div>
+
+      {/* Product row */}
+      <ProductRow products={video.products} onProductClick={onProductClick} />
     </div>
   );
 }

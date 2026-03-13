@@ -1,7 +1,9 @@
 "use client";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import type { ProductWithVideo } from "@/types";
+// Product type flexible for both old and new schema
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ProductWithVideo = any;
 
 interface ProductCardProps {
   product: ProductWithVideo;
@@ -16,7 +18,7 @@ export function ProductCard({
   onDelete,
   onTogglePublish,
 }: ProductCardProps) {
-  const thumbnailUrl = product.video?.thumbnailUrl;
+  const thumbnailUrl = product.imageUrl ?? (product as any).videos?.[0]?.video?.thumbnailUrl ?? null;
 
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden group">
@@ -119,8 +121,8 @@ export function ProductCard({
         {product.brand && (
           <p className="text-xs text-muted mt-0.5">{product.brand}</p>
         )}
-        {product.price && (
-          <p className="text-sm font-medium text-accent mt-1">{product.price}</p>
+        {(product as any).priceDisplay && (
+          <p className="text-sm font-medium text-accent mt-1">{(product as any).priceDisplay}</p>
         )}
       </div>
     </div>

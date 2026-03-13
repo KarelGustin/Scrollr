@@ -39,7 +39,7 @@ export default function DashboardPage() {
   const todayCtr =
     todayViews > 0 ? ((todayClicks / todayViews) * 100).toFixed(1) : "0.0";
   const liveProducts =
-    products?.filter((p) => p.published).length ?? 0;
+    products?.filter((p: { published: boolean }) => p.published).length ?? 0;
 
   // Merge views and clicks for sparkline chart
   const chartData =

@@ -13,21 +13,21 @@ export async function GET(
 
   const { id } = await params;
 
-  const product = await prisma.product.findUnique({
+  const video = await prisma.video.findUnique({
     where: { id },
     include: {
-      videos: {
-        include: { video: true },
+      products: {
+        include: { product: true },
         orderBy: { position: "asc" },
       },
     },
   });
 
-  if (!product || product.userId !== user.id) {
+  if (!video || video.userId !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(product);
+  return NextResponse.json(video);
 }
 
 export async function PATCH(
@@ -41,7 +41,7 @@ export async function PATCH(
 
   const { id } = await params;
 
-  const existing = await prisma.product.findUnique({
+  const existing = await prisma.video.findUnique({
     where: { id },
     select: { userId: true },
   });
@@ -51,35 +51,22 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const { name, brand, price, affiliateUrl, description, published, imageUrl } = body;
+  const { published } = body;
 
-  const numericPrice = price !== undefined
-    ? (price ? parseFloat(String(price).replace(/[^0-9.]/g, "")) : null)
-    : undefined;
-
-  const product = await prisma.product.update({
+  const video = await prisma.video.update({
     where: { id },
     data: {
-      ...(name !== undefined && { name }),
-      ...(brand !== undefined && { brand }),
-      ...(price !== undefined && {
-        price: numericPrice && !isNaN(numericPrice) ? numericPrice : null,
-        priceDisplay: price ? String(price) : null,
-      }),
-      ...(affiliateUrl !== undefined && { affiliateUrl }),
-      ...(description !== undefined && { description }),
       ...(published !== undefined && { published }),
-      ...(imageUrl !== undefined && { imageUrl }),
     },
     include: {
-      videos: {
-        include: { video: true },
+      products: {
+        include: { product: true },
         orderBy: { position: "asc" },
       },
     },
   });
 
-  return NextResponse.json(product);
+  return NextResponse.json(video);
 }
 
 export async function DELETE(
@@ -93,7 +80,7 @@ export async function DELETE(
 
   const { id } = await params;
 
-  const existing = await prisma.product.findUnique({
+  const existing = await prisma.video.findUnique({
     where: { id },
     select: { userId: true },
   });
@@ -102,7 +89,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await prisma.product.delete({ where: { id } });
+  await prisma.video.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
 }

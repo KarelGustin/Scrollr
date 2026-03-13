@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const events = body as {
     type: string;
+    videoId?: string;
     productId?: string;
     metadata?: Record<string, unknown>;
     userId?: string;
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Resolve userId from product if not provided
+  // Resolve userId from product or video if not provided
   const productIds = Array.from(
     new Set(
       events
@@ -53,7 +54,17 @@ export async function POST(req: NextRequest) {
     )
   );
 
+  const videoIds = Array.from(
+    new Set(
+      events
+        .filter((e) => e.videoId && !e.userId)
+        .map((e) => e.videoId as string)
+    )
+  );
+
   const productUserMap = new Map<string, string>();
+  const videoUserMap = new Map<string, string>();
+
   if (productIds.length > 0) {
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
@@ -64,13 +75,33 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  if (videoIds.length > 0) {
+    const videos = await prisma.video.findMany({
+      where: { id: { in: videoIds } },
+      select: { id: true, userId: true },
+    });
+    for (const v of videos) {
+      videoUserMap.set(v.id, v.userId);
+    }
+  }
+
+  const validTypes = [
+    "PAGE_VIEW", "VIDEO_START", "VIDEO_COMPLETE",
+    "SWIPE_NEXT", "SWIPE_PREV", "SHOP_CLICK",
+    "ADD_TO_CART", "SHARE",
+  ];
+
   const data = events
     .map((e) => {
+      if (!validTypes.includes(e.type)) return null;
       const userId =
-        e.userId ?? (e.productId ? productUserMap.get(e.productId) : undefined);
+        e.userId ??
+        (e.videoId ? videoUserMap.get(e.videoId) : undefined) ??
+        (e.productId ? productUserMap.get(e.productId) : undefined);
       if (!userId) return null;
       return {
-        type: e.type as "PAGE_VIEW" | "VIDEO_START" | "VIDEO_COMPLETE" | "SWIPE_NEXT" | "SWIPE_PREV" | "SHOP_CLICK",
+        type: e.type as "PAGE_VIEW" | "VIDEO_START" | "VIDEO_COMPLETE" | "SWIPE_NEXT" | "SWIPE_PREV" | "SHOP_CLICK" | "ADD_TO_CART" | "SHARE",
+        videoId: e.videoId ?? null,
         productId: e.productId ?? null,
         metadata: (e.metadata as Prisma.InputJsonValue) ?? undefined,
         userId,

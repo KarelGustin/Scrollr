@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getUserPlan, showBranding } from "@/lib/planLimits";
 import VideoFeed from "@/components/feed/VideoFeed";
-import type { FeedProduct } from "@/types";
+import type { FeedVideo } from "@/types";
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -12,14 +12,38 @@ interface PageProps {
 async function getUser(username: string) {
   return prisma.user.findUnique({
     where: { username },
-    include: {
-      products: {
+    select: {
+      id: true,
+      username: true,
+      name: true,
+      avatarUrl: true,
+      bio: true,
+      videos: {
         where: {
+          status: "READY",
           published: true,
-          video: { status: "READY" },
+          hlsUrl: { not: null },
         },
-        include: { video: true },
-        orderBy: { position: "asc" },
+        include: {
+          products: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  brand: true,
+                  price: true,
+                  priceDisplay: true,
+                  imageUrl: true,
+                  affiliateUrl: true,
+                  published: true,
+                },
+              },
+            },
+            orderBy: { position: "asc" },
+          },
+        },
+        orderBy: { createdAt: "desc" },
       },
     },
   });
@@ -35,8 +59,8 @@ export async function generateMetadata({
     return { title: "Not Found" };
   }
 
-  const firstProduct = user.products[0];
-  const thumbnail = firstProduct?.video?.thumbnailUrl ?? undefined;
+  const firstVideo = user.videos[0];
+  const thumbnail = firstVideo?.thumbnailUrl ?? undefined;
 
   return {
     title: `@${user.username} on Scrollr`,
@@ -60,25 +84,33 @@ export default async function UserFeedPage({ params }: PageProps) {
   const plan = await getUserPlan(user.id);
   const branded = showBranding(plan);
 
-  // Transform Prisma products to FeedProduct type
-  const feedProducts: FeedProduct[] = user.products
-    .filter((p) => p.video !== null)
-    .map((p) => ({
-      id: p.id,
-      name: p.name,
-      brand: p.brand,
-      price: p.price,
-      description: p.description,
-      video: {
-        hlsUrl: p.video!.hlsUrl ?? "",
-        thumbnailUrl: p.video!.thumbnailUrl,
-        duration: p.video!.duration,
-      },
-    }));
+  // Transform to FeedVideo type
+  const feedVideos: FeedVideo[] = user.videos.map((v) => ({
+    id: v.id,
+    hlsUrl: v.hlsUrl!,
+    thumbnailUrl: v.thumbnailUrl,
+    duration: v.duration,
+    user: {
+      username: user.username!,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+    },
+    products: v.products
+      .filter((vp) => vp.product.published)
+      .map((vp) => ({
+        id: vp.product.id,
+        name: vp.product.name,
+        brand: vp.product.brand,
+        price: vp.product.price,
+        priceDisplay: vp.product.priceDisplay,
+        imageUrl: vp.product.imageUrl,
+        affiliateUrl: vp.product.affiliateUrl,
+      })),
+  }));
 
   return (
     <div className="min-h-screen bg-bg">
-      <VideoFeed products={feedProducts} showBranding={branded} />
+      <VideoFeed videos={feedVideos} showBranding={branded} />
 
       {branded && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">

@@ -18,52 +18,73 @@ model User {
   updatedAt DateTime @updatedAt
 
   products     Product[]
+  videos       Video[]
   events       Event[]
   subscription Subscription?
-  accounts     Account[]
-  sessions     Session[]
-}
-
-model Product {
-  id           String  @id @default(cuid())
-  userId       String
-  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name         String
-  brand        String?
-  price        String?
-  description  String?
-  affiliateUrl String
-  position     Int     @default(0)
-  published    Boolean @default(true)
-
-  video   Video?
-  clicks  Click[]
-  events  Event[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId, position])
+  carts        Cart[]
 }
 
 model Video {
-  id                 String      @id @default(cuid())
-  productId          String      @unique
-  product            Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  cloudflareStreamId String      @unique
+  id                 String         @id @default(cuid())
+  userId             String
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cloudflareStreamId String?        @unique
   thumbnailUrl       String?
   hlsUrl             String?
   dashUrl            String?
   duration           Float?
-  status             VideoStatus @default(PROCESSING)
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  status             VideoStatus    @default(PROCESSING)
+  published          Boolean        @default(false)
+  products           VideoProduct[]
+  events             Event[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 enum VideoStatus {
   PROCESSING
   READY
   ERROR
+}
+
+model VideoProduct {
+  id        String   @id @default(cuid())
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([videoId, productId])
+  @@index([videoId, position])
+}
+
+model Product {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  brand        String?
+  price        Float?
+  priceDisplay String?
+  imageUrl     String?
+  description  String?
+  affiliateUrl String
+  position     Int            @default(0)
+  published    Boolean        @default(true)
+
+  videos    VideoProduct[]
+  clicks    Click[]
+  events    Event[]
+  cartItems CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, position])
 }
 
 model Click {
@@ -82,6 +103,8 @@ model Event {
   id        String    @id @default(cuid())
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String?
+  video     Video?    @relation(fields: [videoId], references: [id], onDelete: SetNull)
   productId String?
   product   Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
   type      EventType
@@ -90,6 +113,7 @@ model Event {
 
   @@index([userId, createdAt])
   @@index([productId, type])
+  @@index([videoId, type])
 }
 
 enum EventType {
@@ -99,6 +123,30 @@ enum EventType {
   SWIPE_NEXT
   SWIPE_PREV
   SHOP_CLICK
+  ADD_TO_CART
+  SHARE
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  sessionId String     @unique
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@unique([cartId, productId])
 }
 
 model Subscription {
@@ -119,38 +167,4 @@ enum Plan {
   FREE
   CREATOR
   PRO
-}
-
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expires      DateTime
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
 }

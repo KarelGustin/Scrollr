@@ -11,7 +11,12 @@ export async function GET() {
 
   const products = await prisma.product.findMany({
     where: { userId: user.id },
-    include: { video: true },
+    include: {
+      videos: {
+        include: { video: true },
+        orderBy: { position: "asc" },
+      },
+    },
     orderBy: { position: "asc" },
   });
 
@@ -33,7 +38,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, brand, price, affiliateUrl, description, videoId } = body;
+  const { name, brand, price, affiliateUrl, description, imageUrl } = body;
 
   if (!name || !affiliateUrl) {
     return NextResponse.json(
@@ -42,7 +47,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Validate affiliate URL
   try {
     const url = new URL(affiliateUrl);
     if (url.protocol !== "http:" && url.protocol !== "https:") {
@@ -58,7 +62,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Get next position
   const lastProduct = await prisma.product.findFirst({
     where: { userId: user.id },
     orderBy: { position: "desc" },
@@ -66,24 +69,26 @@ export async function POST(req: NextRequest) {
   });
   const position = (lastProduct?.position ?? -1) + 1;
 
+  const numericPrice = price ? parseFloat(String(price).replace(/[^0-9.]/g, "")) : null;
+
   const product = await prisma.product.create({
     data: {
       userId: user.id,
       name,
       brand: brand ?? null,
-      price: price ?? null,
+      price: numericPrice && !isNaN(numericPrice) ? numericPrice : null,
+      priceDisplay: price ? String(price) : null,
       description: description ?? null,
+      imageUrl: imageUrl ?? null,
       affiliateUrl,
       position,
-      ...(videoId
-        ? {
-            video: {
-              connect: { id: videoId },
-            },
-          }
-        : {}),
     },
-    include: { video: true },
+    include: {
+      videos: {
+        include: { video: true },
+        orderBy: { position: "asc" },
+      },
+    },
   });
 
   return NextResponse.json(product, { status: 201 });

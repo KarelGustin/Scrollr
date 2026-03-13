@@ -1,18 +1,15 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ProductWithVideo } from "@/types";
-
-async function fetchProducts(): Promise<ProductWithVideo[]> {
-  const res = await fetch("/api/products");
-  if (!res.ok) throw new Error("Failed to fetch products");
-  return res.json();
-}
 
 export function useProducts() {
   return useQuery({
     queryKey: ["products"],
-    queryFn: fetchProducts,
+    queryFn: async () => {
+      const res = await fetch("/api/products");
+      if (!res.ok) throw new Error("Failed to fetch products");
+      return res.json();
+    },
   });
 }
 
@@ -26,7 +23,7 @@ export function useCreateProduct() {
       price?: string;
       affiliateUrl: string;
       description?: string;
-      videoId?: string;
+      imageUrl?: string;
     }) => {
       const res = await fetch("/api/products", {
         method: "POST",
@@ -60,6 +57,7 @@ export function useUpdateProduct() {
       affiliateUrl?: string;
       description?: string;
       published?: boolean;
+      imageUrl?: string;
     }) => {
       const res = await fetch(`/api/products/${id}`, {
         method: "PATCH",

@@ -28,7 +28,24 @@ import { UploadModal } from "@/components/dashboard/UploadModal";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { Modal } from "@/components/ui/Modal";
-import type { ProductWithVideo } from "@/types";
+import { ImportProductForm } from "@/components/dashboard/ImportProductForm";
+// Product type from API includes videos relation
+type DashboardProduct = {
+  id: string;
+  name: string;
+  brand: string | null;
+  price: number | null;
+  priceDisplay: string | null;
+  imageUrl: string | null;
+  description: string | null;
+  affiliateUrl: string;
+  position: number;
+  published: boolean;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  videos: { video: { thumbnailUrl: string | null } }[];
+};
 
 function SortableProductCard({
   product,
@@ -36,10 +53,10 @@ function SortableProductCard({
   onDelete,
   onTogglePublish,
 }: {
-  product: ProductWithVideo;
-  onEdit: (p: ProductWithVideo) => void;
-  onDelete: (p: ProductWithVideo) => void;
-  onTogglePublish: (p: ProductWithVideo) => void;
+  product: DashboardProduct;
+  onEdit: (p: DashboardProduct) => void;
+  onDelete: (p: DashboardProduct) => void;
+  onTogglePublish: (p: DashboardProduct) => void;
 }) {
   const {
     attributes,
@@ -76,16 +93,16 @@ export default function ProductsPage() {
   const updateProduct = useUpdateProduct();
 
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<ProductWithVideo | null>(
+  const [deleteConfirm, setDeleteConfirm] = useState<DashboardProduct | null>(
     null
   );
 
   const [orderedProducts, setOrderedProducts] = useState<
-    ProductWithVideo[] | null
+    DashboardProduct[] | null
   >(null);
 
   // Use local order if we've reordered, otherwise use server data
-  const displayProducts = orderedProducts ?? products ?? [];
+  const displayProducts: DashboardProduct[] = orderedProducts ?? products ?? [];
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -108,12 +125,12 @@ export default function ProductsPage() {
     [displayProducts, reorderProducts]
   );
 
-  const handleEdit = (product: ProductWithVideo) => {
+  const handleEdit = (product: DashboardProduct) => {
     // For now, navigate or open edit — could be expanded with an edit modal
     window.location.href = `/products?edit=${product.id}`;
   };
 
-  const handleDelete = (product: ProductWithVideo) => {
+  const handleDelete = (product: DashboardProduct) => {
     setDeleteConfirm(product);
   };
 
@@ -125,7 +142,7 @@ export default function ProductsPage() {
     }
   };
 
-  const handleTogglePublish = (product: ProductWithVideo) => {
+  const handleTogglePublish = (product: DashboardProduct) => {
     updateProduct.mutate({
       id: product.id,
       published: !product.published,
@@ -169,6 +186,12 @@ export default function ProductsPage() {
           </svg>
           Add Product
         </Button>
+      </div>
+
+      {/* Import from URL */}
+      <div className="bg-card rounded-xl border border-border p-5">
+        <h2 className="text-sm font-medium text-muted mb-3">Import from URL</h2>
+        <ImportProductForm />
       </div>
 
       {/* Product grid */}
