@@ -89,6 +89,10 @@ export type PlanLimits = {
   maxProducts: number;
   analytics: number;
   branding: boolean;
+  maxVideosPerDay: number;
+  maxVideosPerWeek: number;
+  maxDurationSeconds: number;
+  maxFileSizeMB: number;
 };
 
 export type CartItemWithProduct = {
@@ -110,3 +114,22 @@ export type CartItemWithProduct = {
     };
   };
 };
+
+export type UploadQuota = {
+  plan: Plan;
+  daily: { used: number; limit: number };
+  weekly: { used: number; limit: number };
+  maxDurationSeconds: number;
+  maxFileSizeMB: number;
+};
+
+export type ReportReason =
+  | "SEXUAL_CONTENT"
+  | "VIOLENCE"
+  | "HATE_SPEECH"
+  | "SPAM"
+  | "SCAM"
+  | "INVOLVES_MINOR"
+  | "COPYRIGHT"
+  | "SELF_HARM"
+  | "OTHER";

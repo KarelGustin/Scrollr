@@ -12,6 +12,7 @@ interface AppSession {
   avatarUrl: string | null;
   bio: string | null;
   plan: string;
+  role: string;
 }
 
 interface AuthContextValue {

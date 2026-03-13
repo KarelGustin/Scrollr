@@ -8,12 +8,18 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Also fetch plan from subscription
+  // Also fetch plan and role from DB
   const { prisma } = await import("@/lib/prisma");
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId: user.id },
-    select: { plan: true },
-  });
+  const [subscription, dbUser] = await Promise.all([
+    prisma.subscription.findUnique({
+      where: { userId: user.id },
+      select: { plan: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true },
+    }),
+  ]);
 
   return NextResponse.json({
     id: user.id,
@@ -23,5 +29,6 @@ export async function GET(_req: NextRequest) {
     avatarUrl: user.avatarUrl,
     bio: user.bio,
     plan: subscription?.plan ?? "FREE",
+    role: dbUser?.role ?? "USER",
   });
 }

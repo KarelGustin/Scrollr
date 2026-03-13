@@ -16,17 +16,36 @@ model User {
   bio               String?
   stripeConnectId   String?  @unique
   stripeConnectOnboarded Boolean @default(false)
+  role              UserRole @default(USER)
+  trustLevel        TrustLevel @default(NEW)
+  strikeCount       Int      @default(0)
+  lastStrikeAt      DateTime?
+  bannedUntil       DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  products     Product[]
-  videos       Video[]
-  events       Event[]
-  subscription Subscription?
-  carts        Cart[]
-  merchant     Merchant?
-  commissions  Commission[]
-  orders       Order[]
+  products       Product[]
+  videos         Video[]
+  events         Event[]
+  subscription   Subscription?
+  carts          Cart[]
+  merchant       Merchant?
+  commissions    Commission[]
+  orders         Order[]
+  reports        Report[]       @relation("ReporterReports")
+  moderationLogs ModerationLog[]
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum TrustLevel {
+  NEW
+  BASIC
+  ESTABLISHED
+  TRUSTED
 }
 
 model Video {
@@ -40,18 +59,25 @@ model Video {
   duration           Float?
   status             VideoStatus    @default(PROCESSING)
   published          Boolean        @default(false)
+  title              String?
+  description        String?
+  category           String?
   products           VideoProduct[]
   events             Event[]
   score              VideoScore?
+  reports            Report[]
+  moderationLogs     ModerationLog[]
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([status, published])
 }
 
 enum VideoStatus {
   PROCESSING
   READY
+  PENDING_REVIEW
   REJECTED
   ERROR
 }
@@ -328,4 +354,78 @@ enum CommissionStatus {
   PENDING
   PAID
   FAILED
+}
+
+// ── Content Safety Models ──
+
+model Report {
+  id         String       @id @default(cuid())
+  videoId    String
+  video      Video        @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User         @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reason     ReportReason
+  details    String?
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([videoId, reporterId])
+  @@index([videoId, status])
+  @@index([reporterId, createdAt])
+}
+
+enum ReportReason {
+  SEXUAL_CONTENT
+  VIOLENCE
+  HATE_SPEECH
+  SPAM
+  SCAM
+  INVOLVES_MINOR
+  COPYRIGHT
+  SELF_HARM
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
+model ModerationLog {
+  id        String          @id @default(cuid())
+  videoId   String
+  video     Video           @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  adminId   String
+  admin     User            @relation(fields: [adminId], references: [id])
+  action    ModerationAction
+  reason    String?
+  createdAt DateTime        @default(now())
+
+  @@index([videoId])
+  @@index([adminId, createdAt])
+}
+
+enum ModerationAction {
+  APPROVED
+  REJECTED
+  HIDDEN
+  RESTORED
+  USER_WARNED
+  USER_BANNED
+}
+
+// ── Discovery Models ──
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  imageUrl    String?
+  position    Int     @default(0)
+  active      Boolean @default(true)
+
+  @@index([active, position])
 }
