@@ -222,13 +222,42 @@ export function Sidebar() {
 
       {/* Mobile bottom tab bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-xl border-t border-border z-30 flex items-center justify-around px-2 py-2 safe-bottom">
-        {navItems.slice(0, 5).map((item) => {
+        {navItems.slice(0, 2).map((item) => {
           const active = isActive(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-medium transition-colors ${
+              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[10px] font-medium transition-colors ${
+                active ? "text-accent" : "text-muted"
+              }`}
+            >
+              <span>{item.icon}</span>
+              {item.label}
+            </Link>
+          );
+        })}
+
+        {/* Center upload button — TikTok style */}
+        {isCreator && (
+          <Link
+            href="/dashboard/videos?upload=true"
+            className="flex items-center justify-center w-12 h-8 bg-accent rounded-lg -mt-1"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-fg">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </Link>
+        )}
+
+        {navItems.slice(2, 4).map((item) => {
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[10px] font-medium transition-colors ${
                 active ? "text-accent" : "text-muted"
               }`}
             >

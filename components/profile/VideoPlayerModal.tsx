@@ -94,6 +94,13 @@ export default function VideoPlayerModal({ video, onClose }: VideoPlayerModalPro
         </svg>
       </button>
 
+      {/* Scrollr watermark */}
+      <div className="absolute top-4 right-4 z-20 pointer-events-none">
+        <span className="text-[11px] font-bold text-white/50 tracking-widest drop-shadow-md">
+          SCROLLR
+        </span>
+      </div>
+
       {/* Creator info */}
       <div className="absolute top-4 left-12 z-20 flex items-center gap-2">
         {video.user.avatarUrl ? (

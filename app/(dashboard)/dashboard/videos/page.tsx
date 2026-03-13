@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useVideos } from "@/hooks/useVideos";
 import { VideoCard } from "@/components/dashboard/VideoCard";
 import { UploadModal } from "@/components/dashboard/UploadModal";
@@ -10,6 +11,16 @@ import { Spinner } from "@/components/ui/Spinner";
 export default function VideosPage() {
   const { data: videos, isLoading } = useVideos();
   const [uploadOpen, setUploadOpen] = useState(false);
+  const searchParams = useSearchParams();
+
+  // Auto-open upload modal from URL param (mobile bottom nav "+" button)
+  useEffect(() => {
+    if (searchParams.get("upload") === "true") {
+      setUploadOpen(true);
+      // Clean up URL
+      window.history.replaceState({}, "", "/dashboard/videos");
+    }
+  }, [searchParams]);
 
   return (
     <div className="space-y-6">
@@ -25,7 +36,7 @@ export default function VideosPage() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Upload Video
+          New Post
         </Button>
       </div>
 
@@ -45,7 +56,7 @@ export default function VideosPage() {
           <p className="text-sm text-muted mb-4">
             Upload your first video to start building your shoppable feed
           </p>
-          <Button onClick={() => setUploadOpen(true)}>Upload Video</Button>
+          <Button onClick={() => setUploadOpen(true)}>Create Your First Post</Button>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

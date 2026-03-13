@@ -17,7 +17,7 @@ export function useUpload() {
     videoId: null,
   });
 
-  const upload = useCallback(async (file: File, productIds?: string[]) => {
+  const upload = useCallback(async (file: File, productIds?: string[], caption?: string) => {
     setState({ progress: 0, uploading: true, error: null, videoId: null });
 
     try {
@@ -25,7 +25,12 @@ export function useUpload() {
       const presignRes = await fetch("/api/upload/presign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productIds }),
+        body: JSON.stringify({
+          productIds,
+          title: caption,
+          description: caption,
+          fileSizeMB: file.size / (1024 * 1024),
+        }),
       });
 
       if (!presignRes.ok) {
