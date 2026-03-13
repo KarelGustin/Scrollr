@@ -24,6 +24,7 @@ export function useCreateProduct() {
       affiliateUrl: string;
       description?: string;
       imageUrl?: string;
+      sizes?: string[];
     }) => {
       const res = await fetch("/api/products", {
         method: "POST",

@@ -9,6 +9,7 @@ export function ImportProductForm() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sizesInput, setSizesInput] = useState("");
   const [preview, setPreview] = useState<{
     name: string;
     description: string | null;
@@ -59,6 +60,11 @@ export function ImportProductForm() {
   const handleSave = async () => {
     if (!preview) return;
 
+    const sizes = sizesInput
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     try {
       await createProduct.mutateAsync({
         name: preview.name,
@@ -67,9 +73,11 @@ export function ImportProductForm() {
         affiliateUrl: preview.affiliateUrl,
         description: preview.description ?? undefined,
         imageUrl: preview.imageUrl ?? undefined,
+        sizes: sizes.length > 0 ? sizes : undefined,
       });
       setPreview(null);
       setUrl("");
+      setSizesInput("");
     } catch {
       setError("Failed to save product");
     }
@@ -79,13 +87,13 @@ export function ImportProductForm() {
     <div className="space-y-4">
       <div className="flex gap-2">
         <Input
-          placeholder="Paste product URL..."
+          placeholder="Paste store link (e.g. https://shop.com/product)..."
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           className="flex-1"
         />
         <Button onClick={handleImport} loading={loading} disabled={!url.trim()}>
-          Import
+          Link
         </Button>
       </div>
 
@@ -119,6 +127,15 @@ export function ImportProductForm() {
             </div>
           </div>
 
+          <div>
+            <label className="text-xs text-muted block mb-1.5">Available sizes (comma-separated)</label>
+            <Input
+              placeholder="e.g. XS, S, M, L, XL"
+              value={sizesInput}
+              onChange={(e) => setSizesInput(e.target.value)}
+            />
+          </div>
+
           <div className="flex gap-2">
             <Button
               onClick={handleSave}
@@ -126,11 +143,11 @@ export function ImportProductForm() {
               className="flex-1"
               size="sm"
             >
-              Save Product
+              Link Product
             </Button>
             <Button
               variant="ghost"
-              onClick={() => setPreview(null)}
+              onClick={() => { setPreview(null); setSizesInput(""); }}
               size="sm"
             >
               Cancel

@@ -33,6 +33,13 @@ export async function PUT(
     );
   }
 
+  if (productIds.length > 7) {
+    return NextResponse.json(
+      { error: "Maximum 7 products per video" },
+      { status: 400 }
+    );
+  }
+
   // Verify all products belong to this user
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, userId: user.id },

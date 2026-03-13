@@ -161,11 +161,11 @@ export default function AnalyticsPage() {
             <LineChart data={chartData}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.05)"
+                stroke="var(--border)"
               />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 11, fill: "#71717a" }}
+                tick={{ fontSize: 11, fill: "var(--muted)" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(val) => {
@@ -174,27 +174,28 @@ export default function AnalyticsPage() {
                 }}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "#71717a" }}
+                tick={{ fontSize: 11, fill: "var(--muted)" }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#18181b",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "8px",
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "12px",
                   fontSize: "12px",
+                  color: "var(--text)",
                 }}
-                labelStyle={{ color: "#71717a" }}
-                itemStyle={{ color: "#fafafa" }}
+                labelStyle={{ color: "var(--muted)" }}
+                itemStyle={{ color: "var(--text)" }}
               />
               <Legend
-                wrapperStyle={{ fontSize: "12px", color: "#71717a" }}
+                wrapperStyle={{ fontSize: "12px", color: "var(--muted)" }}
               />
               <Line
                 type="monotone"
                 dataKey="views"
-                stroke="#c8ff00"
+                stroke="#FF6B4A"
                 strokeWidth={2}
                 dot={false}
                 name="Views"

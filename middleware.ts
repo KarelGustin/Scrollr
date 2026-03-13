@@ -22,6 +22,7 @@ export async function middleware(request: NextRequest) {
     pathname === "/search" ||
     pathname === "/discover" ||
     pathname === "/onboarding" ||
+    pathname === "/apply" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
   ) {
@@ -65,8 +66,14 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/analytics") ||
     pathname.startsWith("/settings") ||
     pathname.startsWith("/earnings") ||
+    pathname.startsWith("/feed") ||
+    pathname.startsWith("/orders") ||
+    pathname.startsWith("/account") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/api/admin") ||
+    pathname.startsWith("/api/consumer") ||
+    pathname.startsWith("/api/follows") ||
+    pathname.startsWith("/api/saved") ||
     pathname.startsWith("/api/upload") ||
     pathname.startsWith("/api/earnings") ||
     pathname.startsWith("/api/stripe/connect") ||

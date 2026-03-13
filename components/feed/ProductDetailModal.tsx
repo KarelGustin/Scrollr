@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FeedVideoProduct } from "@/types";
 
 interface ProductDetailModalProps {
@@ -17,6 +17,12 @@ export default function ProductDetailModal({
   onShopNow,
 }: ProductDetailModalProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
+  // Reset selected size when product changes
+  useEffect(() => {
+    setSelectedSize(null);
+  }, [product?.id]);
 
   // Close on escape
   useEffect(() => {
@@ -39,7 +45,7 @@ export default function ProductDetailModal({
       <div
         ref={sheetRef}
         onClick={(e) => e.stopPropagation()}
-        className="absolute bottom-0 left-0 right-0 bg-surface border-t border-border rounded-t-2xl p-6 pb-8 animate-in slide-in-from-bottom duration-300 max-h-[70vh] overflow-y-auto"
+        className="absolute bottom-0 left-0 right-0 bg-surface border-t border-border rounded-t-2xl p-6 pb-8 animate-in slide-in-from-bottom duration-300 max-h-[75vh] overflow-y-auto"
       >
         {/* Handle */}
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-5" />
@@ -49,7 +55,7 @@ export default function ProductDetailModal({
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="w-24 h-24 rounded-xl object-cover flex-shrink-0"
+              className="w-28 h-28 rounded-xl object-cover flex-shrink-0"
             />
           )}
           <div className="flex-1 min-w-0">
@@ -60,17 +66,46 @@ export default function ProductDetailModal({
               <p className="text-sm text-muted mt-0.5">{product.brand}</p>
             )}
             {product.priceDisplay && (
-              <p className="text-lg font-bold text-accent mt-1">
+              <p className="text-xl font-bold text-accent mt-1">
                 {product.priceDisplay}
               </p>
             )}
           </div>
         </div>
 
+        {/* Description */}
+        {product.description && (
+          <p className="text-sm text-muted mt-4 leading-relaxed">
+            {product.description}
+          </p>
+        )}
+
+        {/* Sizes */}
+        {product.sizes && product.sizes.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs font-medium text-muted mb-2">Available Sizes</p>
+            <div className="flex flex-wrap gap-2">
+              {product.sizes.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size === selectedSize ? null : size)}
+                  className={`px-3.5 py-2 text-sm font-medium rounded-xl border transition-colors ${
+                    selectedSize === size
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border bg-card text-text hover:border-text/20"
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-3 mt-6">
           <button
             onClick={() => onAddToCart(product)}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-card border border-border rounded-xl text-sm font-semibold text-text hover:bg-surface transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-accent text-accent-fg rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="9" cy="21" r="1" />
@@ -81,11 +116,13 @@ export default function ProductDetailModal({
           </button>
           <button
             onClick={() => onShopNow(product)}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-accent text-accent-fg rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-card border border-border text-text rounded-xl text-sm font-semibold hover:bg-surface transition-colors"
           >
-            Shop Now
+            Visit Store
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14M12 5l7 7-7 7" />
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
             </svg>
           </button>
         </div>

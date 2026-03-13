@@ -30,6 +30,8 @@ async function getData(username: string, videoId: string) {
               priceDisplay: true,
               imageUrl: true,
               affiliateUrl: true,
+              description: true,
+              sizes: true,
               published: true,
             },
           },
@@ -103,6 +105,8 @@ export default async function SingleVideoPage({ params }: PageProps) {
         priceDisplay: vp.product.priceDisplay,
         imageUrl: vp.product.imageUrl,
         affiliateUrl: vp.product.affiliateUrl,
+        description: vp.product.description,
+        sizes: (vp.product.sizes as string[] | null) ?? null,
       })),
   };
 

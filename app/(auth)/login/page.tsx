@@ -25,7 +25,7 @@ export default function LoginPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}/discover`,
         },
       });
 
@@ -43,7 +43,24 @@ export default function LoginPage() {
       if (signInError) {
         setError(signInError.message);
       } else {
-        window.location.href = "/dashboard";
+        // Role-aware redirect
+        try {
+          const profileRes = await fetch("/api/user/profile");
+          if (profileRes.ok) {
+            const profile = await profileRes.json();
+            if (profile.role === "ADMIN") {
+              window.location.href = "/admin";
+            } else if (profile.role === "CREATOR") {
+              window.location.href = "/dashboard";
+            } else {
+              window.location.href = "/discover";
+            }
+          } else {
+            window.location.href = "/discover";
+          }
+        } catch {
+          window.location.href = "/discover";
+        }
       }
     }
 

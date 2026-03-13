@@ -1,15 +1,13 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { getUserPlan, showBranding } from "@/lib/planLimits";
-import VideoFeed from "@/components/feed/VideoFeed";
-import type { FeedVideo } from "@/types";
+import CreatorProfile from "@/components/profile/CreatorProfile";
 
 interface PageProps {
   params: Promise<{ username: string }>;
 }
 
-async function getUser(username: string) {
+async function getCreator(username: string) {
   return prisma.user.findUnique({
     where: { username },
     select: {
@@ -18,13 +16,29 @@ async function getUser(username: string) {
       name: true,
       avatarUrl: true,
       bio: true,
+      _count: {
+        select: {
+          followers: true,
+          following: true,
+        },
+      },
       videos: {
         where: {
           status: "READY",
           published: true,
           hlsUrl: { not: null },
         },
-        include: {
+        select: {
+          id: true,
+          thumbnailUrl: true,
+          hlsUrl: true,
+          duration: true,
+          createdAt: true,
+          _count: {
+            select: {
+              events: { where: { type: "VIDEO_START" } },
+            },
+          },
           products: {
             include: {
               product: {
@@ -36,6 +50,8 @@ async function getUser(username: string) {
                   priceDisplay: true,
                   imageUrl: true,
                   affiliateUrl: true,
+                  description: true,
+                  sizes: true,
                   published: true,
                 },
               },
@@ -53,7 +69,7 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { username } = await params;
-  const user = await getUser(username);
+  const user = await getCreator(username);
 
   if (!user) {
     return { title: "Not Found" };
@@ -85,57 +101,44 @@ export async function generateMetadata({
   };
 }
 
-export default async function UserFeedPage({ params }: PageProps) {
+export default async function CreatorProfilePage({ params }: PageProps) {
   const { username } = await params;
-  const user = await getUser(username);
+  const creator = await getCreator(username);
 
-  if (!user) {
+  if (!creator) {
     notFound();
   }
 
-  const plan = await getUserPlan(user.id);
-  const branded = showBranding(plan);
+  const profileData = {
+    id: creator.id,
+    username: creator.username!,
+    name: creator.name,
+    avatarUrl: creator.avatarUrl,
+    bio: creator.bio,
+    followersCount: creator._count.followers,
+    followingCount: creator._count.following,
+    videosCount: creator.videos.length,
+    videos: creator.videos.map((v) => ({
+      id: v.id,
+      thumbnailUrl: v.thumbnailUrl,
+      hlsUrl: v.hlsUrl!,
+      duration: v.duration,
+      viewCount: v._count.events,
+      products: v.products
+        .filter((vp) => vp.product.published)
+        .map((vp) => ({
+          id: vp.product.id,
+          name: vp.product.name,
+          brand: vp.product.brand,
+          price: vp.product.price,
+          priceDisplay: vp.product.priceDisplay,
+          imageUrl: vp.product.imageUrl,
+          affiliateUrl: vp.product.affiliateUrl,
+          description: vp.product.description,
+          sizes: (vp.product.sizes as string[] | null) ?? null,
+        })),
+    })),
+  };
 
-  // Transform to FeedVideo type
-  const feedVideos: FeedVideo[] = user.videos.map((v) => ({
-    id: v.id,
-    hlsUrl: v.hlsUrl!,
-    thumbnailUrl: v.thumbnailUrl,
-    duration: v.duration,
-    user: {
-      username: user.username!,
-      name: user.name,
-      avatarUrl: user.avatarUrl,
-    },
-    products: v.products
-      .filter((vp) => vp.product.published)
-      .map((vp) => ({
-        id: vp.product.id,
-        name: vp.product.name,
-        brand: vp.product.brand,
-        price: vp.product.price,
-        priceDisplay: vp.product.priceDisplay,
-        imageUrl: vp.product.imageUrl,
-        affiliateUrl: vp.product.affiliateUrl,
-      })),
-  }));
-
-  return (
-    <div className="min-h-screen bg-bg">
-      <VideoFeed videos={feedVideos} showBranding={branded} />
-
-      {branded && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-          <a
-            href="https://scrollr.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 bg-surface/80 backdrop-blur border border-border rounded-full text-xs text-muted hover:text-text transition-colors"
-          >
-            Made with Scrollr
-          </a>
-        </div>
-      )}
-    </div>
-  );
+  return <CreatorProfile creator={profileData} />;
 }

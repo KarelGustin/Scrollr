@@ -157,14 +157,14 @@ export default function ModerationQueuePage() {
                 <button
                   onClick={() => handleAction(video.id, "approve")}
                   disabled={actionInProgress === video.id}
-                  className="flex-1 sm:flex-none px-4 py-2 bg-accent text-[#09090b] text-sm font-semibold rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50"
+                  className="flex-1 sm:flex-none px-4 py-2 bg-accent text-accent-fg text-sm font-semibold rounded-xl hover:bg-accent/90 transition-colors disabled:opacity-50"
                 >
                   Approve
                 </button>
                 <button
                   onClick={() => handleAction(video.id, "reject")}
                   disabled={actionInProgress === video.id}
-                  className="flex-1 sm:flex-none px-4 py-2 bg-destructive/10 text-destructive text-sm font-semibold rounded-lg hover:bg-destructive/20 transition-colors disabled:opacity-50"
+                  className="flex-1 sm:flex-none px-4 py-2 bg-destructive/10 text-destructive text-sm font-semibold rounded-xl hover:bg-destructive/20 transition-colors disabled:opacity-50"
                 >
                   Reject
                 </button>

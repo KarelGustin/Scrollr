@@ -176,7 +176,7 @@ export default function EarningsPage() {
             <button
               onClick={() => dashboardMutation.mutate()}
               disabled={dashboardMutation.isPending}
-              className="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg hover:bg-surface/80 transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-xl hover:bg-surface/80 transition-colors disabled:opacity-50"
             >
               {dashboardMutation.isPending ? "Loading..." : "View Stripe Dashboard"}
             </button>
@@ -184,7 +184,7 @@ export default function EarningsPage() {
             <button
               onClick={() => connectMutation.mutate()}
               disabled={connectMutation.isPending}
-              className="px-4 py-2 text-sm font-medium text-[#09090b] bg-accent rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-accent-fg bg-accent rounded-xl hover:bg-accent/90 transition-colors disabled:opacity-50"
             >
               {connectMutation.isPending ? "Setting up..." : "Connect Stripe"}
             </button>
@@ -211,34 +211,35 @@ export default function EarningsPage() {
             <BarChart data={chartData}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.05)"
+                stroke="var(--border)"
               />
               <XAxis
                 dataKey="month"
-                tick={{ fontSize: 11, fill: "#71717a" }}
+                tick={{ fontSize: 11, fill: "var(--muted)" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "#71717a" }}
+                tick={{ fontSize: 11, fill: "var(--muted)" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(val) => `$${val}`}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#18181b",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "8px",
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "12px",
                   fontSize: "12px",
+                  color: "var(--text)",
                 }}
-                labelStyle={{ color: "#71717a" }}
-                itemStyle={{ color: "#fafafa" }}
+                labelStyle={{ color: "var(--muted)" }}
+                itemStyle={{ color: "var(--text)" }}
                 formatter={(value: number) => [formatCurrency(value), "Earnings"]}
               />
               <Bar
                 dataKey="amount"
-                fill="#c8ff00"
+                fill="#FF6B4A"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={48}
               />

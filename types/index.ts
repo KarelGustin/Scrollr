@@ -36,6 +36,8 @@ export type FeedVideoProduct = {
   priceDisplay: string | null;
   imageUrl: string | null;
   affiliateUrl: string;
+  description: string | null;
+  sizes: string[] | null;
 };
 
 // Legacy compat — kept for existing code that may reference it
@@ -121,6 +123,22 @@ export type UploadQuota = {
   weekly: { used: number; limit: number };
   maxDurationSeconds: number;
   maxFileSizeMB: number;
+};
+
+export type CreatorApplicationData = {
+  id: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  category: string;
+  socialLinks: {
+    instagram?: string;
+    tiktok?: string;
+    youtube?: string;
+    twitter?: string;
+  };
+  pitch: string;
+  adminNote?: string | null;
+  createdAt: string;
+  reviewedAt?: string | null;
 };
 
 export type ReportReason =
