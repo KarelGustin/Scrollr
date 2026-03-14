@@ -5,9 +5,9 @@ import { useEffect, useState, useRef } from "react";
 type Phase = "watching" | "dots" | "products" | "tap" | "added" | "scroll";
 
 const VIDEOS = [
-  { src: "/videos/heroVideo.mp4", creator: "@emma" },
-  { src: "/videos/video2.mp4", creator: "@mia" },
-  { src: "/videos/video3.mp4", creator: "@luca" },
+  { src: "https://jxztvoxjhhwghjkksuqm.supabase.co/storage/v1/object/public/lander/heroVideo.mp4", creator: "@emma" },
+  { src: "https://jxztvoxjhhwghjkksuqm.supabase.co/storage/v1/object/public/lander/video2.mp4", creator: "@mia" },
+  { src: "https://jxztvoxjhhwghjkksuqm.supabase.co/storage/v1/object/public/lander/video3.mp4", creator: "@luca" },
 ];
 
 export function PhoneMockup() {
