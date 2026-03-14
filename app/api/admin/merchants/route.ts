@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         email: `${username}@merchant.scrollr.io`,
         username,
         name: storeName || shopifyDomain.split(".")[0],
-        role: "CREATOR",
+        role: "MERCHANT",
       },
     });
     finalUserId = newUser.id;

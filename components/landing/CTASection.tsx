@@ -43,6 +43,12 @@ export function CTASection() {
             >
               Join as Creator
             </Link>
+            <Link
+              href="/merchant-register"
+              className="inline-flex items-center justify-center px-8 py-4 text-white font-medium text-base rounded-full border-2 border-white/40 hover:border-white hover:bg-white/10 transition-all duration-300"
+            >
+              I&apos;m a Merchant
+            </Link>
           </div>
         </ScrollReveal>
       </div>

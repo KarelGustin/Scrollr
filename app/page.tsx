@@ -3,6 +3,7 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { SocialProofBar } from "@/components/landing/SocialProofBar";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { ForCreatorsSection } from "@/components/landing/ForCreatorsSection";
+import { ForMerchantsSection } from "@/components/landing/ForMerchantsSection";
 import { CategoriesSection } from "@/components/landing/CategoriesSection";
 import { FeedDemo } from "@/components/landing/FeedDemo";
 import { TrustSection } from "@/components/landing/TrustSection";
@@ -18,6 +19,7 @@ export default function HomePage() {
       <SocialProofBar />
       <HowItWorksSection />
       <ForCreatorsSection />
+      <ForMerchantsSection />
       <CategoriesSection />
       <FeedDemo />
       <TrustSection />

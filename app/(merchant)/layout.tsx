@@ -5,11 +5,12 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/Spinner";
+import { BottomNav } from "@/components/nav/BottomNav";
 
-const adminNavItems = [
+const merchantNavItems = [
   {
     label: "Overview",
-    href: "/admin",
+    href: "/merchant",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" />
@@ -20,51 +21,18 @@ const adminNavItems = [
     ),
   },
   {
-    label: "Moderation Queue",
-    href: "/admin/moderation",
+    label: "Products",
+    href: "/merchant/products",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Reports",
-    href: "/admin/reports",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-        <line x1="4" y1="22" x2="4" y2="15" />
-      </svg>
-    ),
-  },
-  {
-    label: "Applications",
-    href: "/admin/applications",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-        <circle cx="8.5" cy="7" r="4" />
-        <line x1="20" y1="8" x2="20" y2="14" />
-        <line x1="23" y1="11" x2="17" y2="11" />
-      </svg>
-    ),
-  },
-  {
-    label: "Users",
-    href: "/admin/users",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 00-3-3.87" />
-        <path d="M16 3.13a4 4 0 010 7.75" />
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+        <line x1="7" y1="7" x2="7.01" y2="7" />
       </svg>
     ),
   },
   {
     label: "Creators",
-    href: "/admin/creators",
+    href: "/merchant/creators",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="23 7 16 12 23 17 23 7" />
@@ -73,57 +41,33 @@ const adminNavItems = [
     ),
   },
   {
-    label: "Merchants",
-    href: "/admin/merchants",
+    label: "Analytics",
+    href: "/merchant/analytics",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
-        <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+        <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z" />
+        <path d="M9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625z" />
+        <path d="M16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
       </svg>
     ),
   },
   {
-    label: "Dummy Data",
-    href: "/admin/dummy",
+    label: "Settings",
+    href: "/merchant/settings",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5z" />
-        <path d="M2 17l10 5 10-5" />
-        <path d="M2 12l10 5 10-5" />
-      </svg>
-    ),
-  },
-  {
-    label: "Content Seeding",
-    href: "/admin/content-seeding",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5z" />
-        <path d="M2 17l10 5 10-5" />
-        <path d="M2 12l10 5 10-5" />
-      </svg>
-    ),
-  },
-  {
-    label: "Messages",
-    href: "/admin/messages",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
       </svg>
     ),
   },
 ];
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function MerchantLayout({ children }: { children: React.ReactNode }) {
   const { user, status } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isMerchant, setIsMerchant] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -135,21 +79,21 @@ export default function AdminLayout({
       fetch("/api/user/role")
         .then((res) => res.json())
         .then((data) => {
-          if (data.role === "ADMIN") {
-            setIsAdmin(true);
+          if (data.role === "MERCHANT" || data.role === "ADMIN") {
+            setIsMerchant(true);
           } else {
-            setIsAdmin(false);
-            router.replace("/dashboard");
+            setIsMerchant(false);
+            router.replace("/discover");
           }
         })
         .catch(() => {
-          setIsAdmin(false);
-          router.replace("/dashboard");
+          setIsMerchant(false);
+          router.replace("/discover");
         });
     }
   }, [status, user, router]);
 
-  if (status === "loading" || isAdmin === null) {
+  if (status === "loading" || isMerchant === null) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-bg">
         <Spinner size="lg" className="text-accent" />
@@ -157,40 +101,35 @@ export default function AdminLayout({
     );
   }
 
-  if (!user || !isAdmin) {
-    return null;
-  }
+  if (!user || !isMerchant) return null;
 
   const isActive = (href: string) => {
-    if (href === "/admin") return pathname === "/admin";
+    if (href === "/merchant") return pathname === "/merchant";
     return pathname.startsWith(href);
   };
 
-  const userName = user.name ?? "Admin";
-  const avatarUrl = user.avatarUrl;
+  const userName = user.name ?? "Merchant";
 
   return (
     <div className="min-h-screen bg-bg">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-surface border-r border-border flex-col z-30">
-        {/* Logo + Admin badge */}
         <div className="px-6 py-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <Link href="/admin" className="text-xl font-display font-bold text-text">
+            <Link href="/merchant" className="text-xl font-display font-bold text-text">
               Scrollr
             </Link>
-            <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">
-              Admin
+            <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-accent/20 text-accent">
+              Merchant
             </span>
           </div>
         </div>
 
-        {/* User info */}
         <div className="px-4 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-card flex items-center justify-center overflow-hidden shrink-0">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt={userName} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-sm font-medium text-muted">
                   {userName.charAt(0).toUpperCase()}
@@ -199,16 +138,15 @@ export default function AdminLayout({
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-text truncate">{userName}</p>
-              <span className="inline-block mt-0.5 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">
-                ADMIN
+              <span className="inline-block mt-0.5 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-accent/20 text-accent">
+                MERCHANT
               </span>
             </div>
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {adminNavItems.map((item) => {
+          {merchantNavItems.map((item) => {
             const active = isActive(item.href);
             return (
               <Link
@@ -227,45 +165,27 @@ export default function AdminLayout({
           })}
         </nav>
 
-        {/* Back to dashboard */}
         <div className="px-4 pb-4">
           <Link
-            href="/dashboard"
+            href="/discover"
             className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-card text-muted text-sm font-medium rounded-lg hover:text-text hover:bg-card/80 transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="19" y1="12" x2="5" y2="12" />
               <polyline points="12 19 5 12 12 5" />
             </svg>
-            Back to Dashboard
+            Browse Content
           </Link>
         </div>
       </aside>
 
-      {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-border z-30 flex items-center justify-around px-2 py-2 safe-bottom">
-        {adminNavItems.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
-                active ? "text-accent" : "text-muted"
-              }`}
-            >
-              <span>{item.icon}</span>
-              {item.label.split(" ")[0]}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <main className="md:ml-64 min-h-screen pb-20 md:pb-0">
+      <main className="md:ml-64 min-h-screen pb-[76px] md:pb-0">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {children}
         </div>
       </main>
+
+      <BottomNav user={user} pathname={pathname} />
     </div>
   );
 }

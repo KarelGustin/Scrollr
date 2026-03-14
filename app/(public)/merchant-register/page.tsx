@@ -4,13 +4,14 @@ import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import Link from "next/link";
 
-export default function LoginPage() {
+export default function MerchantRegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup">("signup");
   const [sent, setSent] = useState(false);
 
   const supabase = createSupabaseBrowserClient();
@@ -25,7 +26,7 @@ export default function LoginPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/discover`,
+          emailRedirectTo: `${window.location.origin}/merchant-onboarding`,
         },
       });
 
@@ -43,26 +44,7 @@ export default function LoginPage() {
       if (signInError) {
         setError(signInError.message);
       } else {
-        // Role-aware redirect
-        try {
-          const profileRes = await fetch("/api/user/profile");
-          if (profileRes.ok) {
-            const profile = await profileRes.json();
-            if (profile.role === "ADMIN") {
-              window.location.href = "/admin";
-            } else if (profile.role === "CREATOR") {
-              window.location.href = "/dashboard";
-            } else if (profile.role === "MERCHANT") {
-              window.location.href = "/merchant";
-            } else {
-              window.location.href = "/discover";
-            }
-          } else {
-            window.location.href = "/discover";
-          }
-        } catch {
-          window.location.href = "/discover";
-        }
+        window.location.href = "/merchant-onboarding";
       }
     }
 
@@ -75,7 +57,7 @@ export default function LoginPage() {
         <div className="text-center">
           <h1 className="text-4xl font-display font-bold text-text">Scrollr</h1>
           <p className="mt-2 text-muted">
-            {mode === "login" ? "Sign in to your account" : "Create your account"}
+            {mode === "signup" ? "Create your merchant account" : "Sign in as a merchant"}
           </p>
         </div>
 
@@ -103,32 +85,26 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
-              )}
-              <Button
-                type="submit"
-                loading={loading}
-                className="w-full"
-                size="lg"
-              >
-                {mode === "login" ? "Sign in" : "Create account"}
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button type="submit" loading={loading} className="w-full" size="lg">
+                {mode === "signup" ? "Create Merchant Account" : "Sign in"}
               </Button>
             </form>
 
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <button
                 type="button"
-                onClick={() => {
-                  setMode(mode === "login" ? "signup" : "login");
-                  setError("");
-                }}
+                onClick={() => { setMode(mode === "signup" ? "login" : "signup"); setError(""); }}
                 className="text-sm text-muted hover:text-text transition-colors"
               >
-                {mode === "login"
-                  ? "Don't have an account? Sign up"
-                  : "Already have an account? Sign in"}
+                {mode === "signup"
+                  ? "Already have an account? Sign in"
+                  : "Don't have an account? Sign up"}
               </button>
+              <p className="text-xs text-muted">
+                Not a merchant?{" "}
+                <Link href="/login" className="text-accent hover:underline">Sign in here</Link>
+              </p>
             </div>
           </>
         )}
