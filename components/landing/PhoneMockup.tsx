@@ -5,9 +5,9 @@ import { useEffect, useState, useRef } from "react";
 type Phase = "watching" | "dots" | "products" | "tap" | "added" | "scroll";
 
 const VIDEOS = [
-  { src: "/videos/heroVideo.mp4", creator: "@emma", gradient: "from-rose-300 via-pink-200 to-orange-200" },
-  { src: "/videos/video2.mp4", creator: "@mia", gradient: "from-sky-300 via-indigo-200 to-violet-200" },
-  { src: "/videos/video3.mp4", creator: "@luca", gradient: "from-emerald-300 via-teal-200 to-cyan-200" },
+  { src: "https://jxztvoxjhhwghjkksuqm.supabase.co/storage/v1/object/public/lander/heroVideo.mp4", creator: "@emma" },
+  { src: "https://jxztvoxjhhwghjkksuqm.supabase.co/storage/v1/object/public/lander/video2.mp4", creator: "@mia" },
+  { src: "https://jxztvoxjhhwghjkksuqm.supabase.co/storage/v1/object/public/lander/video3.mp4", creator: "@luca" },
 ];
 
 export function PhoneMockup() {
@@ -16,7 +16,6 @@ export function PhoneMockup() {
   const [nextIdx, setNextIdx] = useState(1);
   const [swiping, setSwiping] = useState(false);
   const [skipTransition, setSkipTransition] = useState(false);
-  const [failedVideos, setFailedVideos] = useState<Set<number>>(new Set());
   const nextVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -101,28 +100,15 @@ export function PhoneMockup() {
             transition: skipTransition ? "none" : "transform 500ms ease-in-out",
           }}
         >
-          {/* Video with gradient fallback on error */}
-          {!failedVideos.has(currentIdx) ? (
-            <video
-              key={current.src}
-              src={current.src}
-              className="absolute inset-0 w-full h-full object-cover"
-              autoPlay
-              loop
-              muted
-              playsInline
-              onError={() => setFailedVideos((prev) => new Set(prev).add(currentIdx))}
-            />
-          ) : (
-            <div className={`absolute inset-0 bg-gradient-to-br ${current.gradient}`}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg width="100" height="200" viewBox="0 0 100 200" className="opacity-20">
-                  <circle cx="50" cy="30" r="18" fill="currentColor" />
-                  <path d="M50 48 L50 120 M50 70 L25 100 M50 70 L75 100 M50 120 L30 170 M50 120 L70 170" stroke="currentColor" strokeWidth="4" strokeLinecap="round" fill="none" />
-                </svg>
-              </div>
-            </div>
-          )}
+          <video
+            key={current.src}
+            src={current.src}
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
 
           {/* Product dots */}
           {showDots && (
@@ -142,27 +128,15 @@ export function PhoneMockup() {
             transition: skipTransition ? "none" : "transform 500ms ease-in-out",
           }}
         >
-          {!failedVideos.has(nextIdx) ? (
-            <video
-              ref={nextVideoRef}
-              key={next.src}
-              src={next.src}
-              className="absolute inset-0 w-full h-full object-cover"
-              muted
-              playsInline
-              preload="auto"
-              onError={() => setFailedVideos((prev) => new Set(prev).add(nextIdx))}
-            />
-          ) : (
-            <div className={`absolute inset-0 bg-gradient-to-br ${next.gradient}`}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg width="100" height="200" viewBox="0 0 100 200" className="opacity-20">
-                  <circle cx="50" cy="30" r="18" fill="currentColor" />
-                  <path d="M50 48 L50 120 M50 70 L25 100 M50 70 L75 100 M50 120 L30 170 M50 120 L70 170" stroke="currentColor" strokeWidth="4" strokeLinecap="round" fill="none" />
-                </svg>
-              </div>
-            </div>
-          )}
+          <video
+            ref={nextVideoRef}
+            key={next.src}
+            src={next.src}
+            className="absolute inset-0 w-full h-full object-cover"
+            muted
+            playsInline
+            preload="auto"
+          />
         </div>
       </div>
 
