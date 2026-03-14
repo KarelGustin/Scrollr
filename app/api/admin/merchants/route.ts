@@ -2,16 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest) {
+async function requireAdmin() {
   const user = await getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+  if (!user) return null;
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
     select: { role: true },
   });
-  if (dbUser?.role !== "ADMIN")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (dbUser?.role !== "ADMIN") return null;
+  return user;
+}
+
+export async function GET(request: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
@@ -48,26 +52,71 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { role: true },
-  });
-  if (dbUser?.role !== "ADMIN")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await request.json();
-  const { userId, shopifyDomain, shopifyAccessToken, storeName } = body;
+  const { userId, shopifyDomain, shopifyAccessToken, storeName, storeLogoUrl, shippingPolicy, returnPolicy } = body;
 
-  if (!userId || !shopifyDomain || !shopifyAccessToken) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  if (!shopifyDomain) {
+    return NextResponse.json({ error: "Shopify domain is required" }, { status: 400 });
+  }
+
+  let finalUserId = userId;
+
+  // If no userId, create a new user automatically
+  if (!finalUserId) {
+    const username = (storeName || shopifyDomain.split(".")[0])
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .slice(0, 20) + Math.floor(Math.random() * 9999);
+    const newUser = await prisma.user.create({
+      data: {
+        email: `${username}@merchant.scrollr.io`,
+        username,
+        name: storeName || shopifyDomain.split(".")[0],
+        role: "CREATOR",
+      },
+    });
+    finalUserId = newUser.id;
   }
 
   const merchant = await prisma.merchant.create({
-    data: { userId, shopifyDomain, shopifyAccessToken, storeName },
+    data: {
+      userId: finalUserId,
+      shopifyDomain,
+      shopifyAccessToken: shopifyAccessToken || `tok_${Date.now()}`,
+      storeName: storeName || null,
+      storeLogoUrl: storeLogoUrl || null,
+      shippingPolicy: shippingPolicy || null,
+      returnPolicy: returnPolicy || null,
+    },
   });
 
   return NextResponse.json(merchant, { status: 201 });
+}
+
+export async function PATCH(request: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const body = await request.json();
+  const { merchantId, storeName, storeLogoUrl, shippingPolicy, returnPolicy, active } = body;
+
+  if (!merchantId) {
+    return NextResponse.json({ error: "merchantId is required" }, { status: 400 });
+  }
+
+  const merchant = await prisma.merchant.update({
+    where: { id: merchantId },
+    data: {
+      ...(storeName !== undefined && { storeName }),
+      ...(storeLogoUrl !== undefined && { storeLogoUrl }),
+      ...(shippingPolicy !== undefined && { shippingPolicy }),
+      ...(returnPolicy !== undefined && { returnPolicy }),
+      ...(active !== undefined && { active }),
+    },
+  });
+
+  return NextResponse.json(merchant);
 }
