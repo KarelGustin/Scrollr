@@ -15,6 +15,7 @@ const REDIRECT_URI = `${APP_URL}/api/shopify/callback`;
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const shop = searchParams.get("shop");
+  const returnTo = searchParams.get("returnTo");
 
   if (!shop || !shop.endsWith(".myshopify.com")) {
     return NextResponse.json(
@@ -51,6 +52,17 @@ export async function GET(req: NextRequest) {
     maxAge: 600, // 10 minutes
     path: "/",
   });
+
+  // Store returnTo path so callback redirects back to the right page
+  if (returnTo) {
+    response.cookies.set("shopify_return_to", returnTo, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 600,
+      path: "/",
+    });
+  }
 
   return response;
 }

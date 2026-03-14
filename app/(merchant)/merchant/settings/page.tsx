@@ -8,10 +8,17 @@ export default function MerchantSettingsPage() {
   const [shippingPolicy, setShippingPolicy] = useState("");
   const [returnPolicy, setReturnPolicy] = useState("");
   const [shopifyDomain, setShopifyDomain] = useState("");
+  const [shopifyConnectDomain, setShopifyConnectDomain] = useState("");
   const [active, setActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ created: number; updated: number } | null>(null);
+  const [syncError, setSyncError] = useState("");
+  const [productCount, setProductCount] = useState<number | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
   useEffect(() => {
     fetch("/api/merchant/settings")
@@ -28,6 +35,14 @@ export default function MerchantSettingsPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    // Fetch product count
+    fetch("/api/merchant-products?limit=1")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.pagination) setProductCount(data.pagination.total);
+      })
+      .catch(() => {});
   }, []);
 
   const handleSave = async () => {
@@ -44,6 +59,58 @@ export default function MerchantSettingsPage() {
     } catch { /* ignore */ }
     setSaving(false);
   };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    setSyncError("");
+    try {
+      const res = await fetch("/api/merchant/sync", { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        setSyncError(data.error || "Sync failed");
+        return;
+      }
+      const result = await res.json();
+      setSyncResult(result);
+      // Refresh product count
+      fetch("/api/merchant-products?limit=1")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.pagination) setProductCount(data.pagination.total);
+        })
+        .catch(() => {});
+    } catch {
+      setSyncError("Sync failed. Please try again.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setDisconnecting(true);
+    try {
+      await fetch("/api/merchant/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopifyDomain: "", shopifyAccessToken: "" }),
+      });
+      setShopifyDomain("");
+      setShowDisconnectConfirm(false);
+    } catch { /* ignore */ }
+    setDisconnecting(false);
+  };
+
+  const handleConnectShopify = () => {
+    const domain = shopifyConnectDomain.trim();
+    if (!domain) return;
+    const fullDomain = domain.endsWith(".myshopify.com")
+      ? domain
+      : `${domain}.myshopify.com`;
+    window.location.href = `/api/shopify/install?shop=${encodeURIComponent(fullDomain)}&returnTo=/merchant/settings`;
+  };
+
+  const isShopifyConnected = shopifyDomain && shopifyDomain.endsWith(".myshopify.com");
 
   if (loading) {
     return (
@@ -116,14 +183,105 @@ export default function MerchantSettingsPage() {
         </div>
       </div>
 
+      {/* Shopify Connection */}
       <div className="bg-card rounded-2xl border border-border p-6">
-        <h3 className="text-sm font-display font-bold text-text mb-3">Shopify Connection</h3>
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${shopifyDomain ? "bg-success" : "bg-muted"}`} />
-          <p className="text-sm text-muted">
-            {shopifyDomain ? `Connected: ${shopifyDomain}` : "Not connected"}
-          </p>
-        </div>
+        <h3 className="text-sm font-display font-bold text-text mb-4">Shopify Connection</h3>
+
+        {isShopifyConnected ? (
+          <div className="space-y-4">
+            {/* Connected state */}
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-success" />
+              <div>
+                <p className="text-sm font-medium text-text">{shopifyDomain}</p>
+                {productCount !== null && (
+                  <p className="text-xs text-muted">{productCount} products synced</p>
+                )}
+              </div>
+            </div>
+
+            {/* Sync result */}
+            {syncResult && (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                <p className="text-sm text-green-500">
+                  Sync complete: {syncResult.created} created, {syncResult.updated} updated
+                </p>
+              </div>
+            )}
+
+            {syncError && (
+              <p className="text-sm text-destructive">{syncError}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                className="flex-1 py-2.5 bg-accent text-white text-sm font-semibold rounded-xl disabled:opacity-50 hover:bg-accent/90 transition-colors"
+              >
+                {syncing ? "Syncing..." : "Re-sync Products"}
+              </button>
+              <button
+                onClick={() => setShowDisconnectConfirm(true)}
+                className="px-4 py-2.5 bg-surface border border-border text-destructive text-sm font-semibold rounded-xl hover:bg-destructive/10 transition-colors"
+              >
+                Disconnect
+              </button>
+            </div>
+
+            {/* Disconnect confirmation */}
+            {showDisconnectConfirm && (
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl space-y-3">
+                <p className="text-sm text-text">
+                  Are you sure? This will remove the Shopify connection. Your synced products will remain but won&apos;t receive updates.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDisconnectConfirm(false)}
+                    className="flex-1 py-2 bg-surface border border-border text-text text-sm font-semibold rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDisconnect}
+                    disabled={disconnecting}
+                    className="flex-1 py-2 bg-destructive text-white text-sm font-semibold rounded-xl disabled:opacity-50"
+                  >
+                    {disconnecting ? "Disconnecting..." : "Yes, Disconnect"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Disconnected state */}
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-muted" />
+              <p className="text-sm text-muted">Not connected</p>
+            </div>
+            <div>
+              <label className="text-xs text-muted block mb-1.5">Shopify Domain</label>
+              <div className="flex items-center bg-surface border border-border rounded-xl overflow-hidden focus-within:border-accent/50">
+                <input
+                  type="text"
+                  value={shopifyConnectDomain}
+                  onChange={(e) => setShopifyConnectDomain(e.target.value)}
+                  placeholder="mystore"
+                  className="flex-1 bg-transparent px-3 py-2.5 text-sm text-text focus:outline-none"
+                />
+                <span className="px-3 text-sm text-muted">.myshopify.com</span>
+              </div>
+            </div>
+            <button
+              onClick={handleConnectShopify}
+              disabled={!shopifyConnectDomain.trim()}
+              className="w-full py-2.5 bg-accent text-white text-sm font-semibold rounded-xl disabled:opacity-50 hover:bg-accent/90 transition-colors"
+            >
+              Connect Shopify
+            </button>
+          </div>
+        )}
       </div>
 
       <button

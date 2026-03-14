@@ -24,7 +24,9 @@ async function shopifyRequest<T>({
   method = "GET",
   body,
 }: ShopifyRequestOptions): Promise<T> {
-  const url = `https://${domain}/admin/api/${SHOPIFY_API_VERSION}/${endpoint}`;
+  const url = endpoint.startsWith("https://")
+    ? endpoint
+    : `https://${domain}/admin/api/${SHOPIFY_API_VERSION}/${endpoint}`;
   const res = await fetch(url, {
     method,
     headers: {
@@ -40,6 +42,51 @@ async function shopifyRequest<T>({
   }
 
   return res.json() as Promise<T>;
+}
+
+/**
+ * Make a Shopify request and return both data and Link header for pagination.
+ */
+async function shopifyRequestWithHeaders<T>({
+  domain,
+  accessToken,
+  endpoint,
+  method = "GET",
+  body,
+}: ShopifyRequestOptions): Promise<{ data: T; linkHeader: string | null }> {
+  const url = endpoint.startsWith("https://")
+    ? endpoint
+    : `https://${domain}/admin/api/${SHOPIFY_API_VERSION}/${endpoint}`;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": accessToken,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Shopify API error ${res.status}: ${text}`);
+  }
+
+  const data = (await res.json()) as T;
+  const linkHeader = res.headers.get("link");
+  return { data, linkHeader };
+}
+
+/**
+ * Parse Shopify Link header to extract the "next" page URL.
+ */
+function parseNextPageUrl(linkHeader: string | null): string | null {
+  if (!linkHeader) return null;
+  const parts = linkHeader.split(",");
+  for (const part of parts) {
+    const match = part.match(/<([^>]+)>;\s*rel="next"/);
+    if (match) return match[1];
+  }
+  return null;
 }
 
 // ── Product Sync ──
@@ -68,26 +115,27 @@ export type ShopifyVariant = {
 
 /**
  * Fetch all products from a Shopify store.
- * Handles pagination via Link header.
+ * Handles pagination via Link header rel="next" cursor-based pagination.
  */
 export async function fetchAllProducts(
   domain: string,
   accessToken: string
 ): Promise<ShopifyProduct[]> {
   const allProducts: ShopifyProduct[] = [];
-  let endpoint = "products.json?limit=250&status=active";
+  let endpoint: string | null = "products.json?limit=250&status=active";
 
   while (endpoint) {
-    const data = await shopifyRequest<{ products: ShopifyProduct[] }>({
+    const { data, linkHeader } = await shopifyRequestWithHeaders<{
+      products: ShopifyProduct[];
+    }>({
       domain,
       accessToken,
       endpoint,
     });
     allProducts.push(...data.products);
 
-    // Simple pagination — Shopify uses page_info cursors
-    // For MVP, fetch first 250 products (most stores)
-    break;
+    // Follow Link header rel="next" for cursor-based pagination
+    endpoint = parseNextPageUrl(linkHeader);
   }
 
   return allProducts;

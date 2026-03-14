@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest) {
   if (!merchant) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { storeName, storeLogoUrl, shippingPolicy, returnPolicy, active, shopifyDomain } = body;
+  const { storeName, storeLogoUrl, shippingPolicy, returnPolicy, active, shopifyDomain, shopifyAccessToken } = body;
 
   const updated = await prisma.merchant.update({
     where: { id: merchant.id },
@@ -25,6 +25,7 @@ export async function PATCH(request: NextRequest) {
       ...(returnPolicy !== undefined && { returnPolicy }),
       ...(active !== undefined && { active }),
       ...(shopifyDomain !== undefined && { shopifyDomain }),
+      ...(shopifyAccessToken !== undefined && { shopifyAccessToken }),
     },
   });
 
