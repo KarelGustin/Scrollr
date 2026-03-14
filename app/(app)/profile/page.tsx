@@ -118,7 +118,7 @@ export default function AccountPage() {
         {/* Action buttons */}
         <div className="flex gap-2 mb-6">
           <Link
-            href="/account/edit"
+            href="/profile/edit"
             className="flex-1 py-2 text-center text-sm font-semibold text-text bg-surface border border-border rounded-xl hover:bg-card transition-colors"
           >
             Edit Profile

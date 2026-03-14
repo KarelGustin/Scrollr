@@ -32,22 +32,27 @@ export default function ProductCard({ product, selectedSize, onSelectSize, onAdd
         {/* Product info */}
         <div className="flex-1 min-w-0">
           <a
-            href={product.affiliateUrl}
+            href={product.merchantUrl || product.affiliateUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="hover:underline"
           >
             <h3 className="text-sm font-semibold text-text truncate">{product.name}</h3>
           </a>
-          {product.brand && (
-            <p className="text-xs text-muted mt-0.5">{product.brand}</p>
+          {(product.vendor || product.brand) && (
+            <p className="text-xs text-muted mt-0.5">{product.vendor || product.brand}</p>
           )}
           {product.description && (
             <p className="text-xs text-muted mt-1 line-clamp-2 leading-relaxed">{product.description}</p>
           )}
-          {product.priceDisplay && (
-            <p className="text-sm font-bold text-accent mt-1.5">{product.priceDisplay}</p>
-          )}
+          <div className="flex items-center gap-1.5 mt-1.5">
+            {product.priceDisplay && (
+              <p className="text-sm font-bold text-accent">{product.priceDisplay}</p>
+            )}
+            {product.compareAtPrice != null && product.price != null && product.compareAtPrice > product.price && (
+              <p className="text-xs text-muted line-through">${product.compareAtPrice.toFixed(2)}</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -87,7 +92,7 @@ export default function ProductCard({ product, selectedSize, onSelectSize, onAdd
           Add to Cart
         </button>
         <a
-          href={product.affiliateUrl}
+          href={product.merchantUrl || product.affiliateUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-1 px-4 py-2.5 bg-surface border border-border text-sm font-medium text-text rounded-xl hover:bg-surface/80 transition-colors"

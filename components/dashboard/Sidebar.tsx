@@ -77,18 +77,12 @@ const baseNavItems = [
   },
 ];
 
-const planColors: Record<string, string> = {
-  FREE: "bg-muted/15 text-muted",
-  CREATOR: "bg-accent/15 text-accent",
-  PRO: "bg-social/15 text-social",
-};
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
 
-  const plan = user?.plan ?? "FREE";
   const userName = user?.name ?? "User";
   const avatarUrl = user?.avatarUrl;
   const isCreator = user?.role === "CREATOR" || user?.role === "ADMIN";
@@ -154,11 +148,6 @@ export function Sidebar() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-text truncate">{userName}</p>
-              <span
-                className={`inline-block mt-0.5 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${planColors[plan] ?? planColors.FREE}`}
-              >
-                {plan}
-              </span>
             </div>
           </div>
         </div>
@@ -196,7 +185,7 @@ export function Sidebar() {
           </button>
 
           {/* CTA */}
-          {!isCreator ? (
+          {!isCreator && (
             <Link
               href="/apply"
               className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-xl hover:bg-accent/90 transition-colors"
@@ -206,17 +195,7 @@ export function Sidebar() {
               </svg>
               Become a Creator
             </Link>
-          ) : plan === "FREE" ? (
-            <Link
-              href="/settings"
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-xl hover:bg-accent/90 transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-              </svg>
-              Upgrade Plan
-            </Link>
-          ) : null}
+          )}
         </div>
       </aside>
 

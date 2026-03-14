@@ -3,8 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useUpload } from "@/hooks/useUpload";
 import { useQueryClient } from "@tanstack/react-query";
-import { ProductPicker } from "./ProductPicker";
-import { InlineProductLink } from "./InlineProductLink";
+import { MerchantProductPicker } from "./MerchantProductPicker";
 
 interface UploadModalProps {
   open: boolean;
@@ -18,8 +17,8 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
-  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
-  const [showProductLink, setShowProductLink] = useState(false);
+  const [location, setLocation] = useState("");
+  const [selectedMerchantProductIds, setSelectedMerchantProductIds] = useState<string[]>([]);
   const [publishOnCreate, setPublishOnCreate] = useState(true);
   const [createdVideoId, setCreatedVideoId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -47,8 +46,8 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
     if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
     setVideoPreviewUrl(null);
     setCaption("");
-    setSelectedProductIds([]);
-    setShowProductLink(false);
+    setLocation("");
+    setSelectedMerchantProductIds([]);
     setPublishOnCreate(true);
     setCreatedVideoId(null);
     setError("");
@@ -80,19 +79,19 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
     if (!videoFile) return;
     setStep("uploading");
     try {
-      const videoId = await upload(
-        videoFile,
-        selectedProductIds.length > 0 ? selectedProductIds : undefined,
-        caption || undefined
-      );
+      const videoId = await upload(videoFile, {
+        merchantProductIds: selectedMerchantProductIds.length > 0 ? selectedMerchantProductIds : undefined,
+        caption: caption || undefined,
+        location: location || undefined,
+      });
       setCreatedVideoId(videoId);
 
-      // Update products if needed
-      if (selectedProductIds.length > 0) {
+      // Update merchant products if needed
+      if (selectedMerchantProductIds.length > 0) {
         await fetch(`/api/videos/${videoId}/products`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productIds: selectedProductIds }),
+          body: JSON.stringify({ merchantProductIds: selectedMerchantProductIds }),
         }).catch(() => {});
       }
 
@@ -106,7 +105,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
       }
 
       queryClient.invalidateQueries({ queryKey: ["videos"] });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["merchant-products"] });
       setStep("success");
     } catch {
       setStep("details");
@@ -135,11 +134,6 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
     } catch {
       // Ignore
     }
-  };
-
-  const handleProductLinked = () => {
-    setShowProductLink(false);
-    // Products list will refresh via React Query
   };
 
   if (!open) return null;
@@ -186,7 +180,6 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
             ref={fileInputRef}
             type="file"
             accept="video/*"
-            capture="environment"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -194,42 +187,19 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
             }}
           />
 
-          {/* Record / Gallery options */}
+          {/* Gallery option */}
           <div className="w-full max-w-sm space-y-4">
-            {/* Camera/Record button */}
+            {/* Gallery button — primary action */}
             <button
               onClick={() => {
                 if (fileInputRef.current) {
-                  fileInputRef.current.setAttribute("capture", "environment");
                   fileInputRef.current.click();
                 }
               }}
-              className="w-full flex items-center gap-4 p-4 bg-card border border-border rounded-2xl hover:bg-surface transition-colors active:scale-[0.98]"
+              className="w-full flex items-center gap-4 p-4 bg-card border border-accent/30 rounded-2xl hover:bg-surface transition-colors active:scale-[0.98]"
             >
               <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
-                  <polygon points="23 7 16 12 23 17 23 7" />
-                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                </svg>
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-semibold text-text">Record Video</p>
-                <p className="text-xs text-muted">Use your camera to record</p>
-              </div>
-            </button>
-
-            {/* Gallery button */}
-            <button
-              onClick={() => {
-                if (fileInputRef.current) {
-                  fileInputRef.current.removeAttribute("capture");
-                  fileInputRef.current.click();
-                }
-              }}
-              className="w-full flex items-center gap-4 p-4 bg-card border border-border rounded-2xl hover:bg-surface transition-colors active:scale-[0.98]"
-            >
-              <div className="w-12 h-12 rounded-full bg-social/10 flex items-center justify-center flex-shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-social">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                   <circle cx="8.5" cy="8.5" r="1.5" />
                   <polyline points="21 15 16 10 5 21" />
@@ -237,14 +207,14 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
               </div>
               <div className="text-left">
                 <p className="text-sm font-semibold text-text">Choose from Gallery</p>
-                <p className="text-xs text-muted">Upload an existing video</p>
+                <p className="text-xs text-muted">Upload a video from your device</p>
               </div>
             </button>
 
             {/* Guidelines */}
             <div className="pt-4 text-center">
               <p className="text-xs text-muted">
-                Max 5 minutes &middot; Up to 500MB &middot; Vertical recommended
+                Max 10 minutes &middot; Up to 500MB &middot; Vertical recommended
               </p>
             </div>
           </div>
@@ -255,7 +225,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
         </div>
       )}
 
-      {/* Step: Details (Caption + Products) */}
+      {/* Step: Details (Caption + Location + Products) */}
       {step === "details" && (
         <div className="overflow-y-auto" style={{ height: "calc(100svh - 48px)" }}>
           <div className="p-4 space-y-4 max-w-lg mx-auto">
@@ -293,6 +263,21 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
               </div>
             </div>
 
+            {/* Location field */}
+            <div className="flex items-center gap-3 px-3 py-2.5 bg-surface border border-border rounded-xl">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value.slice(0, 100))}
+                placeholder="Add location..."
+                className="flex-1 bg-transparent text-sm text-text placeholder:text-muted focus:outline-none"
+              />
+            </div>
+
             <div className="border-t border-border" />
 
             {/* Tag Products section */}
@@ -304,37 +289,16 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
                     <line x1="3" y1="6" x2="21" y2="6" />
                   </svg>
                   <span className="text-sm font-medium text-text">Tag Products</span>
-                  <span className="text-xs text-muted">({selectedProductIds.length}/7)</span>
+                  <span className="text-xs text-muted">({selectedMerchantProductIds.length}/7)</span>
                 </div>
               </div>
 
-              {/* Existing products picker */}
-              <ProductPicker
-                selectedIds={selectedProductIds}
-                onSelectionChange={(ids) => setSelectedProductIds(ids.slice(0, 7))}
+              {/* Merchant products picker */}
+              <MerchantProductPicker
+                selectedIds={selectedMerchantProductIds}
+                onSelectionChange={(ids) => setSelectedMerchantProductIds(ids.slice(0, 7))}
                 maxSelections={7}
               />
-
-              {/* Link new product inline */}
-              {!showProductLink ? (
-                <button
-                  onClick={() => setShowProductLink(true)}
-                  className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-border rounded-xl text-sm text-muted hover:text-text hover:border-text/20 transition-colors"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  Link new product from store
-                </button>
-              ) : (
-                <div className="mt-3">
-                  <InlineProductLink
-                    onProductCreated={handleProductLinked}
-                    onCancel={() => setShowProductLink(false)}
-                  />
-                </div>
-              )}
             </div>
 
             <div className="border-t border-border" />

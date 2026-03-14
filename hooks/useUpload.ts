@@ -9,6 +9,12 @@ interface UploadState {
   videoId: string | null;
 }
 
+interface UploadOptions {
+  merchantProductIds?: string[];
+  caption?: string;
+  location?: string;
+}
+
 export function useUpload() {
   const [state, setState] = useState<UploadState>({
     progress: 0,
@@ -17,7 +23,7 @@ export function useUpload() {
     videoId: null,
   });
 
-  const upload = useCallback(async (file: File, productIds?: string[], caption?: string) => {
+  const upload = useCallback(async (file: File, options?: UploadOptions) => {
     setState({ progress: 0, uploading: true, error: null, videoId: null });
 
     try {
@@ -26,9 +32,10 @@ export function useUpload() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productIds,
-          title: caption,
-          description: caption,
+          merchantProductIds: options?.merchantProductIds,
+          title: options?.caption,
+          description: options?.caption,
+          location: options?.location,
           fileSizeMB: file.size / (1024 * 1024),
         }),
       });

@@ -64,11 +64,15 @@ export default function VideoPlayerModal({ video, onClose }: VideoPlayerModalPro
       body: JSON.stringify([{ type: "ADD_TO_CART", productId: product.id }]),
     }).catch(() => {});
 
-    // Add to cart
+    // Add to cart - use merchantProductId if available, otherwise legacy productId
+    const cartBody = product.merchantProductId
+      ? { merchantProductId: product.merchantProductId, selectedSize: selectedSize[product.id] }
+      : { productId: product.id };
+
     fetch("/api/cart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: product.id }),
+      body: JSON.stringify(cartBody),
     }).catch(() => {});
   };
 

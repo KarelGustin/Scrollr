@@ -61,6 +61,20 @@ export default async function DiscoverPage({
                 published: true,
               },
             },
+            merchantProduct: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                imageUrl: true,
+                price: true,
+                compareAtPrice: true,
+                vendor: true,
+                productUrl: true,
+                inventoryQuantity: true,
+                available: true,
+              },
+            },
           },
           orderBy: { position: "asc" },
         },
@@ -81,18 +95,28 @@ export default async function DiscoverPage({
       avatarUrl: v.user.avatarUrl,
     },
     products: v.products
-      .filter((vp) => vp.product.published)
-      .map((vp) => ({
-        id: vp.product.id,
-        name: vp.product.name,
-        brand: vp.product.brand,
-        price: vp.product.price,
-        priceDisplay: vp.product.priceDisplay,
-        imageUrl: vp.product.imageUrl,
-        affiliateUrl: vp.product.affiliateUrl,
-        description: vp.product.description,
-        sizes: (vp.product.sizes as string[] | null) ?? null,
-      })),
+      .filter((vp) => vp.product ? vp.product.published : vp.merchantProduct?.available)
+      .map((vp) => {
+        const mp = vp.merchantProduct;
+        const p = vp.product;
+        return {
+          id: p?.id ?? mp?.id ?? vp.id,
+          name: mp?.title ?? p?.name ?? "Unknown",
+          brand: p?.brand ?? null,
+          price: mp?.price ?? p?.price ?? null,
+          priceDisplay: mp ? `$${mp.price.toFixed(2)}` : p?.priceDisplay ?? null,
+          imageUrl: mp?.imageUrl ?? p?.imageUrl ?? null,
+          affiliateUrl: p?.affiliateUrl ?? mp?.productUrl ?? "",
+          description: mp?.description ?? p?.description ?? null,
+          sizes: (p?.sizes as string[] | null) ?? null,
+          merchantProductId: mp?.id ?? null,
+          merchantUrl: mp?.productUrl ?? null,
+          vendor: mp?.vendor ?? null,
+          inventoryQuantity: mp?.inventoryQuantity ?? null,
+          compareAtPrice: mp?.compareAtPrice ?? null,
+          variants: null,
+        };
+      }),
   }));
 
   if (feedVideos.length === 0) {

@@ -38,6 +38,13 @@ export type FeedVideoProduct = {
   affiliateUrl: string;
   description: string | null;
   sizes: string[] | null;
+  // MerchantProduct fields
+  merchantProductId: string | null;
+  merchantUrl: string | null;
+  vendor: string | null;
+  inventoryQuantity: number | null;
+  compareAtPrice: number | null;
+  variants: { id: string; title: string; price: number; inventoryQuantity: number | null; available: boolean }[] | null;
 };
 
 // Legacy compat — kept for existing code that may reference it
@@ -99,7 +106,9 @@ export type PlanLimits = {
 
 export type CartItemWithProduct = {
   id: string;
-  productId: string;
+  productId: string | null;
+  merchantProductId: string | null;
+  selectedSize: string | null;
   quantity: number;
   product: {
     id: string;
@@ -109,12 +118,17 @@ export type CartItemWithProduct = {
     priceDisplay: string | null;
     imageUrl: string | null;
     affiliateUrl: string;
-    user: {
-      id: string;
-      username: string | null;
-      name: string | null;
-    };
-  };
+    user: { id: string; username: string | null; name: string | null };
+  } | null;
+  merchantProduct: {
+    id: string;
+    title: string;
+    price: number;
+    imageUrl: string | null;
+    vendor: string | null;
+    productUrl: string | null;
+    merchant: { id: string; storeName: string | null };
+  } | null;
 };
 
 export type UploadQuota = {

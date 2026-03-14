@@ -192,7 +192,7 @@ export async function getViewerInterests(
 
   const tagCounts = new Map<string, number>();
   for (const vp of videoProducts) {
-    if (!vp.product.tags) continue;
+    if (!vp.product?.tags) continue;
     const weight = addToCartVideoIds.has(vp.videoId) ? 2 : 1;
     const tags = vp.product.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
     for (const tag of tags) {
