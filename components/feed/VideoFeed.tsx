@@ -5,24 +5,33 @@ import type { FeedVideo, FeedVideoProduct } from "@/types";
 import { useFeedStore } from "@/stores/feedStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useAddToCart } from "@/hooks/useCart";
+import { useAuth } from "@/lib/auth-context";
 import VideoSlide from "./VideoSlide";
 import ProductDetailModal from "./ProductDetailModal";
 import CartDrawer from "./CartDrawer";
 import CartButton from "./CartButton";
+import AuthGateOverlay from "./AuthGateOverlay";
+
+const ANON_VIEW_LIMIT = 10;
+const STORAGE_KEY = "scrollr_view_count";
 
 interface VideoFeedProps {
   videos: FeedVideo[];
   showBranding: boolean;
   showCreator?: boolean;
+  allowAnonymous?: boolean;
 }
 
-export default function VideoFeed({ videos, showBranding, showCreator = false }: VideoFeedProps) {
+export default function VideoFeed({ videos, showBranding, showCreator = false, allowAnonymous = false }: VideoFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentIndex = useFeedStore((s) => s.currentIndex);
   const setCurrentIndex = useFeedStore((s) => s.setCurrentIndex);
   const [selectedProduct, setSelectedProduct] = useState<FeedVideoProduct | null>(null);
+  const [showAuthGate, setShowAuthGate] = useState(false);
+  const viewedVideosRef = useRef<Set<string>>(new Set());
   const addToCart = useAddToCart();
   const isCartOpen = useCartStore((s) => s.isOpen);
+  const { status } = useAuth();
 
   // Lock html/body scroll on mount
   useEffect(() => {
@@ -48,6 +57,46 @@ export default function VideoFeed({ videos, showBranding, showCreator = false }:
       body: JSON.stringify([{ type: "PAGE_VIEW" }]),
     }).catch(() => {});
   }, []);
+
+  // Initialize viewed videos from localStorage for anonymous users
+  useEffect(() => {
+    if (status === "unauthenticated" && allowAnonymous) {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as string[];
+          viewedVideosRef.current = new Set(parsed);
+        }
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+  }, [status, allowAnonymous]);
+
+  // Track unique video views for unauthenticated users
+  useEffect(() => {
+    if (status !== "unauthenticated" || !allowAnonymous || showAuthGate) return;
+
+    const currentVideo = videos[currentIndex];
+    if (!currentVideo) return;
+
+    const viewed = viewedVideosRef.current;
+    if (!viewed.has(currentVideo.id)) {
+      viewed.add(currentVideo.id);
+
+      // Persist to localStorage
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(viewed)));
+      } catch {
+        // Ignore localStorage errors
+      }
+
+      // Check if limit reached
+      if (viewed.size >= ANON_VIEW_LIMIT) {
+        setShowAuthGate(true);
+      }
+    }
+  }, [currentIndex, status, allowAnonymous, showAuthGate, videos]);
 
   // IntersectionObserver to detect current visible slide
   const handleSlideVisible = useCallback(
@@ -85,8 +134,12 @@ export default function VideoFeed({ videos, showBranding, showCreator = false }:
     setSelectedProduct(product);
   };
 
-  const handleAddToCart = (product: FeedVideoProduct) => {
-    addToCart.mutate({ productId: product.id });
+  const handleAddToCart = (product: FeedVideoProduct, selectedSize?: string) => {
+    if (product.merchantProductId) {
+      addToCart.mutate({ merchantProductId: product.merchantProductId, selectedSize });
+    } else {
+      addToCart.mutate({ productId: product.id });
+    }
     setSelectedProduct(null);
 
     // Fire ADD_TO_CART event
@@ -105,7 +158,8 @@ export default function VideoFeed({ videos, showBranding, showCreator = false }:
       body: JSON.stringify([{ type: "SHOP_CLICK", productId: product.id }]),
     }).catch(() => {});
 
-    window.open(`/r/${product.id}`, "_blank");
+    const url = product.merchantUrl || `/r/${product.id}`;
+    window.open(url, "_blank");
     setSelectedProduct(null);
   };
 
@@ -117,6 +171,7 @@ export default function VideoFeed({ videos, showBranding, showCreator = false }:
         style={{
           scrollSnapType: "y mandatory",
           WebkitOverflowScrolling: "touch",
+          ...(showAuthGate ? { overflow: "hidden" } : {}),
         }}
       >
         {videos.map((video, index) => {
@@ -154,6 +209,12 @@ export default function VideoFeed({ videos, showBranding, showCreator = false }:
         onAddToCart={handleAddToCart}
         onShopNow={handleShopNow}
       />
+
+      {/* Auth gate for unauthenticated users who hit the scroll limit */}
+      {showAuthGate && <AuthGateOverlay />}
+
+      {/* Note: Save endpoints (/api/saved) already require auth via middleware protection.
+          The handleAddToCart function works for anonymous users since cart is session-based. */}
     </>
   );
 }

@@ -19,15 +19,19 @@ export function useAddToCart() {
   return useMutation({
     mutationFn: async ({
       productId,
+      merchantProductId,
+      selectedSize,
       quantity = 1,
     }: {
-      productId: string;
+      productId?: string;
+      merchantProductId?: string;
+      selectedSize?: string;
       quantity?: number;
     }) => {
       const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, quantity }),
+        body: JSON.stringify({ productId, merchantProductId, selectedSize, quantity }),
       });
       if (!res.ok) throw new Error("Failed to add to cart");
       return res.json();

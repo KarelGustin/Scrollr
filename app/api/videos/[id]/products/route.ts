@@ -24,48 +24,99 @@ export async function PUT(
   }
 
   const body = await req.json();
-  const { productIds } = body as { productIds: string[] };
+  const { productIds, merchantProductIds } = body as {
+    productIds?: string[];
+    merchantProductIds?: string[];
+  };
 
-  if (!Array.isArray(productIds)) {
+  const hasProductIds = Array.isArray(productIds) && productIds.length > 0;
+  const hasMerchantProductIds =
+    Array.isArray(merchantProductIds) && merchantProductIds.length > 0;
+
+  if (!hasProductIds && !hasMerchantProductIds) {
     return NextResponse.json(
-      { error: "productIds must be an array" },
+      { error: "productIds or merchantProductIds must be provided as an array" },
       { status: 400 }
     );
   }
 
-  if (productIds.length > 7) {
+  const totalProducts =
+    (hasProductIds ? productIds.length : 0) +
+    (hasMerchantProductIds ? merchantProductIds.length : 0);
+
+  if (totalProducts > 7) {
     return NextResponse.json(
       { error: "Maximum 7 products per video" },
       { status: 400 }
     );
   }
 
-  // Verify all products belong to this user
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds }, userId: user.id },
-    select: { id: true },
-  });
+  // Build the list of VideoProduct records to create
+  const videoProductData: {
+    videoId: string;
+    productId?: string;
+    merchantProductId?: string;
+    position: number;
+  }[] = [];
 
-  const validIds = new Set(products.map((p) => p.id));
-  const filteredIds = productIds.filter((id) => validIds.has(id));
+  let position = 0;
+
+  // Verify creator-owned products belong to this user
+  if (hasProductIds) {
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds }, userId: user.id },
+      select: { id: true },
+    });
+    const validIds = new Set(products.map((p) => p.id));
+    for (const pid of productIds) {
+      if (validIds.has(pid)) {
+        videoProductData.push({
+          videoId: id,
+          productId: pid,
+          position: position++,
+        });
+      }
+    }
+  }
+
+  // Verify merchant products exist and are available (no ownership check needed)
+  if (hasMerchantProductIds) {
+    const merchantProducts = await prisma.merchantProduct.findMany({
+      where: { id: { in: merchantProductIds }, available: true },
+      select: { id: true },
+    });
+    const validMerchantIds = new Set(merchantProducts.map((mp) => mp.id));
+    for (const mpId of merchantProductIds) {
+      if (validMerchantIds.has(mpId)) {
+        videoProductData.push({
+          videoId: id,
+          merchantProductId: mpId,
+          position: position++,
+        });
+      }
+    }
+  }
 
   // Replace all video-product links
   await prisma.$transaction([
     prisma.videoProduct.deleteMany({ where: { videoId: id } }),
-    prisma.videoProduct.createMany({
-      data: filteredIds.map((productId, index) => ({
-        videoId: id,
-        productId,
-        position: index,
-      })),
-    }),
+    prisma.videoProduct.createMany({ data: videoProductData }),
   ]);
 
   const updated = await prisma.video.findUnique({
     where: { id },
     include: {
       products: {
-        include: { product: true },
+        include: {
+          product: true,
+          merchantProduct: {
+            include: {
+              merchant: {
+                select: { id: true, storeName: true, storeLogoUrl: true },
+              },
+            },
+          },
+        },
         orderBy: { position: "asc" },
       },
     },

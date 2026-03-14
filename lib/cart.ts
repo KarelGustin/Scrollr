@@ -5,6 +5,27 @@ function generateSessionId(): string {
   return crypto.randomUUID();
 }
 
+const cartInclude = {
+  items: {
+    include: {
+      product: {
+        include: {
+          user: {
+            select: { id: true, username: true, name: true },
+          },
+        },
+      },
+      merchantProduct: {
+        include: {
+          merchant: {
+            select: { id: true, storeName: true, storeLogoUrl: true },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
 export async function getOrCreateCart() {
   const cookieStore = await cookies();
   let sessionId = cookieStore.get("cart_session")?.value;
@@ -12,19 +33,7 @@ export async function getOrCreateCart() {
   if (sessionId) {
     const cart = await prisma.cart.findUnique({
       where: { sessionId },
-      include: {
-        items: {
-          include: {
-            product: {
-              include: {
-                user: {
-                  select: { id: true, username: true, name: true },
-                },
-              },
-            },
-          },
-        },
-      },
+      include: cartInclude,
     });
     if (cart) return { cart, sessionId };
   }
@@ -33,19 +42,7 @@ export async function getOrCreateCart() {
   sessionId = generateSessionId();
   const cart = await prisma.cart.create({
     data: { sessionId },
-    include: {
-      items: {
-        include: {
-          product: {
-            include: {
-              user: {
-                select: { id: true, username: true, name: true },
-              },
-            },
-          },
-        },
-      },
-    },
+    include: cartInclude,
   });
 
   return { cart, sessionId, isNew: true };

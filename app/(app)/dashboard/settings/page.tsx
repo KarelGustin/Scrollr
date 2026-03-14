@@ -24,12 +24,9 @@ export default function SettingsPage() {
   const [profileSaved, setProfileSaved] = useState(false);
 
   const [usernameChecking, setUsernameChecking] = useState(false);
-  const [billingLoading, setBillingLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
-
-  const currentPlan = user?.plan ?? "FREE";
 
   // Initialize form from user
   useEffect(() => {
@@ -115,25 +112,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleManageBilling = async () => {
-    setBillingLoading(true);
-    try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "portal" }),
-      });
-      if (res.ok) {
-        const { url } = await res.json();
-        window.location.href = url;
-      }
-    } catch {
-      // silently fail
-    } finally {
-      setBillingLoading(false);
-    }
-  };
-
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "DELETE") return;
     setDeleting(true);
@@ -150,14 +128,6 @@ export default function SettingsPage() {
       setDeleting(false);
     }
   };
-
-  const planLabels: Record<string, { label: string; color: string }> = {
-    FREE: { label: "Free", color: "bg-muted/20 text-muted" },
-    CREATOR: { label: "Creator", color: "bg-accent/20 text-accent" },
-    PRO: { label: "Pro", color: "bg-purple-500/20 text-purple-400" },
-  };
-
-  const planInfo = planLabels[currentPlan] ?? planLabels.FREE;
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -243,57 +213,6 @@ export default function SettingsPage() {
             <span className="text-sm text-green-400">Saved successfully</span>
           )}
         </div>
-      </div>
-
-      {/* Billing section */}
-      <div className="bg-card rounded-xl border border-border p-6 space-y-5">
-        <h2 className="text-lg font-display font-semibold text-text">
-          Billing
-        </h2>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-text">Current Plan</p>
-            <span
-              className={`inline-block mt-1 text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded ${planInfo.color}`}
-            >
-              {planInfo.label}
-            </span>
-          </div>
-          <Button
-            variant="secondary"
-            onClick={handleManageBilling}
-            loading={billingLoading}
-          >
-            Manage Billing
-          </Button>
-        </div>
-
-        {currentPlan === "FREE" && (
-          <div className="bg-surface rounded-lg p-4 border border-border">
-            <p className="text-sm text-text font-medium mb-1">
-              Upgrade to Creator or Pro
-            </p>
-            <p className="text-xs text-muted mb-3">
-              Get more products, advanced analytics, and custom branding.
-            </p>
-            <Button size="sm" onClick={handleManageBilling}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-              </svg>
-              Upgrade Now
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Danger zone */}

@@ -32,6 +32,26 @@ export default function DashboardPage() {
       return res.json();
     },
   });
+
+  interface DashboardStats {
+    views: number;
+    clicks: number;
+    conversionRate: number;
+    revenue: number;
+    profitShare: number;
+    orders: number;
+    period: string;
+  }
+
+  const { data: dashStats } = useQuery<DashboardStats>({
+    queryKey: ["dashboard-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/dashboard/stats?period=7d");
+      if (!res.ok) throw new Error("Failed to fetch dashboard stats");
+      return res.json();
+    },
+  });
+
   const [copied, setCopied] = useState(false);
 
   const [checklistState, setChecklistState] = useState<Record<string, boolean>>(
@@ -49,8 +69,11 @@ export default function DashboardPage() {
     analytics?.clicks?.[analytics.clicks.length - 1]?.count ?? 0;
   const todayCtr =
     todayViews > 0 ? ((todayClicks / todayViews) * 100).toFixed(1) : "0.0";
-  const liveProducts =
-    products?.filter((p: { published: boolean }) => p.published).length ?? 0;
+  // Format currency for display
+  const formatCurrency = (amount: number) =>
+    amount >= 1000
+      ? `$${(amount / 1000).toFixed(1)}k`
+      : `$${amount.toFixed(2)}`;
 
   // Merge views and clicks for sparkline chart
   const chartData =
@@ -107,7 +130,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           title="Views Today"
           value={todayViews}
@@ -148,7 +171,7 @@ export default function DashboardPage() {
           }
         />
         <StatCard
-          title="CTR Today"
+          title="Conversion Rate"
           value={`${todayCtr}%`}
           icon={
             <svg
@@ -166,8 +189,8 @@ export default function DashboardPage() {
           }
         />
         <StatCard
-          title="Products Live"
-          value={liveProducts}
+          title="Revenue"
+          value={formatCurrency(dashStats?.revenue ?? 0)}
           icon={
             <svg
               width="18"
@@ -179,8 +202,27 @@ export default function DashboardPage() {
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
-              <line x1="7" y1="7" x2="7.01" y2="7" />
+              <line x1="12" y1="1" x2="12" y2="23" />
+              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+            </svg>
+          }
+        />
+        <StatCard
+          title="Profit Share"
+          value={formatCurrency(dashStats?.profitShare ?? 0)}
+          icon={
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+              <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
             </svg>
           }
         />

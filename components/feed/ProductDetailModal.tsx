@@ -6,7 +6,7 @@ import type { FeedVideoProduct } from "@/types";
 interface ProductDetailModalProps {
   product: FeedVideoProduct | null;
   onClose: () => void;
-  onAddToCart: (product: FeedVideoProduct) => void;
+  onAddToCart: (product: FeedVideoProduct, selectedSize?: string) => void;
   onShopNow: (product: FeedVideoProduct) => void;
 }
 
@@ -18,10 +18,49 @@ export default function ProductDetailModal({
 }: ProductDetailModalProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [sizeRequired, setSizeRequired] = useState(false);
 
-  // Reset selected size when product changes
+  // Determine available sizes from variants or sizes array
+  const availableSizes = product?.variants
+    ? product.variants
+        .filter((v) => v.available)
+        .map((v) => v.title)
+    : product?.sizes ?? [];
+
+  const hasSizes = availableSizes && availableSizes.length > 0;
+
+  // Stock status
+  const getStockStatus = () => {
+    if (!product) return null;
+
+    // If variants exist and a size is selected, check that variant
+    if (product.variants && selectedSize) {
+      const variant = product.variants.find((v) => v.title === selectedSize);
+      if (variant) {
+        if (!variant.available || variant.inventoryQuantity === 0) return "out";
+        if (variant.inventoryQuantity !== null && variant.inventoryQuantity < 5) return "low";
+        return "in";
+      }
+    }
+
+    // Fall back to product-level inventory
+    if (product.inventoryQuantity !== null) {
+      if (product.inventoryQuantity === 0) return "out";
+      if (product.inventoryQuantity < 5) return "low";
+      return "in";
+    }
+
+    return null; // Unknown / not tracked
+  };
+
+  const stockStatus = product ? getStockStatus() : null;
+
+  // Reset state when product changes
   useEffect(() => {
     setSelectedSize(null);
+    setAddedToCart(false);
+    setSizeRequired(false);
   }, [product?.id]);
 
   // Close on escape
@@ -36,6 +75,27 @@ export default function ProductDetailModal({
 
   if (!product) return null;
 
+  const handleAddToCart = () => {
+    if (hasSizes && !selectedSize) {
+      setSizeRequired(true);
+      return;
+    }
+    setSizeRequired(false);
+    setAddedToCart(true);
+    onAddToCart(product, selectedSize ?? undefined);
+
+    // Reset confirmation after animation
+    setTimeout(() => setAddedToCart(false), 1200);
+  };
+
+  const displayBrand = product.vendor || product.brand;
+  const storeUrl = product.merchantUrl || product.affiliateUrl;
+
+  // Format compare-at price
+  const formatPrice = (price: number) => {
+    return `$${price.toFixed(2)}`;
+  };
+
   return (
     <div className="fixed inset-0 z-50" onClick={onClose}>
       {/* Backdrop */}
@@ -45,7 +105,7 @@ export default function ProductDetailModal({
       <div
         ref={sheetRef}
         onClick={(e) => e.stopPropagation()}
-        className="absolute bottom-0 left-0 right-0 bg-surface border-t border-border rounded-t-2xl p-6 pb-8 animate-in slide-in-from-bottom duration-300 max-h-[75vh] overflow-y-auto"
+        className="absolute bottom-0 left-0 right-0 bg-surface border-t border-border rounded-t-2xl p-6 pb-8 animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto"
       >
         {/* Handle */}
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-5" />
@@ -62,13 +122,35 @@ export default function ProductDetailModal({
             <h3 className="text-lg font-display font-bold text-text">
               {product.name}
             </h3>
-            {product.brand && (
-              <p className="text-sm text-muted mt-0.5">{product.brand}</p>
+            {displayBrand && (
+              <p className="text-sm text-muted mt-0.5">{displayBrand}</p>
             )}
-            {product.priceDisplay && (
-              <p className="text-xl font-bold text-accent mt-1">
-                {product.priceDisplay}
-              </p>
+            <div className="flex items-center gap-2 mt-1">
+              {product.priceDisplay && (
+                <p className="text-xl font-bold text-accent">
+                  {product.priceDisplay}
+                </p>
+              )}
+              {product.compareAtPrice != null && product.price != null && product.compareAtPrice > product.price && (
+                <p className="text-sm text-muted line-through">
+                  {formatPrice(product.compareAtPrice)}
+                </p>
+              )}
+            </div>
+
+            {/* Stock indicator */}
+            {stockStatus && (
+              <div className="mt-1.5">
+                {stockStatus === "in" && (
+                  <span className="text-xs font-medium text-green-500">In Stock</span>
+                )}
+                {stockStatus === "low" && (
+                  <span className="text-xs font-medium text-amber-500">Low Stock</span>
+                )}
+                {stockStatus === "out" && (
+                  <span className="text-xs font-medium text-red-500">Out of Stock</span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -80,39 +162,74 @@ export default function ProductDetailModal({
           </p>
         )}
 
-        {/* Sizes */}
-        {product.sizes && product.sizes.length > 0 && (
+        {/* Size picker */}
+        {hasSizes && (
           <div className="mt-4">
-            <p className="text-xs font-medium text-muted mb-2">Available Sizes</p>
+            <p className={`text-xs font-medium mb-2 ${sizeRequired ? "text-red-500" : "text-muted"}`}>
+              {sizeRequired ? "Please select a size" : "Select Size"}
+            </p>
             <div className="flex flex-wrap gap-2">
-              {product.sizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size === selectedSize ? null : size)}
-                  className={`px-3.5 py-2 text-sm font-medium rounded-xl border transition-colors ${
-                    selectedSize === size
-                      ? "border-accent bg-accent/10 text-accent"
-                      : "border-border bg-card text-text hover:border-text/20"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+              {availableSizes!.map((size) => {
+                const isUnavailable = product.variants
+                  ? !product.variants.find((v) => v.title === size)?.available
+                  : false;
+
+                return (
+                  <button
+                    key={size}
+                    onClick={() => {
+                      if (isUnavailable) return;
+                      setSelectedSize(size === selectedSize ? null : size);
+                      setSizeRequired(false);
+                    }}
+                    disabled={isUnavailable}
+                    className={`px-3.5 py-2 text-sm font-medium rounded-xl border transition-colors ${
+                      isUnavailable
+                        ? "border-border bg-card text-muted/40 cursor-not-allowed line-through"
+                        : selectedSize === size
+                          ? "border-accent bg-accent/10 text-accent"
+                          : "border-border bg-card text-text hover:border-text/20"
+                    }`}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
         <div className="flex gap-3 mt-6">
           <button
-            onClick={() => onAddToCart(product)}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-accent text-accent-fg rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors"
+            onClick={handleAddToCart}
+            disabled={stockStatus === "out" || addedToCart}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              addedToCart
+                ? "bg-green-500 text-white"
+                : stockStatus === "out"
+                  ? "bg-muted/20 text-muted cursor-not-allowed"
+                  : "bg-accent text-accent-fg hover:bg-accent/90"
+            }`}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="9" cy="21" r="1" />
-              <circle cx="20" cy="21" r="1" />
-              <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
-            </svg>
-            Add to Cart
+            {addedToCart ? (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Added!
+              </>
+            ) : stockStatus === "out" ? (
+              "Out of Stock"
+            ) : (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+                </svg>
+                Add to Cart
+              </>
+            )}
           </button>
           <button
             onClick={() => onShopNow(product)}

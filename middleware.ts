@@ -69,6 +69,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/feed") ||
     pathname.startsWith("/orders") ||
     pathname.startsWith("/account") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/checkout") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/api/admin") ||
     pathname.startsWith("/api/consumer") ||

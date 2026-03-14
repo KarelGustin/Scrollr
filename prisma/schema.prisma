@@ -69,6 +69,7 @@ model Video {
   title              String?
   description        String?
   category           String?
+  location           String?
   products           VideoProduct[]
   events             Event[]
   score              VideoScore?
@@ -91,15 +92,18 @@ enum VideoStatus {
 }
 
 model VideoProduct {
-  id        String   @id @default(cuid())
-  videoId   String
-  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  position  Int      @default(0)
-  createdAt DateTime @default(now())
+  id                String           @id @default(cuid())
+  videoId           String
+  video             Video            @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  productId         String?
+  product           Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  merchantProductId String?
+  merchantProduct   MerchantProduct? @relation(fields: [merchantProductId], references: [id], onDelete: Cascade)
+  position          Int              @default(0)
+  createdAt         DateTime         @default(now())
 
   @@unique([videoId, productId])
+  @@unique([videoId, merchantProductId])
   @@index([videoId, position])
 }
 
@@ -200,15 +204,19 @@ model Cart {
 }
 
 model CartItem {
-  id        String   @id @default(cuid())
-  cartId    String
-  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity  Int      @default(1)
-  createdAt DateTime @default(now())
+  id                String           @id @default(cuid())
+  cartId            String
+  cart              Cart             @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId         String?
+  product           Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  merchantProductId String?
+  merchantProduct   MerchantProduct? @relation(fields: [merchantProductId], references: [id], onDelete: Cascade)
+  selectedSize      String?
+  quantity          Int              @default(1)
+  createdAt         DateTime         @default(now())
 
   @@unique([cartId, productId])
+  @@unique([cartId, merchantProductId, selectedSize])
 }
 
 model Subscription {
@@ -278,7 +286,9 @@ model MerchantProduct {
   productId String?  @unique
   product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
-  orderItems OrderItem[]
+  videoProducts VideoProduct[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
 
   @@unique([merchantId, shopifyProductId, shopifyVariantId])
   @@index([merchantId, available])

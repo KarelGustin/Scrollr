@@ -1,72 +1,54 @@
-import type { Plan } from "@prisma/client";
 import type { PlanLimits } from "@/types";
 import { prisma } from "./prisma";
 
-export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  FREE: {
-    maxProducts: 5,
-    analytics: 7,
-    branding: true,
-    maxVideosPerDay: 3,
-    maxVideosPerWeek: 10,
-    maxDurationSeconds: 60,
-    maxFileSizeMB: 100,
-  },
-  CREATOR: {
-    maxProducts: 999,
-    analytics: 90,
-    branding: false,
-    maxVideosPerDay: 10,
-    maxVideosPerWeek: 50,
-    maxDurationSeconds: 180,
-    maxFileSizeMB: 500,
-  },
-  PRO: {
-    maxProducts: 999,
-    analytics: 365,
-    branding: false,
-    maxVideosPerDay: 25,
-    maxVideosPerWeek: 100,
-    maxDurationSeconds: 600,
-    maxFileSizeMB: 2048,
-  },
+/**
+ * Single set of limits for all creators (no plan tiers).
+ * Uses PRO-level limits as the default for everyone.
+ */
+export const CREATOR_LIMITS: PlanLimits = {
+  maxProducts: 999,
+  analytics: 365,
+  branding: false,
+  maxVideosPerDay: 25,
+  maxVideosPerWeek: 100,
+  maxDurationSeconds: 600,
+  maxFileSizeMB: 500,
 };
 
-export async function getUserPlan(userId: string): Promise<Plan> {
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
-  });
+/**
+ * Legacy PLAN_LIMITS export for backwards compatibility.
+ * All plans map to the same limits.
+ */
+export const PLAN_LIMITS: Record<string, PlanLimits> = {
+  FREE: CREATOR_LIMITS,
+  CREATOR: CREATOR_LIMITS,
+  PRO: CREATOR_LIMITS,
+};
 
-  if (!subscription || subscription.status !== "active") {
-    return "FREE";
-  }
-
-  return subscription.plan;
-}
-
-export async function canCreateProduct(userId: string): Promise<boolean> {
-  const plan = await getUserPlan(userId);
-  const count = await prisma.product.count({ where: { userId } });
-  return count < PLAN_LIMITS[plan].maxProducts;
-}
-
-export function getAnalyticsDaysLimit(plan: Plan): number {
-  return PLAN_LIMITS[plan].analytics;
-}
-
-export function showBranding(plan: Plan): boolean {
-  return PLAN_LIMITS[plan].branding;
+/**
+ * Returns the analytics days limit.
+ * All creators get 365 days.
+ */
+export function getAnalyticsDaysLimit(_plan?: string): number {
+  return CREATOR_LIMITS.analytics;
 }
 
 /**
- * Check if user can upload a new video based on plan limits and trust level.
+ * Returns whether to show Scrollr branding.
+ * Kept for API compatibility; always returns false (no forced branding).
+ */
+export function showBranding(_plan?: string): boolean {
+  return CREATOR_LIMITS.branding;
+}
+
+/**
+ * Check if user can upload a new video based on limits and trust level.
  * Returns { allowed: true } or { allowed: false, reason: string }.
  */
 export async function canUploadVideo(
   userId: string
 ): Promise<{ allowed: boolean; reason?: string; remaining?: { daily: number; weekly: number } }> {
-  const plan = await getUserPlan(userId);
-  const limits = PLAN_LIMITS[plan];
+  const limits = CREATOR_LIMITS;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -120,8 +102,7 @@ export async function canUploadVideo(
  * Get upload quota info for the dashboard display.
  */
 export async function getUploadQuota(userId: string) {
-  const plan = await getUserPlan(userId);
-  const limits = PLAN_LIMITS[plan];
+  const limits = CREATOR_LIMITS;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -144,7 +125,7 @@ export async function getUploadQuota(userId: string) {
   ]);
 
   return {
-    plan,
+    plan: "PRO" as const,
     daily: { used: dailyUsed, limit: dailyLimit },
     weekly: { used: weeklyUsed, limit: limits.maxVideosPerWeek },
     maxDurationSeconds: limits.maxDurationSeconds,
@@ -230,4 +211,21 @@ export async function applyStrike(userId: string): Promise<{ strikeCount: number
 
   await updateTrustLevel(userId);
   return { strikeCount: user.strikeCount, action };
+}
+
+/**
+ * Legacy getUserPlan -- always returns "PRO" since we no longer have plan tiers.
+ * Kept for backwards compatibility with code that imports it.
+ */
+export async function getUserPlan(_userId: string): Promise<string> {
+  return "PRO";
+}
+
+/**
+ * Legacy canCreateProduct -- always returns true.
+ * Creators no longer own products directly (merchant-synced model),
+ * but kept for backwards compatibility with existing product routes.
+ */
+export async function canCreateProduct(_userId: string): Promise<boolean> {
+  return true;
 }

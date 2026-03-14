@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createDirectUploadUrl } from "@/lib/cloudflare";
-import { canUploadVideo, PLAN_LIMITS, getUserPlan } from "@/lib/planLimits";
+import { canUploadVideo, CREATOR_LIMITS } from "@/lib/planLimits";
 import { moderateTextContent } from "@/lib/moderation";
 
 export async function POST(req: NextRequest) {
@@ -21,20 +21,20 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { productIds, title, description, fileSizeMB } = body as {
+  const { productIds, merchantProductIds, title, description, location, fileSizeMB } = body as {
     productIds?: string[];
+    merchantProductIds?: string[];
     title?: string;
     description?: string;
+    location?: string;
     fileSizeMB?: number;
   };
 
   // Check file size limit
   if (fileSizeMB) {
-    const plan = await getUserPlan(user.id);
-    const limits = PLAN_LIMITS[plan];
-    if (fileSizeMB > limits.maxFileSizeMB) {
+    if (fileSizeMB > CREATOR_LIMITS.maxFileSizeMB) {
       return NextResponse.json(
-        { error: `File size exceeds ${limits.maxFileSizeMB}MB limit for your plan` },
+        { error: `File size exceeds ${CREATOR_LIMITS.maxFileSizeMB}MB limit` },
         { status: 400 }
       );
     }
@@ -68,16 +68,29 @@ export async function POST(req: NextRequest) {
       status: "PROCESSING",
       title: title ?? null,
       description: description ?? null,
+      location: location ?? null,
     },
   });
 
-  // If product IDs were provided, link them to the video
+  // If legacy product IDs were provided, link them to the video
   if (productIds && productIds.length > 0) {
     await prisma.videoProduct.createMany({
       data: productIds.map((productId, index) => ({
         videoId: video.id,
         productId,
         position: index,
+      })),
+    });
+  }
+
+  // If merchant product IDs were provided, link them to the video
+  if (merchantProductIds && merchantProductIds.length > 0) {
+    const startPosition = productIds?.length ?? 0;
+    await prisma.videoProduct.createMany({
+      data: merchantProductIds.map((merchantProductId, index) => ({
+        videoId: video.id,
+        merchantProductId,
+        position: startPosition + index,
       })),
     });
   }
