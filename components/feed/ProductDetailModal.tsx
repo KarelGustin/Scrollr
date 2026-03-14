@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import type { FeedVideoProduct } from "@/types";
 
 interface ProductDetailModalProps {
@@ -8,6 +10,18 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onAddToCart: (product: FeedVideoProduct, selectedSize?: string) => void;
   onShopNow: (product: FeedVideoProduct) => void;
+}
+
+interface UgcVideo {
+  id: string;
+  thumbnailUrl: string | null;
+  hlsUrl: string | null;
+  title: string | null;
+  user: {
+    username: string;
+    avatarUrl: string | null;
+  };
+  score: number;
 }
 
 export default function ProductDetailModal({
@@ -20,6 +34,10 @@ export default function ProductDetailModal({
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState(false);
   const [sizeRequired, setSizeRequired] = useState(false);
+  const [ugcVideos, setUgcVideos] = useState<UgcVideo[]>([]);
+  const [loadingUgc, setLoadingUgc] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const touchStartX = useRef(0);
 
   // Determine available sizes from variants or sizes array
   const availableSizes = product?.variants
@@ -30,11 +48,13 @@ export default function ProductDetailModal({
 
   const hasSizes = availableSizes && availableSizes.length > 0;
 
+  // Image list: use imageUrl (feed products don't have images array yet)
+  const imageList = product?.imageUrl ? [product.imageUrl] : [];
+
   // Stock status
   const getStockStatus = () => {
     if (!product) return null;
 
-    // If variants exist and a size is selected, check that variant
     if (product.variants && selectedSize) {
       const variant = product.variants.find((v) => v.title === selectedSize);
       if (variant) {
@@ -44,14 +64,13 @@ export default function ProductDetailModal({
       }
     }
 
-    // Fall back to product-level inventory
     if (product.inventoryQuantity !== null) {
       if (product.inventoryQuantity === 0) return "out";
       if (product.inventoryQuantity < 5) return "low";
       return "in";
     }
 
-    return null; // Unknown / not tracked
+    return null;
   };
 
   const stockStatus = product ? getStockStatus() : null;
@@ -61,7 +80,20 @@ export default function ProductDetailModal({
     setSelectedSize(null);
     setAddedToCart(false);
     setSizeRequired(false);
-  }, [product?.id]);
+    setCurrentImageIndex(0);
+    setUgcVideos([]);
+
+    if (product?.merchantProductId) {
+      setLoadingUgc(true);
+      fetch(`/api/merchant-products/${product.merchantProductId}/ugc`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setUgcVideos(data);
+        })
+        .catch(() => {})
+        .finally(() => setLoadingUgc(false));
+    }
+  }, [product?.id, product?.merchantProductId]);
 
   // Close on escape
   useEffect(() => {
@@ -83,17 +115,28 @@ export default function ProductDetailModal({
     setSizeRequired(false);
     setAddedToCart(true);
     onAddToCart(product, selectedSize ?? undefined);
-
-    // Reset confirmation after animation
     setTimeout(() => setAddedToCart(false), 1200);
   };
 
   const displayBrand = product.vendor || product.brand;
   const storeUrl = product.merchantUrl || product.affiliateUrl;
 
-  // Format compare-at price
-  const formatPrice = (price: number) => {
-    return `$${price.toFixed(2)}`;
+  const formatPrice = (price: number) => `$${price.toFixed(2)}`;
+
+  // Touch handlers for image carousel
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && currentImageIndex < imageList.length - 1) {
+        setCurrentImageIndex(currentImageIndex + 1);
+      } else if (diff < 0 && currentImageIndex > 0) {
+        setCurrentImageIndex(currentImageIndex - 1);
+      }
+    }
   };
 
   return (
@@ -111,12 +154,33 @@ export default function ProductDetailModal({
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-5" />
 
         <div className="flex gap-4">
-          {product.imageUrl && (
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-28 h-28 rounded-xl object-cover flex-shrink-0"
-            />
+          {imageList.length > 0 && (
+            <div
+              className="relative w-28 h-28 rounded-xl overflow-hidden flex-shrink-0"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              <Image
+                src={imageList[currentImageIndex]}
+                alt={product.name}
+                fill
+                className="object-cover"
+                sizes="112px"
+              />
+              {/* Dot indicators for multiple images */}
+              {imageList.length > 1 && (
+                <div className="absolute bottom-1 inset-x-0 flex justify-center gap-1">
+                  {imageList.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        i === currentImageIndex ? "bg-white" : "bg-white/50"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-display font-bold text-text">
@@ -243,6 +307,57 @@ export default function ProductDetailModal({
             </svg>
           </button>
         </div>
+
+        {/* UGC Section */}
+        {(ugcVideos.length > 0 || loadingUgc) && (
+          <div className="mt-6 border-t border-border pt-4">
+            {loadingUgc && (
+              <div className="flex items-center gap-2 text-sm text-muted">
+                <div className="w-4 h-4 border-2 border-muted/30 border-t-muted rounded-full animate-spin" />
+                Loading featured videos...
+              </div>
+            )}
+            {ugcVideos.length > 0 && (
+              <div>
+                <h3 className="text-sm font-display font-bold text-text mb-3">
+                  Featured by Creators
+                </h3>
+                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                  {ugcVideos.map((video) => (
+                    <Link
+                      key={video.id}
+                      href={`/@${video.user.username}/${video.id}`}
+                      className="flex-shrink-0 group"
+                    >
+                      <div className="relative w-20 rounded-xl overflow-hidden bg-surface" style={{ aspectRatio: "9/16" }}>
+                        {video.thumbnailUrl ? (
+                          <Image
+                            src={video.thumbnailUrl}
+                            alt={`Video by ${video.user.username}`}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="80px"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-muted">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1.5 pt-4">
+                          <p className="text-[10px] text-white font-medium truncate">
+                            @{video.user.username}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

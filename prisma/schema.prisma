@@ -270,6 +270,7 @@ model MerchantProduct {
   title              String
   description        String?
   imageUrl           String?
+  images             Json?      // Array of image URLs: ["https://...", ...]
   price              Float
   compareAtPrice     Float?
   currency           String   @default("USD")

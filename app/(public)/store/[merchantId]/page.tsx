@@ -44,6 +44,7 @@ export default async function MerchantStorePage({ params }: PageProps) {
       title: true,
       description: true,
       imageUrl: true,
+      images: true,
       price: true,
       compareAtPrice: true,
       currency: true,

@@ -1,20 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Spinner } from "@/components/ui/Spinner";
 
 const STEPS = [
   { id: "username", title: "Choose your username", description: "This will be your unique store link" },
   { id: "store", title: "Set up your store", description: "Tell customers about your brand" },
-  { id: "shopify", title: "Connect Shopify", description: "Optional — you can connect later" },
+  { id: "shopify", title: "Connect Shopify", description: "Link your Shopify store to sync products" },
   { id: "ready", title: "You're all set!", description: "Your store is ready to go" },
 ];
 
 export default function MerchantOnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" className="text-accent" />
+      </div>
+    }>
+      <MerchantOnboardingContent />
+    </Suspense>
+  );
+}
+
+function MerchantOnboardingContent() {
   const { user, status, refreshUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [username, setUsername] = useState("");
   const [storeName, setStoreName] = useState("");
@@ -24,6 +37,15 @@ export default function MerchantOnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [shopifyConnected, setShopifyConnected] = useState(false);
+
+  // Check if returning from Shopify OAuth
+  useEffect(() => {
+    if (searchParams.get("shopify") === "connected") {
+      setShopifyConnected(true);
+      setStep(3); // Auto-advance to success step
+    }
+  }, [searchParams]);
 
   if (status === "loading") {
     return (
@@ -108,19 +130,17 @@ export default function MerchantOnboardingPage() {
     }
   };
 
-  const handleShopify = async () => {
-    if (shopifyDomain.trim()) {
-      setLoading(true);
-      try {
-        await fetch("/api/merchant/settings", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ shopifyDomain }),
-        });
-      } catch { /* ignore */ }
-      setLoading(false);
+  const handleConnectShopify = () => {
+    const domain = shopifyDomain.trim();
+    if (!domain) {
+      setError("Please enter your Shopify domain");
+      return;
     }
-    setStep(3);
+    const fullDomain = domain.endsWith(".myshopify.com")
+      ? domain
+      : `${domain}.myshopify.com`;
+    // Redirect to Shopify OAuth with returnTo
+    window.location.href = `/api/shopify/install?shop=${encodeURIComponent(fullDomain)}&returnTo=/merchant-onboarding`;
   };
 
   return (
@@ -229,31 +249,50 @@ export default function MerchantOnboardingPage() {
 
           {step === 2 && (
             <div className="space-y-4">
-              <div>
-                <label className="text-xs text-muted block mb-1.5">Shopify Domain (optional)</label>
-                <input
-                  type="text"
-                  value={shopifyDomain}
-                  onChange={(e) => setShopifyDomain(e.target.value)}
-                  placeholder="mystore.myshopify.com"
-                  className="w-full bg-surface border border-border rounded-xl px-3 py-2.5 text-sm text-text focus:outline-none focus:border-accent/50"
-                />
-                <p className="text-xs text-muted mt-1">You can connect this later from settings</p>
-              </div>
+              {shopifyConnected ? (
+                <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <p className="text-sm font-medium text-green-500">Shopify connected! Products are syncing.</p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-xs text-muted block mb-1.5">Shopify Domain</label>
+                    <div className="flex items-center bg-surface border border-border rounded-xl overflow-hidden focus-within:border-accent/50">
+                      <input
+                        type="text"
+                        value={shopifyDomain}
+                        onChange={(e) => {
+                          setShopifyDomain(e.target.value);
+                          setError("");
+                        }}
+                        placeholder="mystore"
+                        className="flex-1 bg-transparent px-3 py-2.5 text-sm text-text focus:outline-none"
+                      />
+                      <span className="px-3 text-sm text-muted">.myshopify.com</span>
+                    </div>
+                  </div>
+                  {error && <p className="text-sm text-destructive">{error}</p>}
+                </>
+              )}
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(3)}
                   className="flex-1 py-2.5 bg-card border border-border text-text text-sm font-semibold rounded-xl hover:bg-surface transition-colors"
                 >
-                  Skip
+                  {shopifyConnected ? "Continue" : "Skip for now"}
                 </button>
-                <button
-                  onClick={handleShopify}
-                  disabled={loading}
-                  className="flex-1 py-2.5 bg-accent text-white text-sm font-semibold rounded-xl disabled:opacity-50 hover:bg-accent/90 transition-colors"
-                >
-                  {loading ? "Connecting..." : "Connect"}
-                </button>
+                {!shopifyConnected && (
+                  <button
+                    onClick={handleConnectShopify}
+                    disabled={loading}
+                    className="flex-1 py-2.5 bg-accent text-white text-sm font-semibold rounded-xl disabled:opacity-50 hover:bg-accent/90 transition-colors"
+                  >
+                    Connect Shopify
+                  </button>
+                )}
               </div>
             </div>
           )}

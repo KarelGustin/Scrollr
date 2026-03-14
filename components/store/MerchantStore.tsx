@@ -17,6 +17,7 @@ interface MerchantStoreProps {
     title: string;
     description: string | null;
     imageUrl: string | null;
+    images: unknown;
     price: number;
     compareAtPrice: number | null;
     currency: string;
@@ -184,7 +185,10 @@ export default function MerchantStore({ merchant, products, categories }: Mercha
 
       {/* Product detail modal */}
       <StoreProductModal
-        product={selectedProduct}
+        product={selectedProduct ? {
+          ...selectedProduct,
+          images: Array.isArray(selectedProduct.images) ? selectedProduct.images as string[] : null,
+        } : null}
         onClose={() => setSelectedProduct(null)}
       />
     </div>
