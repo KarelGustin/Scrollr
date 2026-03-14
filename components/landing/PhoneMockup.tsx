@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+
 type Phase = "watching" | "dots" | "products" | "tap" | "added" | "scroll";
 
 export function PhoneMockup() {
@@ -74,10 +75,20 @@ export function PhoneMockup() {
       >
         {/* Silhouette figure */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <svg width="100" height="200" viewBox="0 0 100 200" className="opacity-20">
+          <video
+            src="/videos/heroVideo.mp4"
+            width={100}
+            height={200}
+            className="opacity-20"
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
+          {/* <svg width="100" height="200" viewBox="0 0 100 200" className="opacity-20">
             <circle cx="50" cy="30" r="18" fill="currentColor" />
             <path d="M50 48 L50 120 M50 70 L25 100 M50 70 L75 100 M50 120 L30 170 M50 120 L70 170" stroke="currentColor" strokeWidth="4" strokeLinecap="round" fill="none" />
-          </svg>
+          </svg> */}
         </div>
 
         {/* Product dots — coral themed */}
