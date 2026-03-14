@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { useEffect, useState, useRef } from "react";
 
 type Phase = "watching" | "dots" | "products" | "tap" | "added" | "scroll";
 
+const VIDEOS = [
+  { src: "/videos/heroVideo.mp4", creator: "@emma" },
+  { src: "/videos/video2.mp4", creator: "@mia" },
+  { src: "/videos/video3.mp4", creator: "@luca" },
+];
+
 export function PhoneMockup() {
   const [phase, setPhase] = useState<Phase>("watching");
-  const [videoIndex, setVideoIndex] = useState(0);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [nextIdx, setNextIdx] = useState(1);
+  const [swiping, setSwiping] = useState(false);
+  const [skipTransition, setSkipTransition] = useState(false);
+  const nextVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const timeline = [
@@ -27,8 +36,27 @@ export function PhoneMockup() {
       setPhase(step.phase);
 
       if (step.phase === "scroll") {
+        // Start the swipe animation
+        setSwiping(true);
+
+        // Preload next video
+        if (nextVideoRef.current) {
+          nextVideoRef.current.currentTime = 0;
+          nextVideoRef.current.play().catch(() => {});
+        }
+
         timeout = setTimeout(() => {
-          setVideoIndex((i) => (i + 1) % 2);
+          // Disable transition so the reset doesn't animate
+          setSkipTransition(true);
+          setCurrentIdx((prev) => (prev + 1) % VIDEOS.length);
+          setNextIdx((prev) => (prev + 1) % VIDEOS.length);
+          setSwiping(false);
+
+          // Re-enable transition on next frame
+          requestAnimationFrame(() => {
+            setSkipTransition(false);
+          });
+
           currentStep = 0;
           advance();
         }, step.duration);
@@ -44,16 +72,11 @@ export function PhoneMockup() {
     return () => clearTimeout(timeout);
   }, []);
 
-  const videos = [
-    { gradient: "from-rose-300 via-pink-200 to-orange-200", creator: "@emma" },
-    { gradient: "from-sky-300 via-indigo-200 to-violet-200", creator: "@mia" },
-  ];
-
-  const video = videos[videoIndex];
-  const showDots = phase !== "watching";
-  const showProducts = phase === "products" || phase === "tap" || phase === "added";
+  const current = VIDEOS[currentIdx];
+  const next = VIDEOS[nextIdx];
+  const showDots = phase !== "watching" && !swiping;
+  const showProducts = (phase === "products" || phase === "tap" || phase === "added") && !swiping;
   const showAdded = phase === "added";
-  const isScrolling = phase === "scroll";
 
   return (
     <div className="phone-frame">
@@ -67,47 +90,62 @@ export function PhoneMockup() {
         </div>
       </div>
 
-      {/* Video content */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${video.gradient} transition-all duration-500 ${
-          isScrolling ? "translate-y-[-100%]" : "translate-y-0"
-        }`}
-      >
-        {/* Silhouette figure */}
-        <div className="absolute inset-0 flex items-center justify-center">
+      {/* Video container — clips overflow */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Current video — slides up and out */}
+        <div
+          className="absolute inset-0"
+          style={{
+            transform: swiping ? "translateY(-100%)" : "translateY(0)",
+            transition: skipTransition ? "none" : "transform 500ms ease-in-out",
+          }}
+        >
           <video
-            src="/videos/heroVideo.mp4"
-            width={100}
-            height={200}
-            className="opacity-20"
+            key={current.src}
+            src={current.src}
+            className="absolute inset-0 w-full h-full object-cover"
             autoPlay
             loop
             muted
             playsInline
           />
-          {/* <svg width="100" height="200" viewBox="0 0 100 200" className="opacity-20">
-            <circle cx="50" cy="30" r="18" fill="currentColor" />
-            <path d="M50 48 L50 120 M50 70 L25 100 M50 70 L75 100 M50 120 L30 170 M50 120 L70 170" stroke="currentColor" strokeWidth="4" strokeLinecap="round" fill="none" />
-          </svg> */}
+
+          {/* Product dots */}
+          {showDots && (
+            <>
+              <div className="absolute top-[35%] left-[45%] w-3 h-3 bg-[#FF6B4A] rounded-full shadow-lg animate-dot-appear ring-2 ring-white/50 z-10" />
+              <div className="absolute top-[50%] left-[52%] w-3 h-3 bg-[#FF6B4A] rounded-full shadow-lg animate-dot-appear ring-2 ring-white/50 z-10" style={{ animationDelay: "0.15s" }} />
+              <div className="absolute top-[65%] left-[40%] w-3 h-3 bg-[#FF6B4A] rounded-full shadow-lg animate-dot-appear ring-2 ring-white/50 z-10" style={{ animationDelay: "0.3s" }} />
+            </>
+          )}
         </div>
 
-        {/* Product dots — coral themed */}
-        {showDots && (
-          <>
-            <div className="absolute top-[35%] left-[45%] w-3 h-3 bg-[#FF6B4A] rounded-full shadow-lg animate-dot-appear ring-2 ring-white/50" />
-            <div className="absolute top-[50%] left-[52%] w-3 h-3 bg-[#FF6B4A] rounded-full shadow-lg animate-dot-appear ring-2 ring-white/50" style={{ animationDelay: "0.15s" }} />
-            <div className="absolute top-[65%] left-[40%] w-3 h-3 bg-[#FF6B4A] rounded-full shadow-lg animate-dot-appear ring-2 ring-white/50" style={{ animationDelay: "0.3s" }} />
-          </>
-        )}
+        {/* Next video — starts below, slides up into view */}
+        <div
+          className="absolute inset-0"
+          style={{
+            transform: swiping ? "translateY(0)" : "translateY(100%)",
+            transition: skipTransition ? "none" : "transform 500ms ease-in-out",
+          }}
+        >
+          <video
+            ref={nextVideoRef}
+            key={next.src}
+            src={next.src}
+            className="absolute inset-0 w-full h-full object-cover"
+            muted
+            playsInline
+            preload="auto"
+          />
+        </div>
       </div>
-
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
 
       {/* Creator badge */}
       <div className="absolute top-14 left-4 z-20 flex items-center gap-2">
         <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur" />
-        <span className="text-white text-xs font-medium">{video.creator}</span>
+        <span className="text-white text-xs font-medium">
+          {swiping ? next.creator : current.creator}
+        </span>
       </div>
 
       {/* Side actions */}
