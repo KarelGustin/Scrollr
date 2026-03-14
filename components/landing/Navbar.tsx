@@ -38,6 +38,12 @@ export function Navbar() {
           >
             For Creators
           </a>
+          <a
+            href="#for-merchants"
+            className="text-sm text-warm-secondary hover:text-warm-text transition-colors"
+          >
+            For Merchants
+          </a>
           <Link
             href="/login"
             className="text-sm text-warm-secondary hover:text-warm-text transition-colors"

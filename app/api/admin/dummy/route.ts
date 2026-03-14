@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
           email: `${username}@merchant.scrollr.io`,
           username,
           name: store.name,
-          role: "CREATOR",
+          role: "MERCHANT",
         },
       });
 
