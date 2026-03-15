@@ -33,12 +33,12 @@ export default function ContentSeedingPage() {
   const [result, setResult] = useState("");
 
   useEffect(() => {
-    // Fetch videos and merchants
+    // Fetch all published videos (including those without products) and merchants
     Promise.all([
-      fetch("/api/feed?limit=100").then((r) => r.json()),
+      fetch("/api/admin/videos?limit=100").then((r) => r.json()),
       fetch("/api/admin/merchants").then((r) => r.json()),
-    ]).then(([feedData, merchantData]) => {
-      setVideos(feedData.videos ?? []);
+    ]).then(([videoData, merchantData]) => {
+      setVideos(videoData.videos ?? []);
       setMerchants(merchantData.merchants ?? []);
     });
   }, []);
