@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -7,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 interface NavLink {
   href: string;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }
 
 const FeedIcon = () => (

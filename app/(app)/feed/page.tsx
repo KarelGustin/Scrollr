@@ -54,7 +54,7 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="fixed top-0 left-0 right-0 z-20 bg-bg/80 backdrop-blur-xl border-b border-border">
+      <div className="fixed top-0 left-0 right-0 md:left-[200px] z-20 bg-bg/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-lg font-display font-bold text-text">Following</h1>
         </div>
