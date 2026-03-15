@@ -73,7 +73,7 @@ const merchantNavItems = [
 ];
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
-  const { user, status } = useAuth();
+  const { user, status, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isMerchant, setIsMerchant] = useState<boolean | null>(null);
@@ -174,7 +174,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
           })}
         </nav>
 
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 space-y-2">
           <Link
             href="/discover"
             className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-card text-muted text-sm font-medium rounded-lg hover:text-text hover:bg-card/80 transition-colors"
@@ -185,6 +185,17 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             </svg>
             Browse Content
           </Link>
+          <button
+            onClick={async () => { await signOut(); router.replace("/"); }}
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-destructive text-sm font-medium rounded-lg hover:bg-destructive/10 transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Sign Out
+          </button>
         </div>
       </aside>
 

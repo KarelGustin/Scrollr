@@ -114,6 +114,14 @@ const config: Config = {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
         },
+        "pulse-ring": {
+          "0%": { transform: "scale(0.8)", opacity: "0.8" },
+          "100%": { transform: "scale(2)", opacity: "0" },
+        },
+        "confetti-pop": {
+          "0%": { transform: "translate(0,0) scale(0)", opacity: "1" },
+          "100%": { transform: "translate(var(--x),var(--y)) scale(1)", opacity: "0" },
+        },
       },
       animation: {
         "slide-up": "slide-up 300ms ease-out",
@@ -131,6 +139,8 @@ const config: Config = {
         "dot-appear": "dot-appear 0.3s ease-out forwards",
         "count-up-tick": "count-up-tick 0.4s ease-out forwards",
         "scroll-left": "scroll-left 30s linear infinite",
+        "pulse-ring": "pulse-ring 1.5s ease-out infinite",
+        "confetti-pop": "confetti-pop 0.8s ease-out forwards",
       },
     },
   },

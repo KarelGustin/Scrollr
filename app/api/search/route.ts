@@ -4,10 +4,10 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q")?.trim();
-  const type = searchParams.get("type"); // "videos" | "products" | "creators" | null (all)
+  const type = searchParams.get("type"); // "videos" | "products" | "creators" | "stores" | null (all)
 
   if (!q || q.length === 0) {
-    return NextResponse.json({ videos: [], products: [], creators: [] });
+    return NextResponse.json({ videos: [], products: [], creators: [], merchants: [] });
   }
 
   // Limit query length to prevent abuse
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   const shouldSearch = (t: string) => !type || type === t;
 
-  const [videos, products, creators] = await Promise.all([
+  const [videos, products, creators, merchants] = await Promise.all([
     shouldSearch("videos")
       ? prisma.video.findMany({
           where: {
@@ -112,7 +112,32 @@ export async function GET(req: NextRequest) {
           take: 20,
         })
       : [],
+
+    shouldSearch("stores")
+      ? prisma.merchant.findMany({
+          where: {
+            active: true,
+            OR: [
+              { storeName: { contains: query, mode: "insensitive" } },
+              { shopifyDomain: { contains: query, mode: "insensitive" } },
+            ],
+          },
+          select: {
+            id: true,
+            storeName: true,
+            storeLogoUrl: true,
+            _count: {
+              select: {
+                merchantProducts: {
+                  where: { available: true },
+                },
+              },
+            },
+          },
+          take: 20,
+        })
+      : [],
   ]);
 
-  return NextResponse.json({ videos, products, creators });
+  return NextResponse.json({ videos, products, creators, merchants });
 }
