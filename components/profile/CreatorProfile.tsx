@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import type { FeedVideoProduct } from "@/types";
+import type { FeedVideo, FeedVideoProduct } from "@/types";
 import FollowButton from "./FollowButton";
-import VideoPlayerModal from "./VideoPlayerModal";
+import CreatorReelsViewer from "./CreatorReelsViewer";
 
 interface ProfileVideo {
   id: string;
@@ -41,10 +41,28 @@ function formatDuration(seconds: number | null): string {
 }
 
 export default function CreatorProfile({ creator }: { creator: CreatorData }) {
-  const [activeVideo, setActiveVideo] = useState<ProfileVideo | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const handleVideoClick = useCallback((video: ProfileVideo) => {
-    setActiveVideo(video);
+  const feedVideos = useMemo<FeedVideo[]>(
+    () =>
+      creator.videos.map((video) => ({
+        id: video.id,
+        hlsUrl: video.hlsUrl,
+        thumbnailUrl: video.thumbnailUrl,
+        duration: video.duration,
+        user: {
+          id: creator.id,
+          username: creator.username,
+          name: creator.name,
+          avatarUrl: creator.avatarUrl,
+        },
+        products: video.products,
+      })),
+    [creator]
+  );
+
+  const handleVideoClick = useCallback((index: number) => {
+    setActiveIndex(index);
   }, []);
 
   return (
@@ -141,11 +159,12 @@ export default function CreatorProfile({ creator }: { creator: CreatorData }) {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-px bg-border">
-            {creator.videos.map((video) => (
+            {creator.videos.map((video, index) => (
               <button
                 key={video.id}
-                onClick={() => handleVideoClick(video)}
+                onClick={() => handleVideoClick(index)}
                 className="relative aspect-[9/16] bg-surface overflow-hidden group"
+                aria-label={`Open video ${index + 1}`}
               >
                 {video.thumbnailUrl ? (
                   <img
@@ -197,22 +216,12 @@ export default function CreatorProfile({ creator }: { creator: CreatorData }) {
       </div>
 
       {/* Video player modal */}
-      {activeVideo && (
-        <VideoPlayerModal
-          video={{
-            id: activeVideo.id,
-            hlsUrl: activeVideo.hlsUrl,
-            thumbnailUrl: activeVideo.thumbnailUrl,
-            duration: activeVideo.duration,
-            user: {
-              id: creator.id,
-              username: creator.username,
-              name: creator.name,
-              avatarUrl: creator.avatarUrl,
-            },
-            products: activeVideo.products,
-          }}
-          onClose={() => setActiveVideo(null)}
+      {activeIndex !== null && (
+        <CreatorReelsViewer
+          videos={feedVideos}
+          creatorUsername={creator.username}
+          initialIndex={activeIndex}
+          onClose={() => setActiveIndex(null)}
         />
       )}
     </div>

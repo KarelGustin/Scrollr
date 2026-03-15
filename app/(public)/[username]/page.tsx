@@ -7,6 +7,10 @@ interface PageProps {
   params: Promise<{ username: string }>;
 }
 
+function normalizeUsername(rawUsername: string) {
+  return rawUsername.startsWith("@") ? rawUsername.slice(1) : rawUsername;
+}
+
 async function getCreator(username: string) {
   return prisma.user.findUnique({
     where: { username },
@@ -82,7 +86,8 @@ async function getCreator(username: string) {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { username } = await params;
+  const { username: rawUsername } = await params;
+  const username = normalizeUsername(rawUsername);
   const user = await getCreator(username);
 
   if (!user) {
@@ -116,7 +121,8 @@ export async function generateMetadata({
 }
 
 export default async function CreatorProfilePage({ params }: PageProps) {
-  const { username } = await params;
+  const { username: rawUsername } = await params;
+  const username = normalizeUsername(rawUsername);
   const creator = await getCreator(username);
 
   if (!creator) {
