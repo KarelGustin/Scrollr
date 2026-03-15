@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import StoreProductModal from "./StoreProductModal";
+import { StoreProductModal } from "./StoreProductModal";
 
 interface MerchantStoreProps {
   merchant: {
@@ -184,13 +184,14 @@ export default function MerchantStore({ merchant, products, categories }: Mercha
       </div>
 
       {/* Product detail modal */}
-      <StoreProductModal
-        product={selectedProduct ? {
-          ...selectedProduct,
-          images: Array.isArray(selectedProduct.images) ? selectedProduct.images as string[] : null,
-        } : null}
-        onClose={() => setSelectedProduct(null)}
-      />
+      {selectedProduct && (
+        <StoreProductModal
+          productId={selectedProduct.id}
+          merchantId={merchant.id}
+          isDark={false}
+          onClose={() => setSelectedProduct(null)}
+        />
+      )}
     </div>
   );
 }
