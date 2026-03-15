@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useLayoutEffect } from "react";
 import type { FeedVideo, FeedVideoProduct } from "@/types";
 import { useFeedStore } from "@/stores/feedStore";
 import { useCartStore } from "@/stores/cartStore";
@@ -21,9 +21,19 @@ interface VideoFeedProps {
   showCreator?: boolean;
   allowAnonymous?: boolean;
   hideCartButton?: boolean;
+  initialIndex?: number;
+  onIndexChange?: (index: number) => void;
 }
 
-export default function VideoFeed({ videos, showBranding, showCreator = false, allowAnonymous = false, hideCartButton = false }: VideoFeedProps) {
+export default function VideoFeed({
+  videos,
+  showBranding,
+  showCreator = false,
+  allowAnonymous = false,
+  hideCartButton = false,
+  initialIndex = 0,
+  onIndexChange,
+}: VideoFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentIndex = useFeedStore((s) => s.currentIndex);
   const setCurrentIndex = useFeedStore((s) => s.setCurrentIndex);
@@ -33,6 +43,7 @@ export default function VideoFeed({ videos, showBranding, showCreator = false, a
   const addToCart = useAddToCart();
   const isCartOpen = useCartStore((s) => s.isOpen);
   const { status } = useAuth();
+  const safeInitialIndex = Math.max(0, Math.min(initialIndex, Math.max(videos.length - 1, 0)));
 
   // Lock html/body scroll on mount
   useEffect(() => {
@@ -49,6 +60,24 @@ export default function VideoFeed({ videos, showBranding, showCreator = false, a
       body.style.overflow = prevBodyOverflow;
     };
   }, []);
+
+  // Reset feed position when opening a new feed or deep link.
+  useLayoutEffect(() => {
+    if (videos.length === 0) {
+      setCurrentIndex(0);
+      return;
+    }
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    setCurrentIndex(safeInitialIndex);
+    container.scrollTop = container.clientHeight * safeInitialIndex;
+  }, [safeInitialIndex, setCurrentIndex, videos.length]);
+
+  useEffect(() => {
+    onIndexChange?.(currentIndex);
+  }, [currentIndex, onIndexChange]);
 
   // Fire PAGE_VIEW on mount
   useEffect(() => {
