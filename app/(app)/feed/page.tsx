@@ -53,10 +53,18 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="fixed top-0 left-0 right-0 md:left-[200px] z-20 bg-bg/80 backdrop-blur-xl border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-lg font-display font-bold text-text">Following</h1>
+    <div className="min-h-screen bg-black">
+      {/* Floating header — transparent over video */}
+      <div className="fixed top-0 left-0 right-0 md:left-[200px] z-30 pointer-events-none">
+        <div
+          className="pointer-events-none"
+          style={{
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)",
+          }}
+        >
+          <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-3 pointer-events-auto">
+            <h1 className="text-base font-display font-bold text-white drop-shadow-lg">Following</h1>
+          </div>
         </div>
       </div>
       <VideoFeed videos={videos} showBranding={false} showCreator />

@@ -170,7 +170,7 @@ export default function VideoSlide({
       </div>
 
       {/* Right side actions */}
-      <div className="absolute right-3 bottom-24 z-20 flex flex-col gap-3">
+      <div className="absolute right-3 bottom-[calc(140px+env(safe-area-inset-bottom,0px))] md:bottom-28 z-20 flex flex-col gap-3">
         <ShareButton
           url={video.user?.username ? `/@${video.user.username}/${video.id}` : `/discover`}
           title={`Check out this video on Scrollr`}

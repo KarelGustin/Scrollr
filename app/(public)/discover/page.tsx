@@ -184,25 +184,32 @@ export default async function DiscoverPage({
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      {/* Top bar */}
-      <div className="fixed top-0 left-0 right-0 md:left-[200px] z-20 bg-bg/80 backdrop-blur-xl border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-lg font-display font-bold text-text">Discover</h1>
-          <Link
-            href="/search"
-            className="p-2 -mr-2 text-muted hover:text-text transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-            </svg>
-          </Link>
-        </div>
-        {categories.length > 0 && (
-          <div className="px-4 pb-3">
-            <CategoryPills categories={categories} activeSlug={activeCategory} />
+    <div className="min-h-screen bg-black">
+      {/* Floating header — transparent, over video */}
+      <div className="fixed top-0 left-0 right-0 md:left-[200px] z-30 pointer-events-none">
+        <div
+          className="pointer-events-none"
+          style={{
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)",
+          }}
+        >
+          <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-1 pointer-events-auto">
+            <h1 className="text-base font-display font-bold text-white drop-shadow-lg">Discover</h1>
+            <Link
+              href="/search"
+              className="p-2 -mr-2 text-white/80 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5 drop-shadow-lg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+            </Link>
           </div>
-        )}
+          {categories.length > 0 && (
+            <div className="px-4 pb-3 pointer-events-auto">
+              <CategoryPills categories={categories} activeSlug={activeCategory} floating />
+            </div>
+          )}
+        </div>
       </div>
 
       <VideoFeed videos={feedVideos} showBranding={false} showCreator />
