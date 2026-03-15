@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { fetchShopInfo, registerWebhooks } from "@/lib/shopify";
 import { syncAllProducts } from "@/lib/shopify-sync";
@@ -7,6 +8,40 @@ import { generateSlug, ensureUniqueSlug } from "@/lib/slug";
 const SHOPIFY_CLIENT_ID = process.env.SHOPIFY_CLIENT_ID!;
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET!;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const MAX_CALLBACK_AGE_SECONDS = 300;
+
+function isValidShopDomain(shop: string): boolean {
+  return /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/.test(shop);
+}
+
+function verifyShopifyCallbackHmac(searchParams: URLSearchParams): boolean {
+  const hmac = searchParams.get("hmac");
+  if (!hmac) return false;
+
+  const entries = Array.from(searchParams.entries())
+    .filter(([key]) => key !== "hmac" && key !== "signature")
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  const message = entries
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+
+  const digest = crypto
+    .createHmac("sha256", SHOPIFY_CLIENT_SECRET)
+    .update(message)
+    .digest("hex");
+
+  const expected = Buffer.from(digest, "utf8");
+  const actual = Buffer.from(hmac, "utf8");
+  if (expected.length !== actual.length) return false;
+  return crypto.timingSafeEqual(expected, actual);
+}
+
+function getSafeReturnPath(path: string | undefined): string {
+  if (!path) return "/merchant";
+  if (!path.startsWith("/") || path.startsWith("//")) return "/merchant";
+  return path;
+}
 
 /**
  * GET: Shopify OAuth callback.
@@ -18,11 +53,25 @@ export async function GET(req: NextRequest) {
   const code = searchParams.get("code");
   const shop = searchParams.get("shop");
   const state = searchParams.get("state");
+  const timestamp = searchParams.get("timestamp");
 
-  if (!code || !shop || !state) {
+  if (!code || !shop || !state || !timestamp) {
     return NextResponse.redirect(
       `${APP_URL}/login?error=missing_params`
     );
+  }
+
+  if (!isValidShopDomain(shop)) {
+    return NextResponse.redirect(`${APP_URL}/login?error=invalid_shop`);
+  }
+
+  if (!verifyShopifyCallbackHmac(searchParams)) {
+    return NextResponse.redirect(`${APP_URL}/login?error=invalid_hmac`);
+  }
+
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > MAX_CALLBACK_AGE_SECONDS) {
+    return NextResponse.redirect(`${APP_URL}/login?error=expired_callback`);
   }
 
   // Verify state matches cookie (CSRF protection)
@@ -32,6 +81,8 @@ export async function GET(req: NextRequest) {
       `${APP_URL}/login?error=invalid_state`
     );
   }
+
+  const returnPath = getSafeReturnPath(req.cookies.get("shopify_return_to")?.value);
 
   try {
     // Exchange authorization code for access token
@@ -111,7 +162,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Clear OAuth cookies and redirect to merchant dashboard
-    const response = NextResponse.redirect(`${APP_URL}/merchant`);
+    const response = NextResponse.redirect(`${APP_URL}${returnPath}`);
     response.cookies.delete("shopify_oauth_state");
     response.cookies.delete("shopify_return_to");
 

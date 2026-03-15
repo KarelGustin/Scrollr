@@ -22,6 +22,7 @@ interface MerchantProduct {
 
 interface Merchant {
   id: string;
+  slug?: string | null;
   shopifyDomain: string;
   storeName: string | null;
   storeLogoUrl: string | null;
@@ -480,7 +481,7 @@ function MerchantDetail({ merchant }: { merchant: Merchant }) {
           {showProducts ? "Hide Products" : "Manage Products"}
         </button>
         <a
-          href={`/store/${merchant.id}`}
+          href={`/store/${merchant.slug ?? merchant.id}`}
           target="_blank"
           rel="noopener noreferrer"
           className="px-4 py-2 bg-surface border border-border text-sm font-medium text-accent rounded-xl hover:bg-surface/80 transition-colors"

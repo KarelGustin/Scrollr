@@ -1,9 +1,10 @@
 "use client";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+/* eslint-disable */
 // Product type flexible for both old and new schema
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ProductWithVideo = any;
+/* eslint-enable */
 
 interface ProductCardProps {
   product: ProductWithVideo;

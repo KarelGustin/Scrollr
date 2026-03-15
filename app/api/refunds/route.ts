@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { refundPayment } from "@/lib/stripe-connect";
+import { getStripe } from "@/lib/stripe";
+import { refundOrder as refundShopifyOrder } from "@/lib/shopify";
 
 /**
  * POST: Process a refund request.
@@ -28,7 +31,11 @@ export async function POST(req: NextRequest) {
     where: { id: orderId },
     include: {
       merchant: {
-        select: { userId: true },
+        select: {
+          userId: true,
+          shopifyDomain: true,
+          shopifyAccessToken: true,
+        },
       },
       commissions: true,
     },
@@ -66,7 +73,39 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Update order status to REFUNDED and set all commissions to FAILED
+    if (!order.stripePaymentId) {
+      return NextResponse.json(
+        { error: "Order is missing Stripe payment reference" },
+        { status: 400 }
+      );
+    }
+
+    // Refund the captured payment.
+    await refundPayment({ paymentIntentId: order.stripePaymentId });
+
+    // Best effort: reverse transfer if it was created separately.
+    if (order.stripeTransferId) {
+      try {
+        await getStripe().transfers.createReversal(order.stripeTransferId);
+      } catch (error) {
+        console.error("Stripe transfer reversal failed:", error);
+      }
+    }
+
+    // Best effort: issue Shopify refund when the order is mirrored there.
+    if (
+      order.shopifyOrderId &&
+      order.merchant.shopifyDomain &&
+      order.merchant.shopifyAccessToken
+    ) {
+      await refundShopifyOrder({
+        domain: order.merchant.shopifyDomain,
+        accessToken: order.merchant.shopifyAccessToken,
+        orderId: order.shopifyOrderId,
+      });
+    }
+
+    // Update order status to REFUNDED and set all commissions to FAILED.
     await prisma.$transaction([
       prisma.order.update({
         where: { id: orderId },
@@ -77,11 +116,6 @@ export async function POST(req: NextRequest) {
         data: { status: "FAILED" },
       }),
     ]);
-
-    // In a real implementation, this would also:
-    // 1. Trigger a Shopify refund via the Shopify Admin API
-    // 2. Reverse the Stripe payment / transfer
-    // 3. Send a refund confirmation email to the buyer
 
     return NextResponse.json({
       success: true,

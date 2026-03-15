@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import {
+  markWebhookEventFailure,
+  markWebhookEventSuccess,
+  startWebhookEvent,
+} from "@/lib/webhook-idempotency";
 
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET!;
 
@@ -26,6 +31,10 @@ export async function POST(req: NextRequest) {
   const hmacHeader = req.headers.get("x-shopify-hmac-sha256");
   const topic = req.headers.get("x-shopify-topic");
   const shopDomain = req.headers.get("x-shopify-shop-domain");
+  const eventId =
+    req.headers.get("x-shopify-event-id") ??
+    req.headers.get("x-request-id") ??
+    null;
 
   if (!hmacHeader || !topic || !shopDomain) {
     return NextResponse.json(
@@ -55,24 +64,37 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const payload = JSON.parse(rawBody);
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
+  }
+
+  const dedupeKey =
+    eventId ??
+    crypto.createHash("sha256").update(`${topic}:${shopDomain}:${rawBody}`).digest("hex");
+  const guard = await startWebhookEvent("SHOPIFY", dedupeKey);
+  if (!guard.shouldProcess) {
+    return NextResponse.json({ ok: true, deduplicated: true });
+  }
 
   try {
     switch (topic) {
       case "products/create":
-        await handleProductUpdate(shopDomain, payload);
+        await handleProductUpdate(shopDomain, payload as Parameters<typeof handleProductUpdate>[1]);
         break;
 
       case "products/update":
-        await handleProductUpdate(shopDomain, payload);
+        await handleProductUpdate(shopDomain, payload as Parameters<typeof handleProductUpdate>[1]);
         break;
 
       case "products/delete":
-        await handleProductDelete(shopDomain, payload);
+        await handleProductDelete(shopDomain, payload as Parameters<typeof handleProductDelete>[1]);
         break;
 
       case "orders/fulfilled":
-        await handleOrderFulfilled(shopDomain, payload);
+        await handleOrderFulfilled(shopDomain, payload as Parameters<typeof handleOrderFulfilled>[1]);
         break;
 
       case "app/uninstalled":
@@ -82,9 +104,14 @@ export async function POST(req: NextRequest) {
       default:
         console.log(`Unhandled Shopify webhook topic: ${topic}`);
     }
+    await markWebhookEventSuccess(guard.recordId);
   } catch (err) {
     console.error(`Error handling Shopify webhook ${topic}:`, err);
-    // Still return 200 to prevent Shopify from retrying
+    await markWebhookEventFailure(
+      guard.recordId,
+      err instanceof Error ? err.message : "Shopify webhook failed"
+    );
+    return NextResponse.json({ error: "Webhook handling failed" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

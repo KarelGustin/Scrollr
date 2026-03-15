@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const [trendingVideos, cartEvents, topCreators, topStores] = await Promise.all([
     // Trending videos by score
@@ -43,9 +45,10 @@ export async function GET() {
 
     // Top stores by product count
     prisma.merchant.findMany({
-      where: { active: true },
+      where: { active: true, slug: { not: null } },
       select: {
         id: true,
+        slug: true,
         storeName: true,
         storeLogoUrl: true,
         _count: { select: { merchantProducts: true } },
