@@ -13,7 +13,6 @@ interface VideoSlideProps {
   isActive: boolean;
   index: number;
   showCreator?: boolean;
-  creatorTopClass?: string;
   onProductClick: (product: FeedVideoProduct) => void;
 }
 
@@ -22,7 +21,6 @@ export default function VideoSlide({
   isActive,
   index,
   showCreator = false,
-  creatorTopClass = "top-4",
   onProductClick,
 }: VideoSlideProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -116,9 +114,13 @@ export default function VideoSlide({
     }
   }, []);
 
+  // Product row height: ~80px cards + 68px nav padding + safe area
+  // Creator info sits above product row, actions sit above creator
+  const hasProducts = video.products.length > 0;
+
   return (
     <div
-      className="relative h-[100svh] w-full flex-shrink-0 bg-black overflow-hidden"
+      className="relative h-[100dvh] w-full flex-shrink-0 bg-black overflow-hidden"
       style={{ scrollSnapAlign: "start" }}
       onClick={handleTap}
     >
@@ -143,9 +145,18 @@ export default function VideoSlide({
         }}
       />
 
-      {/* Creator info */}
+      {/* Right side actions — above product cards */}
+      <div className={`absolute right-3 z-20 flex flex-col gap-3 ${hasProducts ? "bottom-[calc(160px+env(safe-area-inset-bottom,0px))] md:bottom-32" : "bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-20"}`}>
+        <ShareButton
+          url={video.user?.username ? `/@${video.user.username}/${video.id}` : `/discover`}
+          title={`Check out this video on Scrollr`}
+        />
+        <ReportButton videoId={video.id} />
+      </div>
+
+      {/* Creator info — bottom left, above product cards */}
       {showCreator && video.user && (
-        <div className={`absolute ${creatorTopClass} left-4 z-20 flex items-center gap-2`}>
+        <div className={`absolute left-4 z-20 flex items-center gap-2 ${hasProducts ? "bottom-[calc(160px+env(safe-area-inset-bottom,0px))] md:bottom-32" : "bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-20"}`}>
           {video.user.avatarUrl ? (
             <img
               src={video.user.avatarUrl}
@@ -165,22 +176,6 @@ export default function VideoSlide({
           <VideoFollowPill creatorId={video.user.id} />
         </div>
       )}
-
-      {/* Scrollr watermark */}
-      <div className="absolute top-4 right-4 z-20 pointer-events-none">
-        <span className="text-[11px] font-bold text-white/50 tracking-widest drop-shadow-md">
-          SCROLLR
-        </span>
-      </div>
-
-      {/* Right side actions */}
-      <div className="absolute right-3 bottom-[calc(140px+env(safe-area-inset-bottom,0px))] md:bottom-28 z-20 flex flex-col gap-3">
-        <ShareButton
-          url={video.user?.username ? `/@${video.user.username}/${video.id}` : `/discover`}
-          title={`Check out this video on Scrollr`}
-        />
-        <ReportButton videoId={video.id} />
-      </div>
 
       {/* Product row */}
       <ProductRow products={video.products} onProductClick={onProductClick} />

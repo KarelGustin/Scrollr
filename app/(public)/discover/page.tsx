@@ -195,9 +195,10 @@ export default async function DiscoverPage({
             background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)",
           }}
         >
-          <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-1 pointer-events-auto">
-            <h1 className="text-base font-display font-bold text-white drop-shadow-lg">Discover</h1>
-            <div className="flex items-center -mr-2">
+          <div className="flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top,12px)+4px)] pb-1 pointer-events-auto">
+            <div className="w-20" />
+            <h1 className="text-base font-display font-bold text-white drop-shadow-lg tracking-widest">SCROLLR</h1>
+            <div className="flex items-center w-20 justify-end -mr-2">
               <Link
                 href="/search"
                 className="p-2 text-white/80 hover:text-white transition-colors"
@@ -217,7 +218,7 @@ export default async function DiscoverPage({
         </div>
       </div>
 
-      <VideoFeed videos={feedVideos} showBranding={false} showCreator creatorTopClass="top-[100px]" hideCartButton />
+      <VideoFeed videos={feedVideos} showBranding={false} showCreator hideCartButton />
     </div>
   );
 }
