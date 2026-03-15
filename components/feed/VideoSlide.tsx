@@ -6,12 +6,14 @@ import type { FeedVideo, FeedVideoProduct } from "@/types";
 import ProductRow from "./ProductRow";
 import ShareButton from "./ShareButton";
 import ReportButton from "./ReportButton";
+import VideoFollowPill from "./VideoFollowPill";
 
 interface VideoSlideProps {
   video: FeedVideo;
   isActive: boolean;
   index: number;
   showCreator?: boolean;
+  creatorTopClass?: string;
   onProductClick: (product: FeedVideoProduct) => void;
 }
 
@@ -20,6 +22,7 @@ export default function VideoSlide({
   isActive,
   index,
   showCreator = false,
+  creatorTopClass = "top-4",
   onProductClick,
 }: VideoSlideProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -142,7 +145,7 @@ export default function VideoSlide({
 
       {/* Creator info */}
       {showCreator && video.user && (
-        <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+        <div className={`absolute ${creatorTopClass} left-4 z-20 flex items-center gap-2`}>
           {video.user.avatarUrl ? (
             <img
               src={video.user.avatarUrl}
@@ -159,6 +162,7 @@ export default function VideoSlide({
           <span className="text-sm font-semibold text-white drop-shadow-md">
             @{video.user.username}
           </span>
+          <VideoFollowPill creatorId={video.user.id} />
         </div>
       )}
 

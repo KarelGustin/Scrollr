@@ -21,6 +21,7 @@ export type FeedVideo = {
   thumbnailUrl: string | null;
   duration: number | null;
   user: {
+    id: string;
     username: string;
     name: string | null;
     avatarUrl: string | null;

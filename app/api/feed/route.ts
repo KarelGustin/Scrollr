@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     },
     include: {
       user: {
-        select: { username: true, name: true, avatarUrl: true },
+        select: { id: true, username: true, name: true, avatarUrl: true },
       },
       products: {
         include: {
@@ -111,7 +111,12 @@ export async function GET(req: NextRequest) {
     hlsUrl: s.video.hlsUrl!,
     thumbnailUrl: s.video.thumbnailUrl,
     duration: s.video.duration,
-    user: s.video.user,
+    user: {
+      id: s.video.user.id,
+      username: s.video.user.username ?? "anonymous",
+      name: s.video.user.name,
+      avatarUrl: s.video.user.avatarUrl,
+    },
     products: s.video.products.map((vp) => {
       const mp = vp.merchantProduct;
       const p = vp.product;

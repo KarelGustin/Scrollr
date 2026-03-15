@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 import VideoFeed from "@/components/feed/VideoFeed";
+import CartButtonInline from "@/components/feed/CartButtonInline";
 import CategoryPills from "@/components/search/CategoryPills";
 import type { FeedVideo } from "@/types";
 
@@ -49,7 +50,7 @@ export default async function DiscoverPage({
         },
         include: {
           user: {
-            select: { username: true, name: true, avatarUrl: true },
+            select: { id: true, username: true, name: true, avatarUrl: true },
           },
           products: {
             include: {
@@ -98,6 +99,7 @@ export default async function DiscoverPage({
       thumbnailUrl: v.thumbnailUrl,
       duration: v.duration,
       user: {
+        id: v.user.id,
         username: v.user.username ?? "anonymous",
         name: v.user.name,
         avatarUrl: v.user.avatarUrl,
@@ -195,14 +197,17 @@ export default async function DiscoverPage({
         >
           <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-1 pointer-events-auto">
             <h1 className="text-base font-display font-bold text-white drop-shadow-lg">Discover</h1>
-            <Link
-              href="/search"
-              className="p-2 -mr-2 text-white/80 hover:text-white transition-colors"
-            >
-              <svg className="w-5 h-5 drop-shadow-lg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-              </svg>
-            </Link>
+            <div className="flex items-center -mr-2">
+              <Link
+                href="/search"
+                className="p-2 text-white/80 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5 drop-shadow-lg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+              </Link>
+              <CartButtonInline />
+            </div>
           </div>
           {categories.length > 0 && (
             <div className="px-4 pb-3 pointer-events-auto">
@@ -212,7 +217,7 @@ export default async function DiscoverPage({
         </div>
       </div>
 
-      <VideoFeed videos={feedVideos} showBranding={false} showCreator />
+      <VideoFeed videos={feedVideos} showBranding={false} showCreator creatorTopClass="top-[100px]" hideCartButton />
     </div>
   );
 }

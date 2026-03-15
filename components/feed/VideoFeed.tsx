@@ -20,9 +20,11 @@ interface VideoFeedProps {
   showBranding: boolean;
   showCreator?: boolean;
   allowAnonymous?: boolean;
+  creatorTopClass?: string;
+  hideCartButton?: boolean;
 }
 
-export default function VideoFeed({ videos, showBranding, showCreator = false, allowAnonymous = false }: VideoFeedProps) {
+export default function VideoFeed({ videos, showBranding, showCreator = false, allowAnonymous = false, creatorTopClass, hideCartButton = false }: VideoFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentIndex = useFeedStore((s) => s.currentIndex);
   const setCurrentIndex = useFeedStore((s) => s.setCurrentIndex);
@@ -186,6 +188,7 @@ export default function VideoFeed({ videos, showBranding, showCreator = false, a
                   isActive={isActive}
                   index={index}
                   showCreator={showCreator}
+                  creatorTopClass={creatorTopClass}
                   onProductClick={handleProductClick}
                 />
               ) : (
@@ -197,7 +200,7 @@ export default function VideoFeed({ videos, showBranding, showCreator = false, a
       </div>
 
       {/* Cart button */}
-      <CartButton />
+      {!hideCartButton && <CartButton />}
 
       {/* Cart drawer */}
       {isCartOpen && <CartDrawer />}

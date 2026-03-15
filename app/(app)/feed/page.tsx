@@ -3,11 +3,17 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import VideoFeed from "@/components/feed/VideoFeed";
+import CartButtonInline from "@/components/feed/CartButtonInline";
 import { Spinner } from "@/components/ui/Spinner";
 import type { FeedVideo } from "@/types";
 
+interface ConsumerFeedResponse {
+  videos: FeedVideo[];
+  suggested: boolean;
+}
+
 export default function FeedPage() {
-  const { data: videos, isLoading } = useQuery<FeedVideo[]>({
+  const { data, isLoading } = useQuery<ConsumerFeedResponse>({
     queryKey: ["following-feed"],
     queryFn: async () => {
       const res = await fetch("/api/consumer/feed");
@@ -24,7 +30,10 @@ export default function FeedPage() {
     );
   }
 
-  if (!videos?.length) {
+  const videos = data?.videos ?? [];
+  const suggested = data?.suggested ?? false;
+
+  if (videos.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen px-6">
         <div className="text-center max-w-xs">
@@ -64,10 +73,28 @@ export default function FeedPage() {
         >
           <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-3 pointer-events-auto">
             <h1 className="text-base font-display font-bold text-white drop-shadow-lg">Following</h1>
+            <div className="flex items-center -mr-2">
+              <Link
+                href="/search"
+                className="p-2 text-white/80 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5 drop-shadow-lg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+              </Link>
+              <CartButtonInline />
+            </div>
           </div>
+          {suggested && (
+            <div className="px-4 pb-2 pointer-events-auto">
+              <p className="text-xs text-white/60 text-center">
+                Suggested for you &middot; Follow creators to personalize
+              </p>
+            </div>
+          )}
         </div>
       </div>
-      <VideoFeed videos={videos} showBranding={false} showCreator />
+      <VideoFeed videos={videos} showBranding={false} showCreator creatorTopClass="top-14" hideCartButton />
     </div>
   );
 }
