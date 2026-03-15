@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import Link from "next/link";
 import Hls from "hls.js";
 import type { FeedVideo, FeedVideoProduct } from "@/types";
 import { useFeedStore } from "@/stores/feedStore";
@@ -191,6 +192,7 @@ export default function VideoSlide({
   }, []);
 
   const hasProducts = video.products.length > 0;
+  const creatorHref = `/@${video.user.username}`;
 
   return (
     <div
@@ -266,6 +268,7 @@ export default function VideoSlide({
         <ShareButton
           url={video.user?.username ? `/@${video.user.username}/${video.id}` : `/discover`}
           title={`Check out this video on Scrollr`}
+          videoUrl={video.hlsUrl}
         />
         <ReportButton videoId={video.id} />
       </div>
@@ -273,22 +276,28 @@ export default function VideoSlide({
       {/* Creator info — bottom left, above product cards */}
       {showCreator && video.user && (
         <div className={`absolute left-4 z-20 flex items-center gap-2 ${hasProducts ? "bottom-[calc(160px+env(safe-area-inset-bottom,0px))] md:bottom-32" : "bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-20"}`}>
-          {video.user.avatarUrl ? (
-            <img
-              src={video.user.avatarUrl}
-              alt={video.user.username}
-              className="w-8 h-8 rounded-full object-cover border-2 border-white/20"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center border-2 border-white/20">
-              <span className="text-xs font-medium text-muted">
-                {(video.user.name ?? video.user.username ?? "?").charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
-          <span className="text-sm font-semibold text-white drop-shadow-md">
-            @{video.user.username}
-          </span>
+          <Link
+            href={creatorHref}
+            className="flex items-center gap-2 min-w-0 hover:opacity-90 transition-opacity"
+            aria-label={`Open @${video.user.username}'s profile`}
+          >
+            {video.user.avatarUrl ? (
+              <img
+                src={video.user.avatarUrl}
+                alt={video.user.username}
+                className="w-8 h-8 rounded-full object-cover border-2 border-white/20"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center border-2 border-white/20">
+                <span className="text-xs font-medium text-muted">
+                  {(video.user.name ?? video.user.username ?? "?").charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+            <span className="text-sm font-semibold text-white drop-shadow-md">
+              @{video.user.username}
+            </span>
+          </Link>
           <VideoFollowPill creatorId={video.user.id} />
         </div>
       )}
