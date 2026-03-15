@@ -5,7 +5,7 @@ import { ScrollReveal } from "./ScrollReveal";
 
 const benefits = [
   {
-    title: "3% on every sale, forever",
+    title: "5% on every sale, forever",
     description: "Not a one-time fee. Not a coupon code. Real commissions on every purchase your content drives, for as long as it's live.",
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -48,7 +48,7 @@ export function ForCreatorsSection() {
                 Post content. Earn forever.
               </h2>
               <p className="text-lg text-warm-secondary leading-relaxed mb-10">
-                Every time someone buys from your video — this month, next year, whenever — you earn 3%. No flat fees. No one-time deals. Passive income from content you already make.
+                Every time someone buys from your video — this month, next year, whenever — you earn 5%. No flat fees. No one-time deals. Passive income from content you already make.
               </p>
             </ScrollReveal>
 

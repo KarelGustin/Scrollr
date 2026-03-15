@@ -25,7 +25,7 @@ const features = [
     ),
   },
   {
-    title: "Earn 3% Commission",
+    title: "Earn 5% Commission",
     description: "On every sale from products in your videos",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-success">

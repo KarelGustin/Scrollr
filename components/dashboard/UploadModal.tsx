@@ -532,7 +532,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
             {/* Share subtitle for creators */}
             {user?.role === "CREATOR" && (
               <p className="text-xs text-muted">
-                Share to earn more — videos with products earn creators 3% on every sale
+                Share to earn more — videos with products earn creators 5% on every sale
               </p>
             )}
 
