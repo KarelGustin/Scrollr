@@ -3,12 +3,15 @@ import { getMerchant } from "@/lib/merchant-auth";
 import { syncAllProducts } from "@/lib/shopify-sync";
 
 export async function POST() {
-  const merchant = await getMerchant();
+  const merchant = await getMerchant({ includeSecrets: true });
   if (!merchant) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const merchantWithSecrets = merchant as typeof merchant & {
+    shopifyAccessToken: string;
+  };
 
-  if (!merchant.shopifyDomain || !merchant.shopifyAccessToken) {
+  if (!merchantWithSecrets.shopifyDomain || !merchantWithSecrets.shopifyAccessToken) {
     return NextResponse.json(
       { error: "Shopify not connected" },
       { status: 400 }
@@ -26,9 +29,9 @@ export async function POST() {
 
   try {
     const result = await syncAllProducts(
-      merchant.id,
-      merchant.shopifyDomain,
-      merchant.shopifyAccessToken
+      merchantWithSecrets.id,
+      merchantWithSecrets.shopifyDomain,
+      merchantWithSecrets.shopifyAccessToken
     );
 
     return NextResponse.json(result);

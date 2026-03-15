@@ -287,6 +287,73 @@ export async function createOrder(
   return data.order;
 }
 
+/**
+ * Refund a Shopify order by creating a full-order refund.
+ */
+export async function refundOrder(params: {
+  domain: string;
+  accessToken: string;
+  orderId: string;
+}): Promise<void> {
+  const orderData = await shopifyRequest<{
+    order: {
+      id: number;
+      currency: string;
+      line_items: { id: number; quantity: number; location_id: number | null }[];
+      transactions: { id: number; kind: string; status: string; gateway: string; amount: string }[];
+    };
+  }>({
+    domain: params.domain,
+    accessToken: params.accessToken,
+    endpoint: `orders/${params.orderId}.json?fields=id,currency,line_items,transactions`,
+  });
+
+  const saleTransaction = orderData.order.transactions.find(
+    (tx) => tx.kind === "sale" && tx.status === "success"
+  );
+
+  const refundLineItems = orderData.order.line_items.map((line) => ({
+    line_item_id: line.id,
+    quantity: line.quantity,
+    restock_type: "no_restock",
+    location_id: line.location_id ?? undefined,
+  }));
+
+  const calculatePayload = {
+    refund: {
+      currency: orderData.order.currency,
+      shipping: { full_refund: true },
+      refund_line_items: refundLineItems,
+      transactions: saleTransaction
+        ? [
+            {
+              parent_id: saleTransaction.id,
+              amount: saleTransaction.amount,
+              kind: "refund",
+              gateway: saleTransaction.gateway,
+            },
+          ]
+        : [],
+    },
+  };
+
+  const calculated = await shopifyRequest<{ refund: Record<string, unknown> }>({
+    domain: params.domain,
+    accessToken: params.accessToken,
+    endpoint: `orders/${params.orderId}/refunds/calculate.json`,
+    method: "POST",
+    body: calculatePayload,
+  });
+
+  await shopifyRequest({
+    domain: params.domain,
+    accessToken: params.accessToken,
+    endpoint: `orders/${params.orderId}/refunds.json`,
+    method: "POST",
+    body: { refund: calculated.refund },
+  });
+}
+
 // ── Store Info ──
 
 export type ShopifyShop = {

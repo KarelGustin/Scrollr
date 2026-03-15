@@ -16,6 +16,10 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const shop = searchParams.get("shop");
   const returnTo = searchParams.get("returnTo");
+  const safeReturnTo =
+    returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")
+      ? returnTo
+      : null;
 
   if (!shop || !shop.endsWith(".myshopify.com")) {
     return NextResponse.json(
@@ -54,8 +58,8 @@ export async function GET(req: NextRequest) {
   });
 
   // Store returnTo path so callback redirects back to the right page
-  if (returnTo) {
-    response.cookies.set("shopify_return_to", returnTo, {
+  if (safeReturnTo) {
+    response.cookies.set("shopify_return_to", safeReturnTo, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

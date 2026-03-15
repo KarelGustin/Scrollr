@@ -86,6 +86,7 @@ export async function GET(req: NextRequest) {
     shouldSearch("creators")
       ? prisma.user.findMany({
           where: {
+            role: "CREATOR",
             OR: [
               { username: { contains: query, mode: "insensitive" } },
               { name: { contains: query, mode: "insensitive" } },
@@ -117,6 +118,7 @@ export async function GET(req: NextRequest) {
       ? prisma.merchant.findMany({
           where: {
             active: true,
+            slug: { not: null },
             OR: [
               { storeName: { contains: query, mode: "insensitive" } },
               { shopifyDomain: { contains: query, mode: "insensitive" } },
@@ -124,6 +126,7 @@ export async function GET(req: NextRequest) {
           },
           select: {
             id: true,
+            slug: true,
             storeName: true,
             storeLogoUrl: true,
             _count: {

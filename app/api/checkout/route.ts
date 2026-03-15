@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateCart } from "@/lib/cart";
-import { createMarketplacePaymentIntent, createMerchantTransfer, calculateFeeSplit } from "@/lib/stripe-connect";
+import {
+  createMarketplacePaymentIntent,
+  createMerchantTransfer,
+  calculateFeeSplit,
+} from "@/lib/stripe-connect";
 import { getStripe } from "@/lib/stripe";
 import { createOrder as createShopifyOrder } from "@/lib/shopify";
+import {
+  calculateShippingRatesForCart,
+  normalizeAddress,
+  normalizeShippingOptionName,
+} from "@/lib/checkout-shipping";
 
 type CheckoutAddress = {
   firstName: string;
@@ -17,12 +27,87 @@ type CheckoutAddress = {
   country: string;
 };
 
-type CheckoutShippingOption = {
-  name: string;
-  price: number;
-  minDays: number | null;
-  maxDays: number | null;
+type CartSnapshot = {
+  hash: string;
+  subtotalCents: number;
+  hasLegacyItems: boolean;
 };
+
+function normalizeCheckoutAddress(input: unknown): CheckoutAddress | null {
+  if (!input || typeof input !== "object") return null;
+  const value = input as Record<string, unknown>;
+  const firstName = String(value.firstName ?? "").trim();
+  const lastName = String(value.lastName ?? "").trim();
+  const address1 = String(value.address1 ?? "").trim();
+  const city = String(value.city ?? "").trim();
+  const state = String(value.state ?? "").trim();
+  const zip = String(value.zip ?? "").trim();
+  const country = String(value.country ?? "").trim();
+
+  if (!firstName || !lastName || !address1 || !city || !state || !zip || !country) {
+    return null;
+  }
+
+  const address2 = String(value.address2 ?? "").trim();
+  return {
+    firstName,
+    lastName,
+    address1,
+    address2: address2 || undefined,
+    city,
+    state,
+    zip,
+    country,
+  };
+}
+
+function parsePositiveInt(value: string | undefined): number | null {
+  if (!value) return null;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+  return parsed;
+}
+
+function createCartSnapshot(
+  items: Array<{
+    quantity: number;
+    merchantProductId: string | null;
+    merchantProduct?: { price: number } | null;
+    product?: { price: number | null } | null;
+  }>
+): CartSnapshot {
+  const normalized = items.map((item) => {
+    const unitPrice = item.merchantProduct?.price ?? item.product?.price ?? 0;
+    const cents = Math.round(unitPrice * 100);
+    return {
+      key: item.merchantProductId ?? `legacy:${cents}`,
+      quantity: item.quantity,
+      cents,
+      merchantProductId: item.merchantProductId,
+    };
+  });
+
+  normalized.sort((a, b) => {
+    const byKey = a.key.localeCompare(b.key);
+    if (byKey !== 0) return byKey;
+    return a.quantity - b.quantity;
+  });
+
+  const signature = normalized
+    .map((item) => `${item.key}:${item.quantity}:${item.cents}`)
+    .join("|");
+  const hash = crypto.createHash("sha256").update(signature).digest("hex");
+  const subtotalCents = normalized.reduce(
+    (sum, item) => sum + item.quantity * item.cents,
+    0
+  );
+
+  return {
+    hash,
+    subtotalCents,
+    hasLegacyItems: normalized.some((item) => !item.merchantProductId),
+  };
+}
 
 /**
  * POST /api/checkout
@@ -42,11 +127,12 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { action } = body;
+    const action = String(body?.action ?? "");
 
     if (action === "create-intent") {
       return handleCreateIntent(user, body);
-    } else if (action === "confirm") {
+    }
+    if (action === "confirm") {
       return handleConfirm(user, body);
     }
 
@@ -63,18 +149,17 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ── Create PaymentIntent ────────────────────────────────────────────────
-
 async function handleCreateIntent(
   user: { id: string; email: string },
   body: {
-    address: CheckoutAddress;
-    shippingOption: CheckoutShippingOption;
+    address: unknown;
+    shippingOption: unknown;
   }
 ) {
-  const { address, shippingOption } = body;
-
-  if (!address || !shippingOption) {
+  const checkoutAddress = normalizeCheckoutAddress(body.address);
+  const shippingAddress = normalizeAddress(body.address);
+  const shippingOptionName = normalizeShippingOptionName(body.shippingOption);
+  if (!checkoutAddress || !shippingAddress || !shippingOptionName) {
     return NextResponse.json(
       { error: "Address and shipping option are required" },
       { status: 400 }
@@ -82,43 +167,56 @@ async function handleCreateIntent(
   }
 
   const { cart } = await getOrCreateCart();
-
   if (!cart.items.length) {
+    return NextResponse.json({ error: "Your cart is empty" }, { status: 400 });
+  }
+
+  const snapshot = createCartSnapshot(cart.items);
+  if (snapshot.hasLegacyItems) {
     return NextResponse.json(
-      { error: "Your cart is empty" },
+      {
+        error:
+          "Your cart contains unsupported legacy products. Please remove them and try again.",
+      },
       { status: 400 }
     );
   }
 
-  // Calculate subtotal from cart items
-  let subtotal = 0;
-  for (const item of cart.items) {
-    const price = item.merchantProduct?.price ?? item.product?.price ?? 0;
-    subtotal += price * item.quantity;
-  }
+  const rates = await calculateShippingRatesForCart(
+    cart.items.map((item) => ({
+      merchantProductId: item.merchantProductId,
+      quantity: item.quantity,
+    })),
+    shippingAddress
+  );
 
-  const shippingCost = shippingOption.price;
-  const total = subtotal + shippingCost;
-
-  // Convert to cents for Stripe
-  const amountCents = Math.round(total * 100);
-
-  if (amountCents < 50) {
+  const selectedRate = rates.find((rate) => rate.name === shippingOptionName);
+  if (!selectedRate) {
     return NextResponse.json(
-      { error: "Order total is too low" },
+      { error: "Selected shipping option is no longer available" },
       { status: 400 }
     );
   }
 
-  // Generate transfer group to link all transfers for this checkout
-  const transferGroup = `checkout_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const shippingCents = Math.round(selectedRate.price * 100);
+  const totalCents = snapshot.subtotalCents + shippingCents;
+  if (totalCents < 50) {
+    return NextResponse.json({ error: "Order total is too low" }, { status: 400 });
+  }
 
+  const transferGroup = `checkout_${crypto.randomUUID()}`;
   const paymentIntent = await createMarketplacePaymentIntent({
-    amountCents,
+    amountCents: totalCents,
     currency: "eur",
     transferGroup,
     metadata: {
+      userId: user.id,
       cartId: cart.id,
+      cartHash: snapshot.hash,
+      subtotalCents: String(snapshot.subtotalCents),
+      shippingCents: String(shippingCents),
+      totalCents: String(totalCents),
+      shippingName: selectedRate.name,
       buyerEmail: user.email,
     },
   });
@@ -127,47 +225,54 @@ async function handleCreateIntent(
     clientSecret: paymentIntent.client_secret,
     paymentIntentId: paymentIntent.id,
     transferGroup,
-    total,
+    subtotal: snapshot.subtotalCents / 100,
+    shipping: shippingCents / 100,
+    total: totalCents / 100,
+    shippingOption: selectedRate,
   });
 }
-
-// ── Confirm & Create Orders ────────────────────────────────────────────
 
 async function handleConfirm(
   user: { id: string; email: string },
   body: {
-    paymentIntentId: string;
-    transferGroup: string;
-    address: CheckoutAddress;
-    shippingOption: CheckoutShippingOption;
+    paymentIntentId: unknown;
+    address: unknown;
   }
 ) {
-  const { paymentIntentId, transferGroup, address, shippingOption } = body;
-
+  const paymentIntentId = String(body.paymentIntentId ?? "").trim();
+  const address = normalizeCheckoutAddress(body.address);
   if (!paymentIntentId) {
     return NextResponse.json(
       { error: "Payment intent ID is required" },
       { status: 400 }
     );
   }
+  if (!address) {
+    return NextResponse.json(
+      { error: "Complete shipping address is required" },
+      { status: 400 }
+    );
+  }
 
-  // Verify the payment succeeded
   const stripe = getStripe();
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
   if (paymentIntent.status !== "succeeded") {
     return NextResponse.json(
       { error: "Payment has not been completed" },
       { status: 400 }
     );
   }
+  if (paymentIntent.currency.toLowerCase() !== "eur") {
+    return NextResponse.json(
+      { error: "Unexpected payment currency" },
+      { status: 400 }
+    );
+  }
 
-  // Check if we already created a checkout for this payment (idempotency)
   const existingCheckout = await prisma.checkout.findUnique({
     where: { stripePaymentIntentId: paymentIntentId },
     include: { orders: true },
   });
-
   if (existingCheckout && existingCheckout.orders.length > 0) {
     const primaryOrder = existingCheckout.orders[0];
     return NextResponse.json({
@@ -177,48 +282,87 @@ async function handleConfirm(
     });
   }
 
-  // Get the cart
-  const { cart } = await getOrCreateCart();
-
-  if (!cart.items.length) {
+  const metadata = paymentIntent.metadata ?? {};
+  if (metadata.userId !== user.id) {
     return NextResponse.json(
-      { error: "Cart is empty" },
+      { error: "Payment intent does not belong to this user" },
+      { status: 403 }
+    );
+  }
+
+  const expectedSubtotalCents = parsePositiveInt(metadata.subtotalCents);
+  const expectedShippingCents = parsePositiveInt(metadata.shippingCents);
+  const expectedTotalCents = parsePositiveInt(metadata.totalCents);
+  const expectedCartHash = metadata.cartHash;
+  const shippingName = (metadata.shippingName || "Shipping").slice(0, 100);
+
+  if (
+    expectedSubtotalCents === null ||
+    expectedShippingCents === null ||
+    expectedTotalCents === null ||
+    !expectedCartHash
+  ) {
+    return NextResponse.json(
+      { error: "Missing payment metadata. Please try checkout again." },
       { status: 400 }
     );
   }
 
-  // Load full merchant product data for Shopify order creation
-  const merchantProductIds = cart.items
-    .filter((item) => item.merchantProductId)
-    .map((item) => item.merchantProductId!);
+  const chargedCents = paymentIntent.amount_received || paymentIntent.amount;
+  if (chargedCents !== expectedTotalCents) {
+    return NextResponse.json(
+      { error: "Payment amount mismatch. Please contact support." },
+      { status: 400 }
+    );
+  }
 
-  const merchantProducts = merchantProductIds.length
-    ? await prisma.merchantProduct.findMany({
-        where: { id: { in: merchantProductIds } },
-        include: {
-          merchant: {
-            select: {
-              id: true,
-              userId: true,
-              shopifyDomain: true,
-              shopifyAccessToken: true,
-              storeName: true,
-              stripeConnectAccountId: true,
-              stripeConnectOnboarded: true,
-            },
-          },
+  const { cart } = await getOrCreateCart();
+  if (!cart.items.length) {
+    return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+  }
+
+  const snapshot = createCartSnapshot(cart.items);
+  if (snapshot.hasLegacyItems) {
+    return NextResponse.json(
+      {
+        error:
+          "Your cart contains unsupported legacy products. Please remove them and try again.",
+      },
+      { status: 400 }
+    );
+  }
+  if (
+    snapshot.hash !== expectedCartHash ||
+    snapshot.subtotalCents !== expectedSubtotalCents
+  ) {
+    return NextResponse.json(
+      { error: "Your cart changed during checkout. Please try again." },
+      { status: 409 }
+    );
+  }
+
+  const merchantProductIds = cart.items.map((item) => item.merchantProductId as string);
+  const merchantProducts = await prisma.merchantProduct.findMany({
+    where: { id: { in: merchantProductIds } },
+    include: {
+      merchant: {
+        select: {
+          id: true,
+          userId: true,
+          shopifyDomain: true,
+          shopifyAccessToken: true,
+          stripeConnectAccountId: true,
+          stripeConnectOnboarded: true,
         },
-      })
-    : [];
-
+      },
+    },
+  });
   const merchantProductMap = new Map(merchantProducts.map((mp) => [mp.id, mp]));
 
-  // Group cart items by merchant
   type GroupItem = {
     cartItem: (typeof cart.items)[number];
-    merchantProduct: (typeof merchantProducts)[number] | null;
+    merchantProduct: (typeof merchantProducts)[number];
   };
-
   type MerchantGroup = {
     merchantId: string;
     merchantUserId: string;
@@ -231,63 +375,60 @@ async function handleConfirm(
   };
 
   const merchantGroups = new Map<string, MerchantGroup>();
-
   for (const item of cart.items) {
-    const mp = item.merchantProductId
-      ? merchantProductMap.get(item.merchantProductId) ?? null
-      : null;
+    const mp = merchantProductMap.get(item.merchantProductId as string);
+    if (!mp) {
+      return NextResponse.json(
+        { error: "One or more cart items are unavailable." },
+        { status: 400 }
+      );
+    }
 
-    const merchantId = mp?.merchant.id ?? "legacy";
-    const price = mp?.price ?? item.product?.price ?? 0;
-
-    if (!merchantGroups.has(merchantId)) {
-      merchantGroups.set(merchantId, {
-        merchantId,
-        merchantUserId: mp?.merchant.userId ?? "",
-        domain: mp?.merchant.shopifyDomain ?? "",
-        accessToken: mp?.merchant.shopifyAccessToken ?? "",
-        stripeConnectAccountId: mp?.merchant.stripeConnectAccountId ?? null,
-        stripeConnectOnboarded: mp?.merchant.stripeConnectOnboarded ?? false,
+    if (!merchantGroups.has(mp.merchant.id)) {
+      merchantGroups.set(mp.merchant.id, {
+        merchantId: mp.merchant.id,
+        merchantUserId: mp.merchant.userId,
+        domain: mp.merchant.shopifyDomain,
+        accessToken: mp.merchant.shopifyAccessToken,
+        stripeConnectAccountId: mp.merchant.stripeConnectAccountId ?? null,
+        stripeConnectOnboarded: mp.merchant.stripeConnectOnboarded ?? false,
         items: [],
         subtotal: 0,
       });
     }
 
-    const group = merchantGroups.get(merchantId)!;
+    const group = merchantGroups.get(mp.merchant.id)!;
     group.items.push({ cartItem: item, merchantProduct: mp });
-    group.subtotal += price * item.quantity;
+    group.subtotal += mp.price * item.quantity;
   }
 
-  // Calculate total
+  const shippingCost = expectedShippingCents / 100;
+  const total = expectedTotalCents / 100;
   const overallSubtotal = Array.from(merchantGroups.values()).reduce(
-    (sum, g) => sum + g.subtotal,
+    (sum, group) => sum + group.subtotal,
     0
   );
-  const shippingCost = shippingOption.price;
-  const total = overallSubtotal + shippingCost;
-
-  // Distribute shipping proportionally among merchants
   const shippingPerMerchant = (merchantId: string) => {
     if (overallSubtotal === 0) return 0;
     const group = merchantGroups.get(merchantId)!;
     return (group.subtotal / overallSubtotal) * shippingCost;
   };
 
-  // Create Checkout record
-  const checkout = await prisma.checkout.create({
-    data: {
-      stripePaymentIntentId: paymentIntentId,
-      buyerUserId: user.id,
-      buyerEmail: user.email,
-      total,
-    },
-  });
+  const checkout =
+    existingCheckout ??
+    (await prisma.checkout.create({
+      data: {
+        stripePaymentIntentId: paymentIntentId,
+        buyerUserId: user.id,
+        buyerEmail: user.email,
+        total,
+      },
+    }));
 
-  // Create orders — one per merchant
   const createdOrders: { id: string; orderNumber: string }[] = [];
   let primaryOrderId = "";
   let primaryOrderNumber = "";
-
+  const transferGroup = paymentIntent.transfer_group ?? `checkout_${paymentIntentId}`;
   const shippingAddressJson = {
     line1: address.address1,
     line2: address.address2 ?? "",
@@ -297,18 +438,12 @@ async function handleConfirm(
     country: address.country,
   };
 
-  const merchantEntries = Array.from(merchantGroups.entries());
-  for (const [merchantId, group] of merchantEntries) {
+  for (const [merchantId, group] of Array.from(merchantGroups.entries())) {
     const merchantShipping = shippingPerMerchant(merchantId);
     const fees = calculateFeeSplit(group.subtotal, merchantShipping);
-
-    // Determine the creator who drove the sale (from the video context)
-    // For MVP, use the merchant's userId as creator if they are a creator
     const creatorId = group.merchantUserId || null;
 
     let stripeTransferId: string | undefined;
-
-    // Transfer to merchant if they have Stripe Connect
     if (group.stripeConnectAccountId && group.stripeConnectOnboarded) {
       try {
         const transfer = await createMerchantTransfer({
@@ -324,18 +459,16 @@ async function handleConfirm(
           `Failed to create Stripe transfer for merchant ${merchantId}:`,
           err
         );
-        // Continue without transfer — can be retried later
       }
     }
 
-    // Create Scrollr Order record
     const order = await prisma.order.create({
       data: {
         buyerEmail: user.email,
         buyerName: `${address.firstName} ${address.lastName}`,
         buyerUserId: user.id,
         shippingAddress: shippingAddressJson,
-        merchantId: merchantId === "legacy" ? undefined! : merchantId,
+        merchantId,
         creatorId: creatorId || undefined,
         checkoutId: checkout.id,
         subtotal: group.subtotal,
@@ -348,14 +481,12 @@ async function handleConfirm(
         stripeTransferId,
         status: "PAID",
         items: {
-          create: group.items
-            .filter((gi: GroupItem) => gi.merchantProduct)
-            .map((gi: GroupItem) => ({
-              merchantProductId: gi.merchantProduct!.id,
-              quantity: gi.cartItem.quantity,
-              unitPrice: gi.merchantProduct!.price,
-              total: gi.merchantProduct!.price * gi.cartItem.quantity,
-            })),
+          create: group.items.map((gi) => ({
+            merchantProductId: gi.merchantProduct.id,
+            quantity: gi.cartItem.quantity,
+            unitPrice: gi.merchantProduct.price,
+            total: gi.merchantProduct.price * gi.cartItem.quantity,
+          })),
         },
         commissions: {
           create: [
@@ -378,32 +509,24 @@ async function handleConfirm(
       },
     });
 
-    createdOrders.push({
-      id: order.id,
-      orderNumber: order.orderNumber,
-    });
-
+    createdOrders.push({ id: order.id, orderNumber: order.orderNumber });
     if (createdOrders.length === 1) {
       primaryOrderId = order.id;
       primaryOrderNumber = order.orderNumber;
     }
 
-    // Create Shopify order for merchant products (skip for legacy products)
-    if (merchantId !== "legacy" && group.domain && group.accessToken) {
+    if (group.domain && group.accessToken) {
       try {
-        const shopifyLineItems = group.items
-          .filter((gi: GroupItem) => gi.merchantProduct)
-          .map((gi: GroupItem) => {
-            const mp = gi.merchantProduct!;
-            const variantId = mp.shopifyVariantId
-              ? parseInt(mp.shopifyVariantId, 10)
-              : parseInt(mp.shopifyProductId, 10);
-            return {
-              variant_id: variantId,
-              quantity: gi.cartItem.quantity,
-              price: mp.price.toFixed(2),
-            };
-          });
+        const shopifyLineItems = group.items.map((gi) => {
+          const variantId = gi.merchantProduct.shopifyVariantId
+            ? parseInt(gi.merchantProduct.shopifyVariantId, 10)
+            : parseInt(gi.merchantProduct.shopifyProductId, 10);
+          return {
+            variant_id: variantId,
+            quantity: gi.cartItem.quantity,
+            price: gi.merchantProduct.price.toFixed(2),
+          };
+        });
 
         const shopifyOrder = await createShopifyOrder({
           domain: group.domain,
@@ -421,34 +544,27 @@ async function handleConfirm(
           },
           email: user.email,
           shippingLine: {
-            title: shippingOption.name,
+            title: shippingName,
             price: merchantShipping.toFixed(2),
           },
           note: `Scrollr order ${primaryOrderNumber}`,
           tags: ["scrollr"],
         });
 
-        // Update order with Shopify order ID
         await prisma.order.update({
           where: { id: order.id },
-          data: {
-            shopifyOrderId: shopifyOrder.id.toString(),
-          },
+          data: { shopifyOrderId: shopifyOrder.id.toString() },
         });
       } catch (err) {
         console.error(
           `Failed to create Shopify order for merchant ${merchantId}:`,
           err
         );
-        // Order is still created in Scrollr — Shopify sync can be retried
       }
     }
   }
 
-  // Clear the cart after successful order creation
-  await prisma.cartItem.deleteMany({
-    where: { cartId: cart.id },
-  });
+  await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
   return NextResponse.json({
     orderId: primaryOrderId,

@@ -5,7 +5,10 @@ import { StorePageClient } from "./StorePageClient";
 
 export default async function StorePage({ params }: { params: { slug: string } }) {
   const merchant = await prisma.merchant.findFirst({
-    where: { slug: params.slug, active: true },
+    where: {
+      active: true,
+      OR: [{ slug: params.slug }, { id: params.slug }],
+    },
     include: {
       merchantProducts: {
         where: { available: true },

@@ -93,7 +93,7 @@ export default function MerchantSettingsPage() {
       await fetch("/api/merchant/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shopifyDomain: "", shopifyAccessToken: "" }),
+        body: JSON.stringify({ disconnectShopify: true }),
       });
       setShopifyDomain("");
       setShowDisconnectConfirm(false);

@@ -546,3 +546,29 @@ model Category {
 
   @@index([active, position])
 }
+
+enum WebhookProvider {
+  STRIPE
+  SHOPIFY
+  CLOUDFLARE
+}
+
+enum WebhookEventStatus {
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model WebhookEvent {
+  id          String             @id @default(cuid())
+  provider    WebhookProvider
+  eventId     String
+  status      WebhookEventStatus @default(PROCESSING)
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([provider, eventId])
+  @@index([provider, status, createdAt])
+}

@@ -22,6 +22,23 @@ export async function PATCH(req: NextRequest) {
       ...(storeTheme !== undefined && { storeTheme }),
       ...(storeDescription !== undefined && { storeDescription }),
     },
+    select: {
+      id: true,
+      userId: true,
+      shopifyDomain: true,
+      storeName: true,
+      storeLogoUrl: true,
+      shippingPolicy: true,
+      returnPolicy: true,
+      active: true,
+      createdAt: true,
+      updatedAt: true,
+      slug: true,
+      storeDescription: true,
+      storeTheme: true,
+      stripeConnectAccountId: true,
+      stripeConnectOnboarded: true,
+    },
   });
 
   return NextResponse.json({ merchant: updated });

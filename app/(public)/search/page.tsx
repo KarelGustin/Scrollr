@@ -49,6 +49,7 @@ interface SearchCreator {
 
 interface SearchMerchant {
   id: string;
+  slug: string | null;
   storeName: string | null;
   storeLogoUrl: string | null;
   _count: {
@@ -319,7 +320,7 @@ export default function SearchPage() {
                   {suggestions.merchants.map((merchant) => (
                     <Link
                       key={merchant.id}
-                      href={`/store/${merchant.id}`}
+                      href={`/store/${merchant.slug ?? merchant.id}`}
                       className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border hover:border-accent/20 transition-all"
                     >
                       <div className="flex-shrink-0 w-12 h-12 rounded-full bg-card overflow-hidden border border-border">
@@ -575,7 +576,7 @@ export default function SearchPage() {
                   {data.merchants.map((merchant) => (
                     <Link
                       key={merchant.id}
-                      href={`/store/${merchant.id}`}
+                      href={`/store/${merchant.slug ?? merchant.id}`}
                       className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border hover:border-accent/20 transition-all"
                     >
                       {/* Store logo / initial */}
