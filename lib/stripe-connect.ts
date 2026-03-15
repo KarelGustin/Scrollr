@@ -1,8 +1,8 @@
 import { getStripe } from "./stripe";
 import type Stripe from "stripe";
 
-const PLATFORM_FEE_PERCENT = 12; // 12% to Scrollr
-const CREATOR_COMMISSION_PERCENT = 3; // 3% to creator
+const PLATFORM_FEE_PERCENT = 10; // 10% to Scrollr
+const CREATOR_COMMISSION_PERCENT = 5; // 5% to creator
 const MERCHANT_PAYOUT_PERCENT = 85; // 85% to merchant
 
 /**
@@ -60,7 +60,7 @@ export async function createDashboardLink(accountId: string): Promise<string> {
 
 /**
  * Calculate fee split for a given order total.
- * Splits subtotal into: 85% merchant, 12% platform, 3% creator.
+ * Splits subtotal into: 85% merchant, 10% platform, 5% creator.
  */
 export function calculateFeeSplit(subtotal: number, shippingCost: number) {
   const platformFee = subtotal * (PLATFORM_FEE_PERCENT / 100);

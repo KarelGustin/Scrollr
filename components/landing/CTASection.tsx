@@ -16,13 +16,13 @@ export function CTASection() {
       <div className="max-w-3xl mx-auto text-center relative z-10">
         <ScrollReveal>
           <h2 className="text-4xl sm:text-5xl font-display font-bold text-white leading-tight">
-            Ready to start?
+            Your store could be live in 30 seconds.
           </h2>
         </ScrollReveal>
 
         <ScrollReveal delay={100}>
           <p className="mt-6 text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
-            Whether you&apos;re here to discover or to create — your feed is waiting.
+            Merchants: install the Shopify app. Creators: apply to start earning. Shoppers: your feed is waiting.
           </p>
         </ScrollReveal>
 
@@ -32,7 +32,7 @@ export function CTASection() {
               href="/discover"
               className="inline-flex items-center justify-center px-8 py-4 bg-white text-coral font-semibold text-base rounded-full transition-all duration-300 hover:bg-white/90 hover:scale-[1.02] shadow-lg"
             >
-              Browse Now
+              Start Scrolling
               <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>
@@ -41,13 +41,13 @@ export function CTASection() {
               href="/apply"
               className="inline-flex items-center justify-center px-8 py-4 text-white font-medium text-base rounded-full border-2 border-white/40 hover:border-white hover:bg-white/10 transition-all duration-300"
             >
-              Join as Creator
+              Apply as Creator
             </Link>
             <Link
               href="/merchant-register"
               className="inline-flex items-center justify-center px-8 py-4 text-white font-medium text-base rounded-full border-2 border-white/40 hover:border-white hover:bg-white/10 transition-all duration-300"
             >
-              I&apos;m a Merchant
+              Install Shopify App
             </Link>
           </div>
         </ScrollReveal>
