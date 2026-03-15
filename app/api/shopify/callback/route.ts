@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { fetchShopInfo, registerWebhooks } from "@/lib/shopify";
 import { syncAllProducts } from "@/lib/shopify-sync";
+import { generateSlug, ensureUniqueSlug } from "@/lib/slug";
 
 const SHOPIFY_CLIENT_ID = process.env.SHOPIFY_CLIENT_ID!;
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET!;
@@ -11,25 +11,17 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 /**
  * GET: Shopify OAuth callback.
  * Receives code + shop + state from Shopify after merchant authorizes.
+ * The Shopify app install IS registration — no existing account required.
  */
 export async function GET(req: NextRequest) {
-  const user = await getUser();
-  if (!user) {
-    return NextResponse.redirect(`${APP_URL}/login?error=auth_required`);
-  }
-
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const shop = searchParams.get("shop");
   const state = searchParams.get("state");
 
-  // Read returnTo from cookie
-  const returnTo = req.cookies.get("shopify_return_to")?.value;
-  const redirectBase = returnTo || "/settings";
-
   if (!code || !shop || !state) {
     return NextResponse.redirect(
-      `${APP_URL}${redirectBase}?error=missing_params`
+      `${APP_URL}/login?error=missing_params`
     );
   }
 
@@ -37,7 +29,7 @@ export async function GET(req: NextRequest) {
   const storedState = req.cookies.get("shopify_oauth_state")?.value;
   if (!storedState || storedState !== state) {
     return NextResponse.redirect(
-      `${APP_URL}${redirectBase}?error=invalid_state`
+      `${APP_URL}/login?error=invalid_state`
     );
   }
 
@@ -60,7 +52,7 @@ export async function GET(req: NextRequest) {
       const errText = await tokenRes.text();
       console.error("Shopify token exchange failed:", errText);
       return NextResponse.redirect(
-        `${APP_URL}${redirectBase}?error=token_exchange_failed`
+        `${APP_URL}/login?error=token_exchange_failed`
       );
     }
 
@@ -69,23 +61,44 @@ export async function GET(req: NextRequest) {
 
     // Fetch shop info
     const shopInfo = await fetchShopInfo(shop, accessToken);
+    const shopEmail = shopInfo.email;
+
+    // Find or create Prisma user from shop email
+    let user = await prisma.user.findUnique({ where: { email: shopEmail } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: shopEmail,
+          name: shopInfo.name || shop.replace(".myshopify.com", ""),
+          role: "MERCHANT",
+        },
+      });
+    } else if (user.role !== "MERCHANT") {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { role: "MERCHANT" },
+      });
+    }
+
+    // Generate a unique slug for the merchant store
+    const slug = await ensureUniqueSlug(generateSlug(shopInfo.name || shop));
 
     // Create or update Merchant record in Prisma
     const merchant = await prisma.merchant.upsert({
-      where: { userId: user.id },
+      where: { shopifyDomain: shop },
       update: {
-        shopifyDomain: shop,
         shopifyAccessToken: accessToken,
+        storeName: shopInfo.name || shop,
         shopifyShopId: String(shopInfo.id),
-        storeName: shopInfo.name,
-        active: true,
       },
       create: {
         userId: user.id,
         shopifyDomain: shop,
         shopifyAccessToken: accessToken,
         shopifyShopId: String(shopInfo.id),
-        storeName: shopInfo.name,
+        storeName: shopInfo.name || shop,
+        slug,
+        storeTheme: "light",
       },
     });
 
@@ -97,10 +110,8 @@ export async function GET(req: NextRequest) {
       console.error("Initial product sync failed:", err);
     });
 
-    // Clear cookies and redirect
-    const response = NextResponse.redirect(
-      `${APP_URL}${redirectBase}?shopify=connected`
-    );
+    // Clear OAuth cookies and redirect to merchant dashboard
+    const response = NextResponse.redirect(`${APP_URL}/merchant`);
     response.cookies.delete("shopify_oauth_state");
     response.cookies.delete("shopify_return_to");
 
@@ -108,7 +119,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("Shopify OAuth callback error:", err);
     return NextResponse.redirect(
-      `${APP_URL}${redirectBase}?error=shopify_connect_failed`
+      `${APP_URL}/login?error=shopify_connect_failed`
     );
   }
 }

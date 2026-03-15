@@ -40,6 +40,7 @@ model User {
   followers           Follow[]       @relation("UserFollowers")
   savedItems          SavedItem[]
   adminMessages       AdminMessage[]
+  checkouts           Checkout[]     @relation("UserCheckouts")
 }
 
 enum UserRole {
@@ -257,6 +258,12 @@ model Merchant {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  slug                    String?   @unique
+  storeDescription        String?
+  storeTheme              String    @default("light")
+  stripeConnectAccountId  String?
+  stripeConnectOnboarded  Boolean   @default(false)
+
   merchantProducts MerchantProduct[]
   orders           Order[]
 }
@@ -317,14 +324,17 @@ model Order {
   platformFee       Float       // 1% to Scrollr
   creatorCommission Float       @default(0) // 3% to creator
   currency          String      @default("USD")
-  stripePaymentId   String?     @unique
+  stripePaymentId   String?
   shopifyOrderId    String?     @unique
+  checkoutId        String?
+  stripeTransferId  String?     @unique
   status            OrderStatus @default(PENDING)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
   items       OrderItem[]
   commissions Commission[]
+  checkout    Checkout?   @relation(fields: [checkoutId], references: [id])
 
   @@index([buyerUserId, createdAt(sort: Desc)])
   @@index([merchantId, createdAt(sort: Desc)])
@@ -342,6 +352,17 @@ model OrderItem {
   total             Float
 
   @@index([orderId])
+}
+
+model Checkout {
+  id                    String   @id @default(cuid())
+  stripePaymentIntentId String   @unique
+  buyerUserId           String?
+  buyerEmail            String
+  total                 Float
+  createdAt             DateTime @default(now())
+  orders                Order[]
+  buyer                 User?    @relation("UserCheckouts", fields: [buyerUserId], references: [id])
 }
 
 model Commission {

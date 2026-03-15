@@ -12,73 +12,76 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 /**
  * POST: Create or retrieve Stripe Connect account and return onboarding URL.
+ * Supports both creators (User model) and merchants (Merchant model).
  */
 export async function POST() {
   const user = await getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
     select: {
       email: true,
+      role: true,
       stripeConnectId: true,
       stripeConnectOnboarded: true,
+      merchant: { select: { id: true, stripeConnectAccountId: true, stripeConnectOnboarded: true } },
     },
   });
 
-  if (!dbUser) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
+  if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  const isMerchant = dbUser.role === "MERCHANT";
 
   try {
-    let connectId = dbUser.stripeConnectId;
+    let connectId = isMerchant
+      ? dbUser.merchant?.stripeConnectAccountId
+      : dbUser.stripeConnectId;
 
     if (connectId) {
       // Check if already onboarded
       const onboarded = await isAccountOnboarded(connectId);
       if (onboarded) {
         // Update DB if needed
-        if (!dbUser.stripeConnectOnboarded) {
+        if (isMerchant && dbUser.merchant && !dbUser.merchant.stripeConnectOnboarded) {
+          await prisma.merchant.update({
+            where: { id: dbUser.merchant.id },
+            data: { stripeConnectOnboarded: true },
+          });
+        } else if (!isMerchant && !dbUser.stripeConnectOnboarded) {
           await prisma.user.update({
             where: { id: user.id },
             data: { stripeConnectOnboarded: true },
           });
         }
-        return NextResponse.json({
-          connected: true,
-          onboarded: true,
-          message: "Account already onboarded",
-        });
+        return NextResponse.json({ connected: true, onboarded: true });
       }
 
       // Not yet onboarded, create a new onboarding link
-      const url = await createOnboardingLink(
-        connectId,
-        `${APP_URL}/earnings?stripe=success`,
-        `${APP_URL}/earnings?stripe=refresh`
-      );
-
+      const returnPath = isMerchant ? "/merchant?stripe=complete" : "/earnings?stripe=success";
+      const refreshPath = isMerchant ? "/merchant?stripe=refresh" : "/earnings?stripe=refresh";
+      const url = await createOnboardingLink(connectId, `${APP_URL}${returnPath}`, `${APP_URL}${refreshPath}`);
       return NextResponse.json({ url });
     }
 
     // No Connect account yet — create one
-    connectId = await createConnectAccount(dbUser.email, "creator");
+    connectId = await createConnectAccount(dbUser.email, isMerchant ? "merchant" : "creator");
 
-    // Save to user record
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { stripeConnectId: connectId },
-    });
+    if (isMerchant && dbUser.merchant) {
+      await prisma.merchant.update({
+        where: { id: dbUser.merchant.id },
+        data: { stripeConnectAccountId: connectId },
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { stripeConnectId: connectId },
+      });
+    }
 
-    // Create onboarding link
-    const url = await createOnboardingLink(
-      connectId,
-      `${APP_URL}/earnings?stripe=success`,
-      `${APP_URL}/earnings?stripe=refresh`
-    );
-
+    const returnPath = isMerchant ? "/merchant?stripe=complete" : "/earnings?stripe=success";
+    const refreshPath = isMerchant ? "/merchant?stripe=refresh" : "/earnings?stripe=refresh";
+    const url = await createOnboardingLink(connectId, `${APP_URL}${returnPath}`, `${APP_URL}${refreshPath}`);
     return NextResponse.json({ url });
   } catch (err) {
     console.error("Stripe Connect error:", err);
@@ -91,6 +94,7 @@ export async function POST() {
 
 /**
  * GET: Return Connect status for the current user.
+ * Supports both creators (User model) and merchants (Merchant model).
  */
 export async function GET() {
   const user = await getUser();
@@ -101,12 +105,19 @@ export async function GET() {
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
     select: {
+      role: true,
       stripeConnectId: true,
       stripeConnectOnboarded: true,
+      merchant: { select: { id: true, stripeConnectAccountId: true, stripeConnectOnboarded: true } },
     },
   });
 
-  if (!dbUser?.stripeConnectId) {
+  const isMerchant = dbUser?.role === "MERCHANT";
+  const connectId = isMerchant
+    ? dbUser?.merchant?.stripeConnectAccountId
+    : dbUser?.stripeConnectId;
+
+  if (!connectId) {
     return NextResponse.json({
       connected: false,
       onboarded: false,
@@ -114,19 +125,26 @@ export async function GET() {
   }
 
   try {
-    const onboarded = await isAccountOnboarded(dbUser.stripeConnectId);
+    const onboarded = await isAccountOnboarded(connectId);
 
     // Update DB if status changed
-    if (onboarded && !dbUser.stripeConnectOnboarded) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { stripeConnectOnboarded: true },
-      });
+    if (onboarded) {
+      if (isMerchant && dbUser?.merchant && !dbUser.merchant.stripeConnectOnboarded) {
+        await prisma.merchant.update({
+          where: { id: dbUser.merchant.id },
+          data: { stripeConnectOnboarded: true },
+        });
+      } else if (!isMerchant && dbUser && !dbUser.stripeConnectOnboarded) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { stripeConnectOnboarded: true },
+        });
+      }
     }
 
     let dashboardUrl: string | undefined;
     if (onboarded) {
-      dashboardUrl = await createDashboardLink(dbUser.stripeConnectId);
+      dashboardUrl = await createDashboardLink(connectId);
     }
 
     return NextResponse.json({
@@ -138,7 +156,9 @@ export async function GET() {
     console.error("Stripe Connect status error:", err);
     return NextResponse.json({
       connected: true,
-      onboarded: dbUser.stripeConnectOnboarded,
+      onboarded: isMerchant
+        ? dbUser?.merchant?.stripeConnectOnboarded
+        : dbUser?.stripeConnectOnboarded,
     });
   }
 }

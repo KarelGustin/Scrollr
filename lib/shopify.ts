@@ -325,6 +325,7 @@ export async function registerWebhooks(
   callbackBase: string
 ): Promise<void> {
   const topics = [
+    "products/create",
     "products/update",
     "products/delete",
     "inventory_levels/update",

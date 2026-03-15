@@ -61,6 +61,17 @@ const merchantNavItems = [
     ),
   },
   {
+    label: "Storefront",
+    href: "/merchant/storefront",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l1-4h16l1 4" />
+        <path d="M3 9v11a1 1 0 001 1h16a1 1 0 001-1V9" />
+        <path d="M9 21V13h6v8" />
+      </svg>
+    ),
+  },
+  {
     label: "Settings",
     href: "/merchant/settings",
     icon: (

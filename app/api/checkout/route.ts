@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateCart } from "@/lib/cart";
+import { createMarketplacePaymentIntent, createMerchantTransfer, calculateFeeSplit } from "@/lib/stripe-connect";
 import { getStripe } from "@/lib/stripe";
 import { createOrder as createShopifyOrder } from "@/lib/shopify";
 
@@ -109,25 +110,24 @@ async function handleCreateIntent(
     );
   }
 
-  const stripe = getStripe();
+  // Generate transfer group to link all transfers for this checkout
+  const transferGroup = `checkout_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: amountCents,
-    currency: "usd",
+  const paymentIntent = await createMarketplacePaymentIntent({
+    amountCents,
+    currency: "eur",
+    transferGroup,
     metadata: {
       cartId: cart.id,
-      userId: user.id,
-      subtotal: subtotal.toFixed(2),
-      shippingCost: shippingCost.toFixed(2),
-      shippingMethod: shippingOption.name,
-      addressJson: JSON.stringify(address),
+      buyerEmail: user.email,
     },
-    receipt_email: user.email,
   });
 
   return NextResponse.json({
     clientSecret: paymentIntent.client_secret,
-    amount: amountCents,
+    paymentIntentId: paymentIntent.id,
+    transferGroup,
+    total,
   });
 }
 
@@ -137,11 +137,12 @@ async function handleConfirm(
   user: { id: string; email: string },
   body: {
     paymentIntentId: string;
+    transferGroup: string;
     address: CheckoutAddress;
     shippingOption: CheckoutShippingOption;
   }
 ) {
-  const { paymentIntentId, address, shippingOption } = body;
+  const { paymentIntentId, transferGroup, address, shippingOption } = body;
 
   if (!paymentIntentId) {
     return NextResponse.json(
@@ -161,15 +162,18 @@ async function handleConfirm(
     );
   }
 
-  // Check if we already created an order for this payment (idempotency)
-  const existingOrder = await prisma.order.findUnique({
-    where: { stripePaymentId: paymentIntentId },
+  // Check if we already created a checkout for this payment (idempotency)
+  const existingCheckout = await prisma.checkout.findUnique({
+    where: { stripePaymentIntentId: paymentIntentId },
+    include: { orders: true },
   });
 
-  if (existingOrder) {
+  if (existingCheckout && existingCheckout.orders.length > 0) {
+    const primaryOrder = existingCheckout.orders[0];
     return NextResponse.json({
-      orderId: existingOrder.id,
-      orderNumber: existingOrder.orderNumber,
+      orderId: primaryOrder.id,
+      orderNumber: primaryOrder.orderNumber,
+      totalOrders: existingCheckout.orders.length,
     });
   }
 
@@ -199,6 +203,8 @@ async function handleConfirm(
               shopifyDomain: true,
               shopifyAccessToken: true,
               storeName: true,
+              stripeConnectAccountId: true,
+              stripeConnectOnboarded: true,
             },
           },
         },
@@ -218,6 +224,8 @@ async function handleConfirm(
     merchantUserId: string;
     domain: string;
     accessToken: string;
+    stripeConnectAccountId: string | null;
+    stripeConnectOnboarded: boolean;
     items: GroupItem[];
     subtotal: number;
   };
@@ -238,6 +246,8 @@ async function handleConfirm(
         merchantUserId: mp?.merchant.userId ?? "",
         domain: mp?.merchant.shopifyDomain ?? "",
         accessToken: mp?.merchant.shopifyAccessToken ?? "",
+        stripeConnectAccountId: mp?.merchant.stripeConnectAccountId ?? null,
+        stripeConnectOnboarded: mp?.merchant.stripeConnectOnboarded ?? false,
         items: [],
         subtotal: 0,
       });
@@ -263,6 +273,16 @@ async function handleConfirm(
     return (group.subtotal / overallSubtotal) * shippingCost;
   };
 
+  // Create Checkout record
+  const checkout = await prisma.checkout.create({
+    data: {
+      stripePaymentIntentId: paymentIntentId,
+      buyerUserId: user.id,
+      buyerEmail: user.email,
+      total,
+    },
+  });
+
   // Create orders — one per merchant
   const createdOrders: { id: string; orderNumber: string }[] = [];
   let primaryOrderId = "";
@@ -280,16 +300,35 @@ async function handleConfirm(
   const merchantEntries = Array.from(merchantGroups.entries());
   for (const [merchantId, group] of merchantEntries) {
     const merchantShipping = shippingPerMerchant(merchantId);
-    const groupTotal = group.subtotal + merchantShipping;
-    const platformFee = groupTotal * 0.01; // 1% to Scrollr
-    const creatorCommission = groupTotal * 0.03; // 3% to creator
+    const fees = calculateFeeSplit(group.subtotal, merchantShipping);
 
     // Determine the creator who drove the sale (from the video context)
     // For MVP, use the merchant's userId as creator if they are a creator
     const creatorId = group.merchantUserId || null;
 
+    let stripeTransferId: string | undefined;
+
+    // Transfer to merchant if they have Stripe Connect
+    if (group.stripeConnectAccountId && group.stripeConnectOnboarded) {
+      try {
+        const transfer = await createMerchantTransfer({
+          amountCents: Math.round(fees.merchantPayout * 100),
+          currency: "eur",
+          destinationAccountId: group.stripeConnectAccountId,
+          transferGroup,
+          metadata: { merchantId },
+        });
+        stripeTransferId = transfer.id;
+      } catch (err) {
+        console.error(
+          `Failed to create Stripe transfer for merchant ${merchantId}:`,
+          err
+        );
+        // Continue without transfer — can be retried later
+      }
+    }
+
     // Create Scrollr Order record
-    const isFirstOrder = createdOrders.length === 0;
     const order = await prisma.order.create({
       data: {
         buyerEmail: user.email,
@@ -298,13 +337,15 @@ async function handleConfirm(
         shippingAddress: shippingAddressJson,
         merchantId: merchantId === "legacy" ? undefined! : merchantId,
         creatorId: creatorId || undefined,
+        checkoutId: checkout.id,
         subtotal: group.subtotal,
         shippingCost: merchantShipping,
-        total: groupTotal,
-        platformFee,
-        creatorCommission,
-        currency: "USD",
-        stripePaymentId: isFirstOrder ? paymentIntentId : undefined,
+        total: fees.total,
+        platformFee: fees.platformFee,
+        creatorCommission: fees.creatorCommission,
+        currency: "EUR",
+        stripePaymentId: paymentIntentId,
+        stripeTransferId,
         status: "PAID",
         items: {
           create: group.items
@@ -320,17 +361,17 @@ async function handleConfirm(
           create: [
             {
               userId: creatorId || user.id,
-              amount: creatorCommission,
-              currency: "USD",
-              type: "CREATOR_SALE",
-              status: "PENDING",
+              amount: fees.creatorCommission,
+              currency: "EUR",
+              type: "CREATOR_SALE" as const,
+              status: "PENDING" as const,
             },
             {
               userId: creatorId || user.id,
-              amount: platformFee,
-              currency: "USD",
-              type: "PLATFORM_FEE",
-              status: "PENDING",
+              amount: fees.platformFee,
+              currency: "EUR",
+              type: "PLATFORM_FEE" as const,
+              status: "PENDING" as const,
             },
           ],
         },
@@ -342,7 +383,7 @@ async function handleConfirm(
       orderNumber: order.orderNumber,
     });
 
-    if (isFirstOrder) {
+    if (createdOrders.length === 1) {
       primaryOrderId = order.id;
       primaryOrderNumber = order.orderNumber;
     }
