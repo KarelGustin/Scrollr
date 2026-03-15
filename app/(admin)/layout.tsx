@@ -255,7 +255,7 @@ export default function AdminLayout({
 
       {/* Mobile bottom tab bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-border z-30 flex items-center justify-around px-2 py-2 safe-bottom">
-        {adminNavItems.map((item) => {
+        {adminNavItems.slice(0, 4).map((item) => {
           const active = isActive(item.href);
           return (
             <Link
@@ -270,6 +270,17 @@ export default function AdminLayout({
             </Link>
           );
         })}
+        <button
+          onClick={async () => { await signOut(); router.replace("/"); }}
+          className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium text-muted transition-colors"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Sign Out
+        </button>
       </nav>
 
       <main className="md:ml-64 min-h-screen pb-20 md:pb-0">
