@@ -205,6 +205,7 @@ export default function CreatorProfile({ creator }: { creator: CreatorData }) {
             thumbnailUrl: activeVideo.thumbnailUrl,
             duration: activeVideo.duration,
             user: {
+              id: creator.id,
               username: creator.username,
               name: creator.name,
               avatarUrl: creator.avatarUrl,

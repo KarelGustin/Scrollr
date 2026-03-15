@@ -81,10 +81,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: `${appUrl}/@${data.user.username}/${videoId}`,
       siteName: "Scrollr",
       type: "video.other",
-      ...(data.video.thumbnailUrl ? { images: [{ url: data.video.thumbnailUrl, width: 640, height: 360 }] } : {}),
+      ...(data.video.thumbnailUrl ? { images: [{ url: data.video.thumbnailUrl, width: 720, height: 1280 }] } : {}),
+      ...(data.video.hlsUrl ? { videos: [{ url: data.video.hlsUrl, type: "application/x-mpegURL", width: 720, height: 1280 }] } : {}),
     },
     twitter: {
-      card: data.video.thumbnailUrl ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title: `@${data.user.username} on Scrollr`,
       description,
       ...(data.video.thumbnailUrl ? { images: [data.video.thumbnailUrl] } : {}),
@@ -104,6 +105,7 @@ export default async function SingleVideoPage({ params }: PageProps) {
     thumbnailUrl: data.video.thumbnailUrl,
     duration: data.video.duration,
     user: {
+      id: data.user.id,
       username: data.user.username!,
       name: data.user.name,
       avatarUrl: data.user.avatarUrl,

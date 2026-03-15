@@ -103,6 +103,17 @@ export default function SearchPage() {
     staleTime: 30_000,
   });
 
+  const { data: suggestions } = useQuery<SearchResults>({
+    queryKey: ["search-suggestions"],
+    queryFn: async () => {
+      const res = await fetch("/api/search/suggestions");
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: query.length === 0,
+    staleTime: 60_000,
+  });
+
   const hasResults =
     data &&
     (data.videos.length > 0 ||
@@ -151,8 +162,203 @@ export default function SearchPage() {
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Empty initial state */}
-        {query.length === 0 && (
+        {/* Suggestions when no query */}
+        {query.length === 0 && suggestions && (
+          <div className="space-y-8">
+            {suggestions.videos.length > 0 && (
+              <section>
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">
+                  Trending Videos
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {suggestions.videos.map((video) => (
+                    <Link
+                      key={video.id}
+                      href={`/@${video.user.username ?? "anonymous"}/${video.id}`}
+                      className="group block"
+                    >
+                      <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-surface border border-border">
+                        {video.thumbnailUrl ? (
+                          <img
+                            src={video.thumbnailUrl}
+                            alt={video.title ?? "Video"}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <svg className="w-10 h-10 text-muted/40" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                          </div>
+                        )}
+                        {video.duration && (
+                          <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                            {formatDuration(video.duration)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <p className="text-sm font-medium text-text line-clamp-2 leading-snug">
+                          {video.title ?? "Untitled"}
+                        </p>
+                        <p className="text-xs text-muted mt-0.5">
+                          @{video.user.username ?? "anonymous"}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {suggestions.products.length > 0 && (
+              <section>
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">
+                  Popular Products
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {suggestions.products.map((product) => (
+                    <a
+                      key={product.id}
+                      href={product.affiliateUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group block"
+                    >
+                      <div className="relative aspect-square rounded-xl overflow-hidden bg-surface border border-border">
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <svg className="w-10 h-10 text-muted/40" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <p className="text-sm font-medium text-text line-clamp-2 leading-snug">
+                          {product.name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {product.brand && (
+                            <span className="text-xs text-muted">{product.brand}</span>
+                          )}
+                          {product.priceDisplay && (
+                            <span className="text-xs font-semibold text-accent">
+                              {product.priceDisplay}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {suggestions.creators.length > 0 && (
+              <section>
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">
+                  Top Creators
+                </h3>
+                <div className="space-y-2">
+                  {suggestions.creators.map((creator) => (
+                    <Link
+                      key={creator.id}
+                      href={`/@${creator.username ?? creator.id}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border hover:border-accent/20 transition-all"
+                    >
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-card overflow-hidden">
+                        {creator.avatarUrl ? (
+                          <img
+                            src={creator.avatarUrl}
+                            alt={creator.name ?? creator.username ?? "Creator"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text truncate">
+                          {creator.name ?? creator.username ?? "Anonymous"}
+                        </p>
+                        {creator.username && (
+                          <p className="text-xs text-muted">@{creator.username}</p>
+                        )}
+                        {creator.bio && (
+                          <p className="text-xs text-muted mt-0.5 line-clamp-1">{creator.bio}</p>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <p className="text-xs text-muted">
+                          {creator._count.videos} {creator._count.videos === 1 ? "video" : "videos"}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {suggestions.merchants.length > 0 && (
+              <section>
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">
+                  Top Stores
+                </h3>
+                <div className="space-y-2">
+                  {suggestions.merchants.map((merchant) => (
+                    <Link
+                      key={merchant.id}
+                      href={`/store/${merchant.id}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border hover:border-accent/20 transition-all"
+                    >
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-card overflow-hidden border border-border">
+                        {merchant.storeLogoUrl ? (
+                          <img
+                            src={merchant.storeLogoUrl}
+                            alt={merchant.storeName ?? "Store"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-accent/10">
+                            <span className="text-lg font-bold text-accent">
+                              {(merchant.storeName ?? "S").charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text truncate">
+                          {merchant.storeName ?? "Unnamed Store"}
+                        </p>
+                        <p className="text-xs text-muted">
+                          {merchant._count.merchantProducts}{" "}
+                          {merchant._count.merchantProducts === 1 ? "product" : "products"}
+                        </p>
+                      </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* Empty initial state (no suggestions loaded yet) */}
+        {query.length === 0 && !suggestions && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-16 h-16 rounded-full bg-surface flex items-center justify-center mb-4">
               <svg className="w-8 h-8 text-muted" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

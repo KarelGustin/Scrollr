@@ -11,7 +11,7 @@ export default function ProductRow({ products, onProductClick }: ProductRowProps
   if (products.length === 0) return null;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-20 pb-[calc(60px+env(safe-area-inset-bottom,0px))] md:pb-6">
+    <div className="absolute bottom-0 left-0 right-0 z-20 pb-[calc(68px+env(safe-area-inset-bottom,0px))] md:pb-6">
       <div
         className="flex gap-3 px-4 overflow-x-auto scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch" }}
