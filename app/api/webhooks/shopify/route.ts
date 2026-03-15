@@ -59,6 +59,10 @@ export async function POST(req: NextRequest) {
 
   try {
     switch (topic) {
+      case "products/create":
+        await handleProductUpdate(shopDomain, payload);
+        break;
+
       case "products/update":
         await handleProductUpdate(shopDomain, payload);
         break;
