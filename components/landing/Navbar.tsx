@@ -51,12 +51,6 @@ export function Navbar() {
             Sign in
           </Link>
           <Link
-            href="/merchant-register"
-            className="text-sm text-warm-secondary hover:text-warm-text transition-colors"
-          >
-            Merchant Login
-          </Link>
-          <Link
             href="/register"
             className="text-sm font-semibold px-5 py-2.5 bg-coral text-white rounded-full hover:bg-coral-hover transition-all duration-200"
           >
