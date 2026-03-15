@@ -1,11 +1,12 @@
 import { getStripe } from "./stripe";
 import type Stripe from "stripe";
 
-const PLATFORM_FEE_PERCENT = 1; // 1% to Scrollr
+const PLATFORM_FEE_PERCENT = 12; // 12% to Scrollr
 const CREATOR_COMMISSION_PERCENT = 3; // 3% to creator
+const MERCHANT_PAYOUT_PERCENT = 85; // 85% to merchant
 
 /**
- * Create a Stripe Connect Express account for a merchant or creator.
+ * Create a Stripe Connect Standard account for a merchant or creator.
  * Returns the account ID.
  */
 export async function createConnectAccount(
@@ -14,12 +15,8 @@ export async function createConnectAccount(
 ): Promise<string> {
   const stripe = getStripe();
   const account = await stripe.accounts.create({
-    type: "express",
+    type: "standard",
     email,
-    capabilities: {
-      transfers: { requested: true },
-      ...(type === "merchant" ? { card_payments: { requested: true } } : {}),
-    },
     metadata: { role: type },
   });
   return account.id;
@@ -63,60 +60,70 @@ export async function createDashboardLink(accountId: string): Promise<string> {
 
 /**
  * Calculate fee split for a given order total.
+ * Splits subtotal into: 85% merchant, 12% platform, 3% creator.
  */
 export function calculateFeeSplit(subtotal: number, shippingCost: number) {
-  const productTotal = subtotal;
-  const platformFee = Math.round(productTotal * PLATFORM_FEE_PERCENT) / 100;
-  const creatorCommission =
-    Math.round(productTotal * CREATOR_COMMISSION_PERCENT) / 100;
+  const platformFee = subtotal * (PLATFORM_FEE_PERCENT / 100);
+  const creatorCommission = subtotal * (CREATOR_COMMISSION_PERCENT / 100);
   const total = subtotal + shippingCost;
-  const merchantPayout = total - platformFee - creatorCommission;
-
-  return {
-    subtotal,
-    shippingCost,
-    total,
-    platformFee,
-    creatorCommission,
-    merchantPayout,
-  };
+  const merchantPayout = subtotal * (MERCHANT_PAYOUT_PERCENT / 100);
+  return { subtotal, shippingCost, total, platformFee, creatorCommission, merchantPayout };
 }
 
 /**
- * Create a PaymentIntent with automatic split to merchant, creator gets a
- * separate transfer after payment succeeds.
- *
- * Scrollr is the platform — money flows through us, then out to merchant + creator.
+ * Create a platform-level PaymentIntent using Separate Charges and Transfers.
+ * Money is collected by the platform; transfers to merchant and creator are made separately.
+ * Use transfer_group to link all transfers to this payment.
  */
-export async function createCheckoutPayment({
-  amountCents,
-  merchantStripeId,
-  merchantPayoutCents,
-  currency = "usd",
-  metadata,
-}: {
+export async function createMarketplacePaymentIntent(params: {
   amountCents: number;
-  merchantStripeId: string;
-  merchantPayoutCents: number;
-  currency?: string;
+  currency: string;
+  transferGroup: string;
   metadata?: Record<string, string>;
 }): Promise<Stripe.PaymentIntent> {
   const stripe = getStripe();
-
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: amountCents,
-    currency,
-    // The application_fee_amount is everything that stays on the platform
-    // (platform fee + creator commission). Creator gets transferred separately.
-    application_fee_amount: amountCents - merchantPayoutCents,
-    transfer_data: {
-      destination: merchantStripeId,
-    },
-    metadata: metadata ?? {},
+  return stripe.paymentIntents.create({
+    amount: params.amountCents,
+    currency: params.currency,
+    transfer_group: params.transferGroup,
     automatic_payment_methods: { enabled: true },
+    metadata: params.metadata || {},
   });
+}
 
-  return paymentIntent;
+/**
+ * Transfer merchant payout to a Standard Connect account after payment succeeds.
+ */
+export async function createMerchantTransfer(params: {
+  amountCents: number;
+  currency: string;
+  destinationAccountId: string;
+  transferGroup: string;
+  metadata?: Record<string, string>;
+}): Promise<Stripe.Transfer> {
+  const stripe = getStripe();
+  return stripe.transfers.create({
+    amount: params.amountCents,
+    currency: params.currency,
+    destination: params.destinationAccountId,
+    transfer_group: params.transferGroup,
+    metadata: params.metadata || {},
+  });
+}
+
+/**
+ * Refund a PaymentIntent, reversing associated transfers.
+ */
+export async function refundPayment(params: {
+  paymentIntentId: string;
+  amount?: number;
+}): Promise<Stripe.Refund> {
+  const stripe = getStripe();
+  return stripe.refunds.create({
+    payment_intent: params.paymentIntentId,
+    amount: params.amount,
+    reverse_transfer: true,
+  });
 }
 
 /**
