@@ -132,6 +132,117 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { type } = body;
 
+  // ── Demo videos for feed ──
+  if (type === "demo-videos") {
+    const DEMO_VIDEOS = [
+      {
+        url: "https://jxztvoxjhhwghjkksuqm.supabase.co/storage/v1/object/public/lander/heroVideo.mp4",
+        title: "Summer Collection Lookbook",
+        description: "Check out these trending summer styles",
+        category: "fashion",
+        duration: 30,
+        creator: { name: "Emma Style", username: "emmastyle" },
+        products: [
+          { name: "Oversized Linen Shirt", brand: "Urban Thread", price: 49.99, tags: "fashion" },
+          { name: "High-Waist Shorts", brand: "Urban Thread", price: 39.99, tags: "fashion" },
+        ],
+      },
+      {
+        url: "https://jxztvoxjhhwghjkksuqm.supabase.co/storage/v1/object/public/lander/video2.mp4",
+        title: "My Morning Skincare Routine",
+        description: "Products I use every single morning for glowing skin",
+        category: "beauty",
+        duration: 25,
+        creator: { name: "Mia Glow", username: "miaglow" },
+        products: [
+          { name: "Vitamin C Serum", brand: "Glow Essentials", price: 34.99, tags: "beauty" },
+          { name: "Hydrating Moisturizer", brand: "Glow Essentials", price: 28.99, tags: "beauty" },
+          { name: "SPF 50 Sunscreen", brand: "Glow Essentials", price: 22.99, tags: "beauty" },
+        ],
+      },
+      {
+        url: "https://jxztvoxjhhwghjkksuqm.supabase.co/storage/v1/object/public/lander/video3.mp4",
+        title: "Tech Gadgets You Need",
+        description: "My top 3 tech picks this month",
+        category: "tech",
+        duration: 20,
+        creator: { name: "Luca Tech", username: "lucatech" },
+        products: [
+          { name: "Wireless Earbuds Pro", brand: "TechVault", price: 49.99, tags: "tech" },
+          { name: "USB-C Hub 7-in-1", brand: "TechVault", price: 34.99, tags: "tech" },
+        ],
+      },
+    ];
+
+    const createdVideos: { id: string; title: string }[] = [];
+
+    for (const demo of DEMO_VIDEOS) {
+      // Check if creator already exists
+      let creator = await prisma.user.findFirst({
+        where: { username: demo.creator.username },
+      });
+
+      if (!creator) {
+        creator = await prisma.user.create({
+          data: {
+            email: `${demo.creator.username}@demo.scrollr.io`,
+            username: demo.creator.username,
+            name: demo.creator.name,
+            role: "CREATOR",
+            bio: `Content creator on Scrollr`,
+          },
+        });
+      }
+
+      // Create video record
+      const video = await prisma.video.create({
+        data: {
+          userId: creator.id,
+          hlsUrl: demo.url,
+          title: demo.title,
+          description: demo.description,
+          category: demo.category,
+          duration: demo.duration,
+          status: "READY",
+          published: true,
+        },
+      });
+
+      // Create products and link them to the video
+      for (let pi = 0; pi < demo.products.length; pi++) {
+        const prod = demo.products[pi];
+        const product = await prisma.product.create({
+          data: {
+            userId: creator.id,
+            name: prod.name,
+            brand: prod.brand,
+            price: prod.price,
+            priceDisplay: `$${prod.price.toFixed(2)}`,
+            imageUrl: `https://placehold.co/400x400/FF6B4A/ffffff?text=${encodeURIComponent(prod.name)}`,
+            affiliateUrl: `https://example.com/shop/${encodeURIComponent(prod.name.toLowerCase().replace(/ /g, "-"))}`,
+            tags: prod.tags,
+            published: true,
+          },
+        });
+
+        await prisma.videoProduct.create({
+          data: {
+            videoId: video.id,
+            productId: product.id,
+            position: pi,
+          },
+        });
+      }
+
+      createdVideos.push({ id: video.id, title: demo.title! });
+    }
+
+    return NextResponse.json(
+      { created: createdVideos, count: createdVideos.length },
+      { status: 201 },
+    );
+  }
+
   // ── Merchant dummy data ──
   if (type === "merchant") {
     const { count = 5 } = body as { count?: number };
