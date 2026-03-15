@@ -20,11 +20,10 @@ interface VideoFeedProps {
   showBranding: boolean;
   showCreator?: boolean;
   allowAnonymous?: boolean;
-  creatorTopClass?: string;
   hideCartButton?: boolean;
 }
 
-export default function VideoFeed({ videos, showBranding, showCreator = false, allowAnonymous = false, creatorTopClass, hideCartButton = false }: VideoFeedProps) {
+export default function VideoFeed({ videos, showBranding, showCreator = false, allowAnonymous = false, hideCartButton = false }: VideoFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentIndex = useFeedStore((s) => s.currentIndex);
   const setCurrentIndex = useFeedStore((s) => s.setCurrentIndex);
@@ -169,7 +168,7 @@ export default function VideoFeed({ videos, showBranding, showCreator = false, a
     <>
       <div
         ref={containerRef}
-        className="h-[100svh] w-full overflow-y-scroll bg-black"
+        className="h-[100dvh] w-full overflow-y-scroll bg-black"
         style={{
           scrollSnapType: "y mandatory",
           WebkitOverflowScrolling: "touch",
@@ -188,11 +187,10 @@ export default function VideoFeed({ videos, showBranding, showCreator = false, a
                   isActive={isActive}
                   index={index}
                   showCreator={showCreator}
-                  creatorTopClass={creatorTopClass}
                   onProductClick={handleProductClick}
                 />
               ) : (
-                <div className="h-[100svh] w-full bg-black" />
+                <div className="h-[100dvh] w-full bg-black" />
               )}
             </div>
           );
