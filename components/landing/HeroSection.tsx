@@ -18,14 +18,13 @@ export function HeroSection() {
         {/* Copy */}
         <div className="flex-1 text-center lg:text-left stagger-children">
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-display font-extrabold leading-[0.95] tracking-tight text-warm-text">
-            Window shopping,
+            Shop what creators
             <br />
-            <span className="gradient-text">reimagined.</span>
+            <span className="gradient-text">actually wear.</span>
           </h1>
 
           <p className="mt-6 text-lg sm:text-xl text-warm-secondary max-w-lg leading-relaxed">
-            Discover products through short videos from creators you love.
-            Scroll, tap, shop — all in one feed.
+            A TikTok-style feed where every product is real, every creator is authentic, and checkout never leaves the app. No redirects. No broken links. Just scroll, tap, buy.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -33,16 +32,16 @@ export function HeroSection() {
               href="/discover"
               className="inline-flex items-center justify-center px-8 py-4 bg-coral text-white font-semibold text-base rounded-full transition-all duration-300 hover:bg-coral-hover hover:scale-[1.02] shadow-lg shadow-coral/20"
             >
-              Start Window Scrolling
+              Start Scrolling
               <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>
             </Link>
             <Link
-              href="/register"
+              href="/apply"
               className="inline-flex items-center justify-center px-8 py-4 text-warm-text font-medium text-base rounded-full border-2 border-warm-border hover:border-coral hover:text-coral transition-all duration-300"
             >
-              I&apos;m a Creator
+              Apply as Creator
             </Link>
           </div>
         </div>

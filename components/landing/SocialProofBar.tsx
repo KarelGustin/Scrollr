@@ -25,7 +25,7 @@ export function SocialProofBar() {
             ))}
           </div>
           <span className="ml-3 text-sm font-medium text-warm-text">
-            Join 2,000+ creators and shoppers
+            Backed by real merchants on Shopify
           </span>
         </div>
 
@@ -41,7 +41,18 @@ export function SocialProofBar() {
               </svg>
             ))}
           </div>
-          <span className="text-sm text-warm-secondary">4.9 from early users</span>
+          <span className="text-sm text-warm-secondary">Built in Europe, for Europe</span>
+        </div>
+
+        {/* Divider */}
+        <div className="hidden sm:block w-px h-6 bg-warm-border" />
+
+        {/* Zero cost */}
+        <div className="flex items-center gap-1.5">
+          <svg className="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+          </svg>
+          <span className="text-sm font-medium text-warm-text">€0 to start</span>
         </div>
       </div>
     </section>

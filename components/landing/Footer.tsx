@@ -8,7 +8,7 @@ export function Footer() {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <span className="text-lg font-display font-bold text-warm-text">Scrollr</span>
-            <span className="text-sm text-warm-muted">Made for creators and shoppers</span>
+            <span className="text-sm text-warm-muted">Video-first social commerce</span>
           </div>
 
           {/* Links */}
