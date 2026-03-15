@@ -144,8 +144,15 @@ export function BottomNav({ user, pathname }: BottomNavProps) {
     }
   };
 
+  // Use transparent glass style on video pages (feed/discover)
+  const isVideoPage = pathname === "/feed" || pathname === "/discover" || pathname.startsWith("/discover?");
+
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg/80 backdrop-blur-xl border-t border-border safe-bottom">
+    <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-40 safe-bottom transition-colors ${
+      isVideoPage
+        ? "bg-black/40 backdrop-blur-xl border-t border-white/10"
+        : "bg-bg/80 backdrop-blur-xl border-t border-border"
+    }`}>
       <div className="flex items-center justify-around max-w-lg mx-auto h-[52px]">
         {tabs.map((tab) => {
           const active = isActive(tab.href, pathname);
@@ -155,7 +162,9 @@ export function BottomNav({ user, pathname }: BottomNavProps) {
               href={tab.href}
               onClick={(e) => handleTabClick(e, tab)}
               className={`flex flex-col items-center justify-center gap-0.5 px-4 py-1 transition-colors ${
-                active ? "text-text" : "text-muted"
+                isVideoPage
+                  ? active ? "text-white" : "text-white/50"
+                  : active ? "text-text" : "text-muted"
               }`}
             >
               {tab.icon(active)}
