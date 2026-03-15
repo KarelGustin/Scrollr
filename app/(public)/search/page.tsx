@@ -172,42 +172,48 @@ export default function SearchPage() {
                   Trending Videos
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {suggestions.videos.map((video) => (
-                    <Link
-                      key={video.id}
-                      href={`/@${video.user.username ?? "anonymous"}/${video.id}`}
-                      className="group block"
-                    >
-                      <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-surface border border-border">
-                        {video.thumbnailUrl ? (
-                          <img
-                            src={video.thumbnailUrl}
-                            alt={video.title ?? "Video"}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <svg className="w-10 h-10 text-muted/40" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
-                            </svg>
+                  {suggestions.videos.map((video) => {
+                    const username = video.user.username ?? "anonymous";
+                    return (
+                      <article key={video.id} className="group block">
+                        <Link
+                          href={`/@${username}/${video.id}`}
+                          className="block"
+                        >
+                          <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-surface border border-border">
+                            {video.thumbnailUrl ? (
+                              <img
+                                src={video.thumbnailUrl}
+                                alt={video.title ?? "Video"}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <svg className="w-10 h-10 text-muted/40" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                </svg>
+                              </div>
+                            )}
+                            {video.duration && (
+                              <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                {formatDuration(video.duration)}
+                              </span>
+                            )}
                           </div>
-                        )}
-                        {video.duration && (
-                          <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
-                            {formatDuration(video.duration)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-2">
-                        <p className="text-sm font-medium text-text line-clamp-2 leading-snug">
-                          {video.title ?? "Untitled"}
-                        </p>
-                        <p className="text-xs text-muted mt-0.5">
-                          @{video.user.username ?? "anonymous"}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
+                        </Link>
+                        <div className="mt-2">
+                          <Link href={`/@${username}/${video.id}`} className="block">
+                            <p className="text-sm font-medium text-text line-clamp-2 leading-snug">
+                              {video.title ?? "Untitled"}
+                            </p>
+                          </Link>
+                          <Link href={`/@${username}`} className="text-xs text-muted mt-0.5 hover:text-text transition-colors">
+                            @{username}
+                          </Link>
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -411,42 +417,48 @@ export default function SearchPage() {
                   </h3>
                 )}
                 <div className="grid grid-cols-2 gap-3">
-                  {data.videos.map((video) => (
-                    <Link
-                      key={video.id}
-                      href={`/@${video.user.username ?? "anonymous"}/${video.id}`}
-                      className="group block"
-                    >
-                      <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-surface border border-border">
-                        {video.thumbnailUrl ? (
-                          <img
-                            src={video.thumbnailUrl}
-                            alt={video.title ?? "Video"}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <svg className="w-10 h-10 text-muted/40" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
-                            </svg>
+                  {data.videos.map((video) => {
+                    const username = video.user.username ?? "anonymous";
+                    return (
+                      <article key={video.id} className="group block">
+                        <Link
+                          href={`/@${username}/${video.id}`}
+                          className="block"
+                        >
+                          <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-surface border border-border">
+                            {video.thumbnailUrl ? (
+                              <img
+                                src={video.thumbnailUrl}
+                                alt={video.title ?? "Video"}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <svg className="w-10 h-10 text-muted/40" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                </svg>
+                              </div>
+                            )}
+                            {video.duration && (
+                              <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                {formatDuration(video.duration)}
+                              </span>
+                            )}
                           </div>
-                        )}
-                        {video.duration && (
-                          <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
-                            {formatDuration(video.duration)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-2">
-                        <p className="text-sm font-medium text-text line-clamp-2 leading-snug">
-                          {video.title ?? "Untitled"}
-                        </p>
-                        <p className="text-xs text-muted mt-0.5">
-                          @{video.user.username ?? "anonymous"}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
+                        </Link>
+                        <div className="mt-2">
+                          <Link href={`/@${username}/${video.id}`} className="block">
+                            <p className="text-sm font-medium text-text line-clamp-2 leading-snug">
+                              {video.title ?? "Untitled"}
+                            </p>
+                          </Link>
+                          <Link href={`/@${username}`} className="text-xs text-muted mt-0.5 hover:text-text transition-colors">
+                            @{username}
+                          </Link>
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               </section>
             )}
