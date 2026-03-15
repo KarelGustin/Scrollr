@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import Hls from "hls.js";
 import type { FeedVideo, FeedVideoProduct } from "@/types";
+import { useFeedStore } from "@/stores/feedStore";
 import ProductRow from "./ProductRow";
 import ShareButton from "./ShareButton";
 import ReportButton from "./ReportButton";
@@ -28,6 +29,19 @@ export default function VideoSlide({
   const hasStartedRef = useRef(false);
   const watchStartRef = useRef<number>(0);
 
+  // Shared mute state
+  const isMuted = useFeedStore((s) => s.isMuted);
+  const toggleMute = useFeedStore((s) => s.toggleMute);
+
+  // Mute icon animation
+  const [showMuteIcon, setShowMuteIcon] = useState(false);
+  const muteIconTimeout = useRef<ReturnType<typeof setTimeout>>();
+
+  // Long-press state
+  const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
+  const isLongPressing = useRef(false);
+  const [isPaused, setIsPaused] = useState(false);
+
   // Set up HLS playback
   useEffect(() => {
     const el = videoRef.current;
@@ -37,7 +51,6 @@ export default function VideoSlide({
     const isPlainVideo = /\.(mp4|webm|mov)(\?|$)/i.test(src);
 
     if (isPlainVideo) {
-      // Direct mp4/webm — no HLS needed
       el.src = src;
     } else if (el.canPlayType("application/vnd.apple.mpegurl")) {
       el.src = src;
@@ -59,6 +72,12 @@ export default function VideoSlide({
     };
   }, [video.hlsUrl]);
 
+  // Sync mute state to video element
+  useEffect(() => {
+    const el = videoRef.current;
+    if (el) el.muted = isMuted;
+  }, [isMuted]);
+
   // Play/pause based on isActive + track watch duration
   useEffect(() => {
     const el = videoRef.current;
@@ -66,9 +85,9 @@ export default function VideoSlide({
 
     if (isActive) {
       watchStartRef.current = Date.now();
+      el.muted = isMuted;
       el.play().catch(() => {});
     } else {
-      // Fire watch duration when user scrolls away
       if (hasStartedRef.current) {
         const watchDuration = (Date.now() - watchStartRef.current) / 1000;
         const videoDuration = el.duration || video.duration || 1;
@@ -87,7 +106,7 @@ export default function VideoSlide({
       el.pause();
       hasStartedRef.current = false;
     }
-  }, [isActive, video.id, video.duration]);
+  }, [isActive, video.id, video.duration, isMuted]);
 
   const handlePlay = useCallback(() => {
     if (!hasStartedRef.current) {
@@ -100,29 +119,88 @@ export default function VideoSlide({
     }
   }, [video.id]);
 
-  const handleTap = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  // Tap = toggle mute with animated icon
+  const handleTap = useCallback(() => {
+    toggleMute();
+
+    // Show mute/unmute icon animation
+    setShowMuteIcon(true);
+    if (muteIconTimeout.current) clearTimeout(muteIconTimeout.current);
+    muteIconTimeout.current = setTimeout(() => setShowMuteIcon(false), 800);
+  }, [toggleMute]);
+
+  // Long press handlers
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (target.closest("button") || target.closest("a")) return;
 
-    const el = videoRef.current;
-    if (!el) return;
-
-    if (el.paused) {
-      el.play().catch(() => {});
-    } else {
-      el.pause();
-    }
+    isLongPressing.current = false;
+    longPressTimer.current = setTimeout(() => {
+      isLongPressing.current = true;
+      const el = videoRef.current;
+      if (el && !el.paused) {
+        el.pause();
+        setIsPaused(true);
+      }
+    }, 300);
   }, []);
 
-  // Product row height: ~80px cards + 68px nav padding + safe area
-  // Creator info sits above product row, actions sit above creator
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = undefined;
+    }
+
+    if (isLongPressing.current) {
+      // Was a long press — resume video
+      isLongPressing.current = false;
+      const el = videoRef.current;
+      if (el && isActive) {
+        el.play().catch(() => {});
+        setIsPaused(false);
+      }
+    } else {
+      // Was a short tap — toggle mute
+      const target = e.target as HTMLElement;
+      if (target.closest("button") || target.closest("a")) return;
+      handleTap();
+    }
+  }, [isActive, handleTap]);
+
+  const handlePointerCancel = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = undefined;
+    }
+    if (isLongPressing.current) {
+      isLongPressing.current = false;
+      const el = videoRef.current;
+      if (el && isActive) {
+        el.play().catch(() => {});
+        setIsPaused(false);
+      }
+    }
+  }, [isActive]);
+
+  // Clean up timers
+  useEffect(() => {
+    return () => {
+      if (muteIconTimeout.current) clearTimeout(muteIconTimeout.current);
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    };
+  }, []);
+
   const hasProducts = video.products.length > 0;
 
   return (
     <div
-      className="relative h-[100dvh] w-full flex-shrink-0 bg-black overflow-hidden"
+      className="relative h-[100dvh] w-full flex-shrink-0 bg-black overflow-hidden select-none"
       style={{ scrollSnapAlign: "start" }}
-      onClick={handleTap}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onPointerLeave={handlePointerCancel}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {/* Video */}
       <video
@@ -144,6 +222,44 @@ export default function VideoSlide({
             "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 50%)",
         }}
       />
+
+      {/* Mute/unmute icon animation */}
+      {showMuteIcon && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+          <div
+            className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center"
+            style={{ animation: "muteIconFade 0.8s ease-out forwards" }}
+          >
+            {isMuted ? (
+              // Muted icon (speaker with X)
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <line x1="23" y1="9" x2="17" y2="15" />
+                <line x1="17" y1="9" x2="23" y2="15" />
+              </svg>
+            ) : (
+              // Unmuted icon (speaker with waves)
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+              </svg>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Hold-to-pause indicator */}
+      {isPaused && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+          <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+              <rect x="6" y="4" width="4" height="16" rx="1" />
+              <rect x="14" y="4" width="4" height="16" rx="1" />
+            </svg>
+          </div>
+        </div>
+      )}
 
       {/* Right side actions — above product cards */}
       <div className={`absolute right-3 z-20 flex flex-col gap-3 ${hasProducts ? "bottom-[calc(160px+env(safe-area-inset-bottom,0px))] md:bottom-32" : "bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-20"}`}>
