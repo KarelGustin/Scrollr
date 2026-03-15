@@ -3,6 +3,7 @@
 import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/nav/BottomNav";
+import { Sidebar } from "@/components/nav/Sidebar";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -10,7 +11,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
   return (
     <>
-      <main className="pb-[76px] md:pb-0">{children}</main>
+      {user && <Sidebar />}
+      <main className={`pb-[76px] md:pb-0 ${user ? "md:ml-[200px]" : ""}`}>{children}</main>
       <BottomNav user={user} pathname={pathname} />
     </>
   );
