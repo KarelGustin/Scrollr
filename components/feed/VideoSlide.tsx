@@ -33,8 +33,12 @@ export default function VideoSlide({
     if (!el) return;
 
     const src = video.hlsUrl;
+    const isPlainVideo = /\.(mp4|webm|mov)(\?|$)/i.test(src);
 
-    if (el.canPlayType("application/vnd.apple.mpegurl")) {
+    if (isPlainVideo) {
+      // Direct mp4/webm — no HLS needed
+      el.src = src;
+    } else if (el.canPlayType("application/vnd.apple.mpegurl")) {
       el.src = src;
     } else if (Hls.isSupported()) {
       const hls = new Hls({
