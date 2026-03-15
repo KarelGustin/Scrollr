@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useUpload } from "@/hooks/useUpload";
 import { useQueryClient } from "@tanstack/react-query";
 import { MerchantProductPicker } from "./MerchantProductPicker";
+import { useAuth } from "@/lib/auth-context";
 
 interface UploadModalProps {
   open: boolean;
@@ -27,6 +28,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
   const queryClient = useQueryClient();
 
   const { progress, uploading, error: uploadError, upload, reset: resetUpload } = useUpload();
+  const { user } = useAuth();
 
   // Lock body scroll when open
   useEffect(() => {
@@ -395,18 +397,48 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
       {step === "success" && (
         <div className="flex flex-col items-center justify-center px-6" style={{ minHeight: "calc(100svh - 48px)" }}>
           <div className="w-full max-w-sm text-center space-y-6">
-            {/* Success animation */}
+            {/* Success animation with pulse ring + confetti */}
             <div className="relative mx-auto w-20 h-20">
-              <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center animate-in zoom-in duration-300">
+              {/* Outer pulse ring */}
+              <div className="absolute inset-0 rounded-full bg-success/20 animate-pulse-ring" />
+              <div className="relative w-20 h-20 rounded-full bg-success/10 flex items-center justify-center animate-in zoom-in duration-300">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-success">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
+              {/* Confetti burst */}
+              {[
+                { x: "-50px", y: "-60px", color: "bg-accent" },
+                { x: "55px", y: "-45px", color: "bg-success" },
+                { x: "65px", y: "25px", color: "bg-coral-soft" },
+                { x: "35px", y: "60px", color: "bg-warning" },
+                { x: "-35px", y: "65px", color: "bg-social" },
+                { x: "-60px", y: "15px", color: "bg-accent" },
+                { x: "-45px", y: "-30px", color: "bg-success" },
+                { x: "25px", y: "-65px", color: "bg-warning" },
+              ].map((dot, i) => (
+                <div
+                  key={i}
+                  className={`absolute top-1/2 left-1/2 w-2 h-2 rounded-full ${dot.color}`}
+                  style={{
+                    "--x": dot.x,
+                    "--y": dot.y,
+                    animation: "confetti-burst 0.8s ease-out forwards",
+                    animationDelay: `${i * 0.05}s`,
+                  } as React.CSSProperties}
+                />
+              ))}
             </div>
 
             <div>
               <h2 className="text-2xl font-display font-bold text-text">Your post is live!</h2>
-              <p className="text-sm text-muted mt-2">Share it with your followers on social media</p>
+              {user?.role === "CREATOR" ? (
+                <p className="text-sm text-muted mt-2">
+                  Your content is now live. Start earning from every view and sale!
+                </p>
+              ) : (
+                <p className="text-sm text-muted mt-2">Share it with your followers on social media</p>
+              )}
             </div>
 
             {/* Video preview */}
@@ -496,6 +528,21 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
                 }}
               />
             </div>
+
+            {/* Share subtitle for creators */}
+            {user?.role === "CREATOR" && (
+              <p className="text-xs text-muted">
+                Share to earn more — videos with products earn creators 3% on every sale
+              </p>
+            )}
+
+            {/* Post Another Video */}
+            <button
+              onClick={resetAll}
+              className="w-full py-3 bg-surface border border-border text-sm font-semibold text-text rounded-2xl hover:bg-card transition-colors active:scale-[0.98]"
+            >
+              Post Another Video
+            </button>
 
             {/* Done button */}
             <button

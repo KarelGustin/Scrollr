@@ -21,7 +21,7 @@ const desktopCreatorLinks = [
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, status } = useAuth();
+  const { user, status, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -112,6 +112,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             >
               {isCreator ? "Dashboard" : "Profile"}
             </Link>
+            <button
+              onClick={async () => { await signOut(); router.replace("/"); }}
+              className="text-sm font-medium text-muted hover:text-destructive transition-colors"
+            >
+              Sign Out
+            </button>
           </div>
         </div>
       </header>

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import SearchBar from "@/components/search/SearchBar";
 
-type TabType = "all" | "videos" | "products" | "creators";
+type TabType = "all" | "videos" | "products" | "creators" | "stores";
 
 interface SearchVideo {
   id: string;
@@ -47,10 +47,20 @@ interface SearchCreator {
   };
 }
 
+interface SearchMerchant {
+  id: string;
+  storeName: string | null;
+  storeLogoUrl: string | null;
+  _count: {
+    merchantProducts: number;
+  };
+}
+
 interface SearchResults {
   videos: SearchVideo[];
   products: SearchProduct[];
   creators: SearchCreator[];
+  merchants: SearchMerchant[];
 }
 
 const tabs: { key: TabType; label: string }[] = [
@@ -58,6 +68,7 @@ const tabs: { key: TabType; label: string }[] = [
   { key: "videos", label: "Videos" },
   { key: "products", label: "Products" },
   { key: "creators", label: "Creators" },
+  { key: "stores", label: "Stores" },
 ];
 
 async function fetchSearchResults(query: string, type: TabType): Promise<SearchResults> {
@@ -94,7 +105,10 @@ export default function SearchPage() {
 
   const hasResults =
     data &&
-    (data.videos.length > 0 || data.products.length > 0 || data.creators.length > 0);
+    (data.videos.length > 0 ||
+      data.products.length > 0 ||
+      data.creators.length > 0 ||
+      data.merchants.length > 0);
 
   return (
     <div className="min-h-screen bg-bg">
@@ -117,12 +131,12 @@ export default function SearchPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 mt-3">
+          <div className="flex gap-1 mt-3 overflow-x-auto hide-scrollbar">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                   activeTab === tab.key
                     ? "bg-accent text-accent-fg"
                     : "text-muted hover:text-text"
@@ -149,7 +163,7 @@ export default function SearchPage() {
               Search Scrollr
             </h2>
             <p className="text-sm text-muted">
-              Find videos, products, and creators
+              Find videos, products, creators, and stores
             </p>
           </div>
         )}
@@ -296,7 +310,7 @@ export default function SearchPage() {
                     <Link
                       key={creator.id}
                       href={`/@${creator.username ?? creator.id}`}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border hover:border-white/20 transition-all"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border hover:border-accent/20 transition-all"
                     >
                       {/* Avatar */}
                       <div className="flex-shrink-0 w-12 h-12 rounded-full bg-card overflow-hidden">
@@ -337,6 +351,59 @@ export default function SearchPage() {
                           {creator._count.products} {creator._count.products === 1 ? "product" : "products"}
                         </p>
                       </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Stores */}
+            {data.merchants.length > 0 && (activeTab === "all" || activeTab === "stores") && (
+              <section>
+                {activeTab === "all" && (
+                  <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">
+                    Stores
+                  </h3>
+                )}
+                <div className="space-y-2">
+                  {data.merchants.map((merchant) => (
+                    <Link
+                      key={merchant.id}
+                      href={`/store/${merchant.id}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border hover:border-accent/20 transition-all"
+                    >
+                      {/* Store logo / initial */}
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-card overflow-hidden border border-border">
+                        {merchant.storeLogoUrl ? (
+                          <img
+                            src={merchant.storeLogoUrl}
+                            alt={merchant.storeName ?? "Store"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-accent/10">
+                            <span className="text-lg font-bold text-accent">
+                              {(merchant.storeName ?? "S").charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text truncate">
+                          {merchant.storeName ?? "Unnamed Store"}
+                        </p>
+                        <p className="text-xs text-muted">
+                          {merchant._count.merchantProducts}{" "}
+                          {merchant._count.merchantProducts === 1 ? "product" : "products"}
+                        </p>
+                      </div>
+
+                      {/* Arrow */}
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
                     </Link>
                   ))}
                 </div>
