@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         imageUrl: `https://placehold.co/600x600/${bgColor}/ffffff?text=${encodedTitle}`,
         description: p.description,
         affiliateUrl: `/store/${slug}`,
-        sizes: p.sizes ? JSON.stringify(p.sizes) : null,
+        sizes: p.sizes ? JSON.stringify(p.sizes) : undefined,
         tags: p.tags,
         published: true,
       },
