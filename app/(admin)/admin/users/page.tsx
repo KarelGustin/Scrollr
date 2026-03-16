@@ -44,6 +44,8 @@ export default function UsersPage() {
     },
   });
 
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
   const userAction = useMutation({
     mutationFn: async (body: {
       userId: string;
@@ -64,6 +66,23 @@ export default function UsersPage() {
     },
     onError: () => {
       setActionInProgress(null);
+    },
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/admin/users?userId=${userId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Delete failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setDeleteConfirm(null);
     },
   });
 
@@ -251,6 +270,30 @@ export default function UsersPage() {
                               className="px-2.5 py-1 bg-destructive text-white text-[11px] font-semibold rounded-md hover:bg-destructive/90 transition-colors disabled:opacity-50"
                             >
                               Ban
+                            </button>
+                          )}
+                          {deleteConfirm === user.id ? (
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => deleteUser.mutate(user.id)}
+                                disabled={deleteUser.isPending}
+                                className="px-2.5 py-1 bg-destructive text-white text-[11px] font-semibold rounded-md hover:bg-destructive/90 transition-colors disabled:opacity-50"
+                              >
+                                {deleteUser.isPending ? "..." : "Confirm Delete"}
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(null)}
+                                className="px-2.5 py-1 bg-card text-muted text-[11px] font-semibold rounded-md hover:text-text transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeleteConfirm(user.id)}
+                              className="px-2.5 py-1 bg-destructive/10 text-destructive text-[11px] font-semibold rounded-md hover:bg-destructive/20 transition-colors"
+                            >
+                              Delete
                             </button>
                           )}
                         </div>

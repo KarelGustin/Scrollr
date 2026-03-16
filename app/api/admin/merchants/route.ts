@@ -172,3 +172,38 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json(merchant);
 }
+
+export async function DELETE(request: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { searchParams } = new URL(request.url);
+  const merchantId = searchParams.get("merchantId");
+
+  if (!merchantId) {
+    return NextResponse.json({ error: "merchantId is required" }, { status: 400 });
+  }
+
+  const merchant = await prisma.merchant.findUnique({
+    where: { id: merchantId },
+    select: { id: true, storeName: true, shopifyDomain: true, userId: true },
+  });
+
+  if (!merchant) {
+    return NextResponse.json({ error: "Merchant not found" }, { status: 404 });
+  }
+
+  try {
+    // Delete merchant (cascade deletes merchant products, orders via schema)
+    await prisma.merchant.delete({ where: { id: merchantId } });
+
+    return NextResponse.json({
+      success: true,
+      action: "merchant_deleted",
+      deletedMerchant: { id: merchant.id, storeName: merchant.storeName },
+    });
+  } catch (error) {
+    console.error("Failed to delete merchant:", error);
+    return NextResponse.json({ error: "Failed to delete merchant" }, { status: 500 });
+  }
+}

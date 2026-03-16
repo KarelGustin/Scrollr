@@ -139,3 +139,50 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });
 }
+
+export async function DELETE(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { role: true },
+  });
+  if (dbUser?.role !== "ADMIN")
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get("userId");
+
+  if (!userId) {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  }
+
+  // Prevent self-deletion
+  if (userId === user.id) {
+    return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true, email: true },
+  });
+
+  if (!targetUser) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  try {
+    // Cascade delete handles related records (videos, events, follows, etc.)
+    await prisma.user.delete({ where: { id: userId } });
+
+    return NextResponse.json({
+      success: true,
+      action: "user_deleted",
+      deletedUser: { id: targetUser.id, email: targetUser.email },
+    });
+  } catch (error) {
+    console.error("Failed to delete user:", error);
+    return NextResponse.json({ error: "Failed to delete user" }, { status: 500 });
+  }
+}
