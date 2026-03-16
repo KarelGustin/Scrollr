@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/Spinner";
 
@@ -181,8 +181,6 @@ const NAV_SECTIONS = [
   },
 ];
 
-const adminNavItems = NAV_SECTIONS.flatMap((s) => s.items);
-
 export default function AdminLayout({
   children,
 }: {
@@ -192,6 +190,13 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
+  // Close menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -239,6 +244,132 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-bg">
+      {/* Mobile top bar with hamburger */}
+      <header className="md:hidden fixed top-0 left-0 right-0 bg-surface border-b border-border z-30 flex items-center justify-between px-4 h-14">
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="p-2 -ml-2 text-muted hover:text-text transition-colors"
+          aria-label="Open menu"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-display font-bold text-text">Scrollr</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">
+            Admin
+          </span>
+        </div>
+        <div className="w-8" />
+      </header>
+
+      {/* Mobile sidebar overlay */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={closeMobileMenu} />
+          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-surface border-r border-border flex flex-col animate-in slide-in-from-left duration-200">
+            {/* Header with close */}
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-display font-bold text-text">Scrollr</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">
+                  Admin
+                </span>
+              </div>
+              <button
+                onClick={closeMobileMenu}
+                className="p-1.5 text-muted hover:text-text transition-colors"
+                aria-label="Close menu"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* User info */}
+            <div className="px-4 py-3 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-card flex items-center justify-center overflow-hidden shrink-0">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-medium text-muted">
+                      {userName.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-text truncate">{userName}</p>
+                  <span className="inline-block mt-0.5 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">
+                    ADMIN
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation - all sections */}
+            <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+              {NAV_SECTIONS.map((section) => (
+                <div key={section.title}>
+                  <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted/60">
+                    {section.title}
+                  </p>
+                  <div className="space-y-0.5">
+                    {section.items.map((item) => {
+                      const active = isActive(item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            active
+                              ? "bg-accent/10 text-accent"
+                              : "text-muted hover:text-text hover:bg-card/50"
+                          }`}
+                        >
+                          <span className={active ? "text-accent" : "text-muted"}>{item.icon}</span>
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </nav>
+
+            {/* Footer actions */}
+            <div className="px-4 pb-4 space-y-2 border-t border-border pt-3">
+              <Link
+                href="/dashboard"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-card text-muted text-sm font-medium rounded-lg hover:text-text hover:bg-card/80 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+                Back to Dashboard
+              </Link>
+              <button
+                onClick={async () => { await signOut(); router.replace("/"); }}
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-destructive text-sm font-medium rounded-lg hover:bg-destructive/10 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Sign Out
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
       {/* Desktop sidebar */}
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-surface border-r border-border flex-col z-30">
         {/* Logo + Admin badge */}
@@ -330,37 +461,7 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-border z-30 flex items-center justify-around px-2 py-2 safe-bottom">
-        {adminNavItems.slice(0, 4).map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
-                active ? "text-accent" : "text-muted"
-              }`}
-            >
-              <span>{item.icon}</span>
-              {item.label.split(" ")[0]}
-            </Link>
-          );
-        })}
-        <button
-          onClick={async () => { await signOut(); router.replace("/"); }}
-          className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium text-muted transition-colors"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          Sign Out
-        </button>
-      </nav>
-
-      <main className="md:ml-64 min-h-screen pb-20 md:pb-0">
+      <main className="md:ml-64 min-h-screen pt-14 md:pt-0">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {children}
         </div>
