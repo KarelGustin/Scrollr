@@ -63,26 +63,46 @@ export async function POST(
     return NextResponse.json({ error: "Merchant not found" }, { status: 404 });
   }
 
+  const parsedPrice = parseFloat(price);
+  if (isNaN(parsedPrice) || parsedPrice < 0) {
+    return NextResponse.json({ error: "Invalid price" }, { status: 400 });
+  }
+
+  const parsedCompareAt = compareAtPrice ? parseFloat(compareAtPrice) : null;
+  if (parsedCompareAt !== null && isNaN(parsedCompareAt)) {
+    return NextResponse.json({ error: "Invalid compare-at price" }, { status: 400 });
+  }
+
+  const parsedInventory = inventoryQuantity ? parseInt(inventoryQuantity, 10) : null;
+  if (parsedInventory !== null && isNaN(parsedInventory)) {
+    return NextResponse.json({ error: "Invalid inventory quantity" }, { status: 400 });
+  }
+
   const shopifyProductId = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
-  const product = await prisma.merchantProduct.create({
-    data: {
-      merchantId: id,
-      shopifyProductId,
-      title,
-      description: description || null,
-      imageUrl: imageUrl || null,
-      price: parseFloat(price),
-      compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
-      productType: productType || null,
-      vendor: vendor || null,
-      tags: tags || null,
-      inventoryQuantity: inventoryQuantity ? parseInt(inventoryQuantity) : null,
-      available: available !== undefined ? available : true,
-    },
-  });
+  try {
+    const product = await prisma.merchantProduct.create({
+      data: {
+        merchantId: id,
+        shopifyProductId,
+        title,
+        description: description || null,
+        imageUrl: imageUrl || null,
+        price: parsedPrice,
+        compareAtPrice: parsedCompareAt,
+        productType: productType || null,
+        vendor: vendor || null,
+        tags: tags || null,
+        inventoryQuantity: parsedInventory,
+        available: available !== undefined ? available : true,
+      },
+    });
 
-  return NextResponse.json(product, { status: 201 });
+    return NextResponse.json(product, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create product:", error);
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+  }
 }
 
 export async function PATCH(
@@ -106,20 +126,33 @@ export async function PATCH(
   if (updates.title !== undefined) data.title = updates.title;
   if (updates.description !== undefined) data.description = updates.description;
   if (updates.imageUrl !== undefined) data.imageUrl = updates.imageUrl;
-  if (updates.price !== undefined) data.price = parseFloat(updates.price);
-  if (updates.compareAtPrice !== undefined) data.compareAtPrice = updates.compareAtPrice ? parseFloat(updates.compareAtPrice) : null;
+  if (updates.price !== undefined) {
+    const p = parseFloat(updates.price);
+    if (isNaN(p) || p < 0) return NextResponse.json({ error: "Invalid price" }, { status: 400 });
+    data.price = p;
+  }
+  if (updates.compareAtPrice !== undefined) {
+    data.compareAtPrice = updates.compareAtPrice ? parseFloat(updates.compareAtPrice) || null : null;
+  }
   if (updates.productType !== undefined) data.productType = updates.productType;
   if (updates.vendor !== undefined) data.vendor = updates.vendor;
   if (updates.tags !== undefined) data.tags = updates.tags;
-  if (updates.inventoryQuantity !== undefined) data.inventoryQuantity = updates.inventoryQuantity ? parseInt(updates.inventoryQuantity) : null;
+  if (updates.inventoryQuantity !== undefined) {
+    data.inventoryQuantity = updates.inventoryQuantity ? parseInt(updates.inventoryQuantity, 10) || null : null;
+  }
   if (updates.available !== undefined) data.available = updates.available;
 
-  const product = await prisma.merchantProduct.update({
-    where: { id: productId },
-    data,
-  });
+  try {
+    const product = await prisma.merchantProduct.update({
+      where: { id: productId },
+      data,
+    });
 
-  return NextResponse.json(product);
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error("Failed to update product:", error);
+    return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
+  }
 }
 
 export async function DELETE(
@@ -138,9 +171,14 @@ export async function DELETE(
     return NextResponse.json({ error: "productId query param is required" }, { status: 400 });
   }
 
-  await prisma.merchantProduct.delete({
-    where: { id: productId },
-  });
+  try {
+    await prisma.merchantProduct.delete({
+      where: { id: productId },
+    });
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete product:", error);
+    return NextResponse.json({ error: "Product not found or already deleted" }, { status: 404 });
+  }
 }

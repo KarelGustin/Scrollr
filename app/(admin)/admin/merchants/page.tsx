@@ -413,6 +413,21 @@ function MerchantDetail({ merchant }: { merchant: Merchant }) {
     },
   });
 
+  const deleteMerchantMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/admin/merchants?merchantId=${merchant.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete merchant");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-merchants"] });
+    },
+  });
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const toggleActive = () => {
     updateMutation.mutate({ active: !merchant.active });
   };
@@ -488,6 +503,30 @@ function MerchantDetail({ merchant }: { merchant: Merchant }) {
         >
           View Store
         </a>
+        {showDeleteConfirm ? (
+          <div className="flex gap-2">
+            <button
+              onClick={() => deleteMerchantMutation.mutate()}
+              disabled={deleteMerchantMutation.isPending}
+              className="px-4 py-2 bg-destructive text-white text-sm font-semibold rounded-xl hover:bg-destructive/90 transition-colors disabled:opacity-50"
+            >
+              {deleteMerchantMutation.isPending ? "Deleting..." : "Confirm Delete"}
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-4 py-2 text-sm text-muted hover:text-text transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="px-4 py-2 bg-destructive/10 text-destructive text-sm font-semibold rounded-xl hover:bg-destructive/20 transition-colors"
+          >
+            Delete Merchant
+          </button>
+        )}
       </div>
 
       {updateMutation.isError && (
