@@ -190,6 +190,13 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
+  // Close menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -231,15 +238,6 @@ export default function AdminLayout({
     if (href === "/admin") return pathname === "/admin";
     return pathname.startsWith(href);
   };
-
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
-
-  // Close menu on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
 
   const userName = user.name ?? "Admin";
   const avatarUrl = user.avatarUrl;
