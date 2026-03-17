@@ -77,10 +77,11 @@ export default async function StorePage({ params }: { params: { slug: string } }
     <div className={`min-h-screen ${isDark ? "bg-[#111] text-white" : "bg-[#FAFAF8] text-[#1a1a1a]"}`}>
       <div className="max-w-6xl mx-auto pb-20">
         <StoreHeader
-          storeName={merchant.storeName || merchant.shopifyDomain}
+          storeName={merchant.storeName || merchant.shopifyDomain || "Store"}
           storeDescription={merchant.storeDescription}
           storeLogoUrl={merchant.storeLogoUrl}
           isDark={isDark}
+          productCount={products.length}
         />
         <StorePageClient
           products={products}
@@ -88,6 +89,7 @@ export default async function StorePage({ params }: { params: { slug: string } }
           isDark={isDark}
           merchantId={merchant.id}
           merchantUserId={merchant.user.id}
+          storeName={merchant.storeName || "Store"}
           ugcVideos={ugcVideos.map((v) => ({
             id: v.id,
             thumbnailUrl: v.thumbnailUrl,

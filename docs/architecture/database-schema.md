@@ -78,6 +78,7 @@ Scheduled payout to a creator, grouping one or more commissions.
 | OrderStatus | PENDING, PAID, FULFILLED, SHIPPED, DELIVERED, CANCELLED, REFUNDED |
 | ReportReason | SEXUAL_CONTENT, VIOLENCE, HATE_SPEECH, SPAM, SCAM, INVOLVES_MINOR, COPYRIGHT, SELF_HARM, OTHER |
 | ModerationAction | APPROVED, REJECTED, HIDDEN, RESTORED, USER_WARNED, USER_BANNED |
+| MerchantApplicationStatus | PENDING, APPROVED, REJECTED |
 | CommissionType | CREATOR_SALE (5%), PLATFORM_FEE (10%) |
 | CommissionStatus | PENDING, PAID, FAILED |
 | PayoutStatus | PENDING, PROCESSING, COMPLETED, FAILED |

@@ -168,6 +168,33 @@ After posting, creators can share to Instagram and TikTok via:
 - Tracked via `CreatorTarget` model (monthly)
 - Warning issued if target not met
 
+## Merchant Flow
+
+### Application
+Merchants apply at `/apply/merchant` with a 4-step form:
+1. **Brand**: Store name and URL
+2. **Platform**: Shopify, WooCommerce, CSV, or Other
+3. **Details**: Product category, description, monthly revenue, social presence
+4. **Review**: Summary with edit links
+
+API: `POST /api/merchant-application` creates a `MerchantApplication` record (status: PENDING).
+
+### Onboarding
+After approval, merchants set up their store at `/merchant/onboarding`:
+1. **Store Setup**: Name, logo, slug (URL), description with live preview
+2. **Shipping**: Standard/express rates, delivery times, return window
+3. **Products**: Shopify sync (or CSV/WooCommerce — coming soon)
+4. **Payments**: Stripe Connect onboarding for receiving 85% of sales
+
+### Storefront
+Each merchant gets a public storefront at `/store/[slug]` with:
+- Theme support (light/dark)
+- Product grid with category filtering
+- UGC videos section ("As Seen In") showing creator content tagged to the merchant's products
+- Product detail modal with variant selection, image carousel, add-to-cart
+- Follow button, product count
+- Responsive grid (2/3/4 columns based on screen size)
+
 ## Request Flow
 
 1. User request hits Next.js middleware

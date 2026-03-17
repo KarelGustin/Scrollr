@@ -115,6 +115,24 @@ Get current user's creator application status.
 ### POST /api/creator-application
 Submit creator application with category, social links, primary platform, follower count, and pitch.
 
+## Merchant Application
+
+### GET /api/merchant-application
+Get current user's merchant application status.
+
+### POST /api/merchant-application
+Submit merchant application.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| storeName | string | Yes | Store name (max 100 chars) |
+| storeUrl | string | No | Existing store URL |
+| storeType | string | Yes | "shopify", "woocommerce", "csv", or "other" |
+| category | string | Yes | Product category |
+| description | string | Yes | What they sell (max 500 chars) |
+| monthlyRevenue | string | No | Revenue range |
+| socialLinks | object | No | Social media handles |
+
 ## Checkout
 
 ### POST /api/checkout
