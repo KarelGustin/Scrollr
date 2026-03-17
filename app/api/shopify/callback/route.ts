@@ -117,18 +117,47 @@ export async function GET(req: NextRequest) {
     // Find or create Prisma user from shop email
     let user = await prisma.user.findUnique({ where: { email: shopEmail } });
     if (!user) {
+      // Auto-generate username from shop name
+      const baseUsername = (shopInfo.name || shop.replace(".myshopify.com", ""))
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 20);
+      let username = baseUsername;
+      const existing = await prisma.user.findUnique({ where: { username } });
+      if (existing) {
+        username = `${baseUsername.slice(0, 16)}${Math.floor(1000 + Math.random() * 9000)}`;
+      }
+
       user = await prisma.user.create({
         data: {
           email: shopEmail,
           name: shopInfo.name || shop.replace(".myshopify.com", ""),
+          username,
           role: "MERCHANT",
         },
       });
-    } else if (user.role !== "MERCHANT") {
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { role: "MERCHANT" },
-      });
+    } else {
+      // Auto-set username if missing
+      if (!user.username) {
+        const baseUsername = (shopInfo.name || shop.replace(".myshopify.com", ""))
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "")
+          .slice(0, 20);
+        let username = baseUsername;
+        const existing = await prisma.user.findUnique({ where: { username } });
+        if (existing) {
+          username = `${baseUsername.slice(0, 16)}${Math.floor(1000 + Math.random() * 9000)}`;
+        }
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { username, role: "MERCHANT" },
+        });
+      } else if (user.role !== "MERCHANT") {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { role: "MERCHANT" },
+        });
+      }
     }
 
     // Generate a unique slug for the merchant store
@@ -141,6 +170,8 @@ export async function GET(req: NextRequest) {
         shopifyAccessToken: accessToken,
         storeName: shopInfo.name || shop,
         shopifyShopId: String(shopInfo.id),
+        storeLogoUrl: undefined,
+        syncStatus: "SYNCING",
       },
       create: {
         userId: user.id,
@@ -148,8 +179,10 @@ export async function GET(req: NextRequest) {
         shopifyAccessToken: accessToken,
         shopifyShopId: String(shopInfo.id),
         storeName: shopInfo.name || shop,
+        storeLogoUrl: undefined,
         slug,
         storeTheme: "light",
+        syncStatus: "SYNCING",
       },
     });
 

@@ -14,10 +14,38 @@ export default async function StorePage({ params }: { params: { slug: string } }
         where: { available: true },
         orderBy: { createdAt: "desc" },
       },
+      user: {
+        select: { id: true },
+      },
     },
   });
 
   if (!merchant) notFound();
+
+  // Fetch UGC videos tagged to this merchant's products
+  const merchantProductIds = merchant.merchantProducts.map((mp) => mp.id);
+  const ugcVideos = merchantProductIds.length > 0
+    ? await prisma.video.findMany({
+        where: {
+          status: "READY",
+          published: true,
+          hlsUrl: { not: null },
+          products: {
+            some: {
+              merchantProductId: { in: merchantProductIds },
+            },
+          },
+        },
+        select: {
+          id: true,
+          thumbnailUrl: true,
+          title: true,
+          user: { select: { username: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 12,
+      })
+    : [];
 
   const isDark = merchant.storeTheme === "dark";
 
@@ -59,6 +87,13 @@ export default async function StorePage({ params }: { params: { slug: string } }
           categories={categories}
           isDark={isDark}
           merchantId={merchant.id}
+          merchantUserId={merchant.user.id}
+          ugcVideos={ugcVideos.map((v) => ({
+            id: v.id,
+            thumbnailUrl: v.thumbnailUrl,
+            title: v.title,
+            username: v.user?.username ?? null,
+          }))}
         />
       </div>
     </div>

@@ -6,6 +6,7 @@ import { DashboardStats } from "@/components/merchant/DashboardStats";
 import { RecentOrders } from "@/components/merchant/RecentOrders";
 import { TopProducts } from "@/components/merchant/TopProducts";
 import { TopUGC } from "@/components/merchant/TopUGC";
+import MerchantSyncIndicator from "@/components/merchant/MerchantSyncIndicator";
 
 export default async function MerchantOverview() {
   const user = await getUser();
@@ -45,6 +46,11 @@ export default async function MerchantOverview() {
   return (
     <div className="max-w-5xl">
       {!merchant.stripeConnectOnboarded && <StripeConnectBanner />}
+
+      {/* Sync progress indicator */}
+      {(merchant.syncStatus === "SYNCING" || merchant.syncStatus === "FAILED") && (
+        <MerchantSyncIndicator initialStatus={merchant.syncStatus} />
+      )}
 
       <h1 className="text-xl font-bold text-[#1a1a1a] mb-1">
         Good morning, {merchant.storeName}

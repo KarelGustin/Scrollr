@@ -192,13 +192,13 @@ export default function AdminUploadPage() {
       {/* Creator selection + file picker */}
       <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
         <div>
-          <label className="text-xs text-muted block mb-1.5">Assign to Creator</label>
+          <label className="text-xs text-muted block mb-1.5">Assign to Merchant</label>
           <select
             value={selectedCreator}
             onChange={(e) => setSelectedCreator(e.target.value)}
             className="w-full bg-surface border border-border rounded-xl px-3 py-2.5 text-sm text-text focus:outline-none focus:border-accent/50"
           >
-            <option value="">Choose a creator...</option>
+            <option value="">Choose a merchant user...</option>
             {creators.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name ?? c.username ?? c.id} (@{c.username ?? "—"}) — {c.role}
@@ -267,7 +267,7 @@ export default function AdminUploadPage() {
         )}
 
         {pendingCount > 0 && !selectedCreator && (
-          <p className="text-sm text-center text-warning">Select a creator before uploading</p>
+          <p className="text-sm text-center text-warning">Select a merchant before uploading</p>
         )}
       </div>
 

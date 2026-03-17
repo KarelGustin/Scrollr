@@ -17,6 +17,7 @@ model User {
   bio               String?
   stripeConnectId   String?  @unique
   stripeConnectOnboarded Boolean @default(false)
+  stripeCustomerId  String?  @unique
   role              UserRole @default(USER)
   trustLevel        TrustLevel @default(NEW)
   strikeCount       Int      @default(0)
@@ -263,6 +264,7 @@ model Merchant {
   storeTheme              String    @default("light")
   stripeConnectAccountId  String?
   stripeConnectOnboarded  Boolean   @default(false)
+  syncStatus              String    @default("IDLE")
 
   merchantProducts MerchantProduct[]
   orders           Order[]

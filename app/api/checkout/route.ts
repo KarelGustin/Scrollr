@@ -441,8 +441,6 @@ async function handleConfirm(
   for (const [merchantId, group] of Array.from(merchantGroups.entries())) {
     const merchantShipping = shippingPerMerchant(merchantId);
     const fees = calculateFeeSplit(group.subtotal, merchantShipping);
-    const creatorId = group.merchantUserId || null;
-
     let stripeTransferId: string | undefined;
     if (group.stripeConnectAccountId && group.stripeConnectOnboarded) {
       try {
@@ -469,13 +467,12 @@ async function handleConfirm(
         buyerUserId: user.id,
         shippingAddress: shippingAddressJson,
         merchantId,
-        creatorId: creatorId || undefined,
         checkoutId: checkout.id,
         subtotal: group.subtotal,
         shippingCost: merchantShipping,
         total: fees.total,
         platformFee: fees.platformFee,
-        creatorCommission: fees.creatorCommission,
+        creatorCommission: 0,
         currency: "EUR",
         stripePaymentId: paymentIntentId,
         stripeTransferId,
@@ -491,14 +488,7 @@ async function handleConfirm(
         commissions: {
           create: [
             {
-              userId: creatorId || user.id,
-              amount: fees.creatorCommission,
-              currency: "EUR",
-              type: "CREATOR_SALE" as const,
-              status: "PENDING" as const,
-            },
-            {
-              userId: creatorId || user.id,
+              userId: user.id,
               amount: fees.platformFee,
               currency: "EUR",
               type: "PLATFORM_FEE" as const,

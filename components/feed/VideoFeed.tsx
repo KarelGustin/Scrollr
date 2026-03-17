@@ -10,40 +10,37 @@ import VideoSlide from "./VideoSlide";
 import ProductDetailModal from "./ProductDetailModal";
 import CartDrawer from "./CartDrawer";
 import CartButton from "./CartButton";
-import AuthGateOverlay from "./AuthGateOverlay";
-
-const ANON_VIEW_LIMIT = 10;
-const STORAGE_KEY = "scrollr_view_count";
 
 interface VideoFeedProps {
   videos: FeedVideo[];
   showBranding: boolean;
   showCreator?: boolean;
-  allowAnonymous?: boolean;
   hideCartButton?: boolean;
   initialIndex?: number;
   onIndexChange?: (index: number) => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
 }
 
 export default function VideoFeed({
   videos,
   showBranding,
   showCreator = false,
-  allowAnonymous = false,
   hideCartButton = false,
   initialIndex = 0,
   onIndexChange,
+  onLoadMore,
+  hasMore = false,
 }: VideoFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentIndex = useFeedStore((s) => s.currentIndex);
   const setCurrentIndex = useFeedStore((s) => s.setCurrentIndex);
   const [selectedProduct, setSelectedProduct] = useState<FeedVideoProduct | null>(null);
-  const [showAuthGate, setShowAuthGate] = useState(false);
-  const viewedVideosRef = useRef<Set<string>>(new Set());
   const addToCart = useAddToCart();
   const isCartOpen = useCartStore((s) => s.isOpen);
   const { status } = useAuth();
   const safeInitialIndex = Math.max(0, Math.min(initialIndex, Math.max(videos.length - 1, 0)));
+  const loadMoreCalledRef = useRef(false);
 
   // Lock html/body scroll on mount
   useEffect(() => {
@@ -88,45 +85,21 @@ export default function VideoFeed({
     }).catch(() => {});
   }, []);
 
-  // Initialize viewed videos from localStorage for anonymous users
+  // Infinite scroll: load more when near end
   useEffect(() => {
-    if (status === "unauthenticated" && allowAnonymous) {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored) as string[];
-          viewedVideosRef.current = new Set(parsed);
-        }
-      } catch {
-        // Ignore localStorage errors
+    if (!hasMore || !onLoadMore) return;
+    if (currentIndex >= videos.length - 3) {
+      if (!loadMoreCalledRef.current) {
+        loadMoreCalledRef.current = true;
+        onLoadMore();
       }
     }
-  }, [status, allowAnonymous]);
+  }, [currentIndex, videos.length, hasMore, onLoadMore]);
 
-  // Track unique video views for unauthenticated users
+  // Reset loadMore flag when videos change (new batch loaded)
   useEffect(() => {
-    if (status !== "unauthenticated" || !allowAnonymous || showAuthGate) return;
-
-    const currentVideo = videos[currentIndex];
-    if (!currentVideo) return;
-
-    const viewed = viewedVideosRef.current;
-    if (!viewed.has(currentVideo.id)) {
-      viewed.add(currentVideo.id);
-
-      // Persist to localStorage
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(viewed)));
-      } catch {
-        // Ignore localStorage errors
-      }
-
-      // Check if limit reached
-      if (viewed.size >= ANON_VIEW_LIMIT) {
-        setShowAuthGate(true);
-      }
-    }
-  }, [currentIndex, status, allowAnonymous, showAuthGate, videos]);
+    loadMoreCalledRef.current = false;
+  }, [videos.length]);
 
   // IntersectionObserver to detect current visible slide
   const handleSlideVisible = useCallback(
@@ -201,7 +174,6 @@ export default function VideoFeed({
         style={{
           scrollSnapType: "y mandatory",
           WebkitOverflowScrolling: "touch",
-          ...(showAuthGate ? { overflow: "hidden" } : {}),
         }}
       >
         {videos.map((video, index) => {
@@ -224,6 +196,13 @@ export default function VideoFeed({
             </div>
           );
         })}
+
+        {/* Loading skeleton while fetching more */}
+        {hasMore && (
+          <div className="h-[100dvh] w-full bg-black flex items-center justify-center" data-slide-index={videos.length}>
+            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          </div>
+        )}
       </div>
 
       {/* Cart button */}
@@ -239,12 +218,6 @@ export default function VideoFeed({
         onAddToCart={handleAddToCart}
         onShopNow={handleShopNow}
       />
-
-      {/* Auth gate for unauthenticated users who hit the scroll limit */}
-      {showAuthGate && <AuthGateOverlay />}
-
-      {/* Note: Save endpoints (/api/saved) already require auth via middleware protection.
-          The handleAddToCart function works for anonymous users since cart is session-based. */}
     </>
   );
 }

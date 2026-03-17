@@ -19,7 +19,22 @@ export async function syncAllProducts(
   shop: string,
   accessToken: string
 ): Promise<{ created: number; updated: number }> {
-  const shopifyProducts = await fetchAllProducts(shop, accessToken);
+  // Set sync status to SYNCING
+  await prisma.merchant.update({
+    where: { id: merchantId },
+    data: { syncStatus: "SYNCING" },
+  }).catch(() => {});
+
+  let shopifyProducts;
+  try {
+    shopifyProducts = await fetchAllProducts(shop, accessToken);
+  } catch (err) {
+    await prisma.merchant.update({
+      where: { id: merchantId },
+      data: { syncStatus: "FAILED" },
+    }).catch(() => {});
+    throw err;
+  }
 
   let created = 0;
   let updated = 0;
@@ -158,6 +173,12 @@ export async function syncAllProducts(
       });
     }
   }
+
+  // Set sync status to COMPLETE
+  await prisma.merchant.update({
+    where: { id: merchantId },
+    data: { syncStatus: "COMPLETE" },
+  }).catch(() => {});
 
   return { created, updated };
 }

@@ -113,7 +113,7 @@ function getTabsForUser(user: AppSession | null): Tab[] {
       return merchantTabs;
     case "CREATOR":
     case "ADMIN":
-      return creatorTabs;
+      return consumerTabs;
     default:
       return consumerTabs;
   }

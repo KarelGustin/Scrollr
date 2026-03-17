@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { FeedVideoProduct } from "@/types";
+import { useAuth } from "@/lib/auth-context";
+import { formatPrice } from "@/lib/format";
 
 interface ProductDetailModalProps {
   product: FeedVideoProduct | null;
   onClose: () => void;
   onAddToCart: (product: FeedVideoProduct, selectedSize?: string) => void;
   onShopNow: (product: FeedVideoProduct) => void;
+  onBuyNow?: (product: FeedVideoProduct, selectedSize?: string) => void;
 }
 
 interface UgcVideo {
@@ -29,6 +32,7 @@ export default function ProductDetailModal({
   onClose,
   onAddToCart,
   onShopNow,
+  onBuyNow,
 }: ProductDetailModalProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -37,7 +41,9 @@ export default function ProductDetailModal({
   const [ugcVideos, setUgcVideos] = useState<UgcVideo[]>([]);
   const [loadingUgc, setLoadingUgc] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const touchStartX = useRef(0);
+  const { status } = useAuth();
 
   // Determine available sizes from variants or sizes array
   const availableSizes = product?.variants
@@ -48,8 +54,12 @@ export default function ProductDetailModal({
 
   const hasSizes = availableSizes && availableSizes.length > 0;
 
-  // Image list: use imageUrl (feed products don't have images array yet)
-  const imageList = product?.imageUrl ? [product.imageUrl] : [];
+  // Image list: use images array if available, fall back to imageUrl
+  const imageList = product?.images?.length
+    ? product.images
+    : product?.imageUrl
+      ? [product.imageUrl]
+      : [];
 
   // Stock status
   const getStockStatus = () => {
@@ -82,6 +92,7 @@ export default function ProductDetailModal({
     setSizeRequired(false);
     setCurrentImageIndex(0);
     setUgcVideos([]);
+    setShowAuthPrompt(false);
 
     if (product?.merchantProductId) {
       setLoadingUgc(true);
@@ -107,7 +118,16 @@ export default function ProductDetailModal({
 
   if (!product) return null;
 
+  const requireAuth = (): boolean => {
+    if (status !== "authenticated") {
+      setShowAuthPrompt(true);
+      return true;
+    }
+    return false;
+  };
+
   const handleAddToCart = () => {
+    if (requireAuth()) return;
     if (hasSizes && !selectedSize) {
       setSizeRequired(true);
       return;
@@ -118,10 +138,18 @@ export default function ProductDetailModal({
     setTimeout(() => setAddedToCart(false), 1200);
   };
 
+  const handleBuyNow = () => {
+    if (requireAuth()) return;
+    if (hasSizes && !selectedSize) {
+      setSizeRequired(true);
+      return;
+    }
+    setSizeRequired(false);
+    onBuyNow?.(product, selectedSize ?? undefined);
+  };
+
   const displayBrand = product.vendor || product.brand;
   const storeUrl = product.merchantUrl || product.affiliateUrl;
-
-  const formatPrice = (price: number) => `$${price.toFixed(2)}`;
 
   // Touch handlers for image carousel
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -140,7 +168,7 @@ export default function ProductDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center md:p-6" onClick={onClose}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 animate-in fade-in duration-200" />
 
@@ -148,10 +176,32 @@ export default function ProductDetailModal({
       <div
         ref={sheetRef}
         onClick={(e) => e.stopPropagation()}
-        className="absolute bottom-0 left-0 right-0 bg-surface border-t border-border rounded-t-2xl p-6 pb-8 animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto"
+        className="relative w-full bg-surface border-t border-border rounded-t-2xl p-6 pb-8 animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto md:max-w-2xl md:max-h-[90vh] md:rounded-2xl md:border md:shadow-2xl"
       >
         {/* Handle */}
-        <div className="w-10 h-1 bg-border rounded-full mx-auto mb-5" />
+        <div className="w-10 h-1 bg-border rounded-full mx-auto mb-5 md:hidden" />
+
+        {/* Auth prompt inline */}
+        {showAuthPrompt && (
+          <div className="mb-4 p-4 bg-card border border-border rounded-xl text-center">
+            <p className="text-sm font-semibold text-text mb-1">Sign in to shop</p>
+            <p className="text-xs text-muted mb-3">Create a free account to purchase products</p>
+            <div className="flex gap-2">
+              <Link
+                href="/login"
+                className="flex-1 py-2 text-sm font-medium text-text border border-border rounded-xl hover:bg-surface transition-colors text-center"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                className="flex-1 py-2 text-sm font-semibold text-white bg-accent rounded-xl hover:bg-accent/90 transition-colors text-center"
+              >
+                Register
+              </Link>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-4">
           {imageList.length > 0 && (
@@ -167,6 +217,12 @@ export default function ProductDetailModal({
                 className="object-cover"
                 sizes="112px"
               />
+              {/* Image counter */}
+              {imageList.length > 1 && (
+                <div className="absolute top-1 right-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                  {currentImageIndex + 1}/{imageList.length}
+                </div>
+              )}
               {/* Dot indicators for multiple images */}
               {imageList.length > 1 && (
                 <div className="absolute bottom-1 inset-x-0 flex justify-center gap-1">
@@ -190,9 +246,9 @@ export default function ProductDetailModal({
               <p className="text-sm text-muted mt-0.5">{displayBrand}</p>
             )}
             <div className="flex items-center gap-2 mt-1">
-              {product.priceDisplay && (
+              {product.price != null && (
                 <p className="text-xl font-bold text-accent">
-                  {product.priceDisplay}
+                  {formatPrice(product.price)}
                 </p>
               )}
               {product.compareAtPrice != null && product.price != null && product.compareAtPrice > product.price && (
@@ -263,7 +319,27 @@ export default function ProductDetailModal({
           </div>
         )}
 
+        {/* Action buttons */}
         <div className="flex gap-3 mt-6">
+          {/* Buy Now — primary */}
+          {onBuyNow && (
+            <button
+              onClick={handleBuyNow}
+              disabled={stockStatus === "out"}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                stockStatus === "out"
+                  ? "bg-muted/20 text-muted cursor-not-allowed"
+                  : "bg-accent text-accent-fg hover:bg-accent/90"
+              }`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+              Buy Now
+            </button>
+          )}
+
+          {/* Add to Cart — secondary when Buy Now exists, primary otherwise */}
           <button
             onClick={handleAddToCart}
             disabled={stockStatus === "out" || addedToCart}
@@ -272,7 +348,9 @@ export default function ProductDetailModal({
                 ? "bg-green-500 text-white"
                 : stockStatus === "out"
                   ? "bg-muted/20 text-muted cursor-not-allowed"
-                  : "bg-accent text-accent-fg hover:bg-accent/90"
+                  : onBuyNow
+                    ? "bg-card border border-border text-text hover:bg-surface"
+                    : "bg-accent text-accent-fg hover:bg-accent/90"
             }`}
           >
             {addedToCart ? (
@@ -282,7 +360,7 @@ export default function ProductDetailModal({
                 </svg>
                 Added!
               </>
-            ) : stockStatus === "out" ? (
+            ) : stockStatus === "out" && !onBuyNow ? (
               "Out of Stock"
             ) : (
               <>
@@ -295,18 +373,26 @@ export default function ProductDetailModal({
               </>
             )}
           </button>
-          <button
-            onClick={() => onShopNow(product)}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-card border border-border text-text rounded-xl text-sm font-semibold hover:bg-surface transition-colors"
-          >
-            Visit Store
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
-          </button>
         </div>
+
+        {/* Visit Store link */}
+        {storeUrl && (
+          <div className="mt-3 text-center">
+            <a
+              href={storeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-muted hover:text-text transition-colors"
+            >
+              Visit Store
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+            </a>
+          </div>
+        )}
 
         {/* UGC Section */}
         {(ugcVideos.length > 0 || loadingUgc) && (

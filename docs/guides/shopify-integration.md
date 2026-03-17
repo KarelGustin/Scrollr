@@ -4,13 +4,16 @@ Scrollr integrates with Shopify stores to sync products, create orders, and trac
 
 ## Merchant Onboarding Flow
 
+Onboarding is simplified to a single CTA: **"Connect your Shopify Store"**.
+
 1. Merchant visits `/apply` and fills out the merchant application
 2. Admin approves the application at `/admin/applications`
-3. Merchant is redirected to Shopify OAuth to install the Scrollr app
+3. Merchant clicks "Connect your Shopify Store" and is redirected to Shopify OAuth
 4. OAuth callback stores the access token and creates the `Merchant` record
-5. Initial product sync pulls all products from the Shopify store
-6. Merchant sets up their storefront at `/merchant/storefront`
-7. Merchant connects Stripe Connect for payouts
+5. Username is **auto-generated** from the Shopify shop name during OAuth (auto-provisioning)
+6. Initial product sync begins — `syncStatus` transitions: IDLE -> SYNCING -> COMPLETE (or FAILED)
+7. Merchant dashboard shows a **sync progress indicator** during product import
+8. Merchant connects Stripe Connect for payouts
 
 ## OAuth Flow
 
@@ -29,7 +32,20 @@ Products are synced from the merchant's Shopify Admin API:
 syncMerchantProducts(merchantId: string)
 ```
 
-Synced fields:
+### Sync Status
+
+The `Merchant.syncStatus` field tracks sync progress:
+
+| Status | Description |
+|--------|-------------|
+| IDLE | No sync in progress (default) |
+| SYNCING | Product import is running |
+| COMPLETE | Sync finished successfully |
+| FAILED | Sync encountered an error |
+
+The merchant dashboard displays a progress indicator based on this status. The `GET /api/merchant/sync-status` endpoint returns the current `syncStatus` and `productCount`.
+
+### Synced Fields
 - Product ID, variant ID, title, description
 - Images (primary + gallery)
 - Price, compare-at price, currency
@@ -37,7 +53,7 @@ Synced fields:
 - Tags, product type, vendor
 
 ### Sync Triggers
-- **Initial**: Full sync on first connection
+- **Initial**: Full sync on first connection (syncStatus: IDLE -> SYNCING -> COMPLETE/FAILED)
 - **Manual**: Merchant can trigger sync from dashboard
 - **Webhooks**: Real-time updates via Shopify webhooks:
   - `products/create` — New product added

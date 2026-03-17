@@ -34,7 +34,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#FAFAF8",
+  themeColor: "#000000",
   viewportFit: "cover",
 };
 
@@ -58,6 +58,11 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap"
           rel="stylesheet"
         />
+        {/* PWA manifest */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className="font-sans bg-bg text-text min-h-screen antialiased">
         <Providers>{children}</Providers>

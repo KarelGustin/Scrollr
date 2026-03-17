@@ -164,6 +164,7 @@ export default async function CreatorProfilePage({ params }: PageProps) {
             vendor: mp?.vendor ?? null,
             inventoryQuantity: mp?.inventoryQuantity ?? null,
             compareAtPrice: mp?.compareAtPrice ?? null,
+            images: null,
             variants: null,
           };
         }),

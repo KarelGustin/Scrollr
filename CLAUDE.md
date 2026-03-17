@@ -85,16 +85,16 @@ docs/             → Project documentation
 | Role | Description |
 |------|-------------|
 | USER | Regular consumer — browse, follow, shop |
-| CREATOR | Video creator — upload, tag products, earn commissions |
-| MERCHANT | Store owner — products via Shopify, fulfillment, analytics |
+| CREATOR | (Legacy — hidden in UI, treated as consumer) |
+| MERCHANT | Store owner — products via Shopify, video content, fulfillment, analytics |
 | ADMIN | Platform admin — full management, moderation, user CRUD |
 
 ## Revenue Model
 
-- Merchant: ~85% (after Stripe fees)
-- Scrollr: 10% platform fee
-- Creator: 3% commission on attributed sales
-- Stripe: ~2% processing
+- Merchant: 85%
+- Scrollr: 15% platform fee
+- Creator: 0% (no independent creator commissions)
+- Stripe: ~2% processing (separate from platform fee)
 
 ## Content Safety
 

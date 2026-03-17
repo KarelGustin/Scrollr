@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-// Simple in-memory rate limiting: max 100 requests per IP per minute
+// Simple in-memory rate limiting: max 600 requests per IP per minute
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 function isRateLimited(ip: string): boolean {
@@ -15,7 +15,7 @@ function isRateLimited(ip: string): boolean {
   }
 
   entry.count++;
-  return entry.count > 100;
+  return entry.count > 600;
 }
 
 export async function POST(req: NextRequest) {
