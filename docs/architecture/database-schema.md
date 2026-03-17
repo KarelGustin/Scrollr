@@ -13,7 +13,7 @@ User ─────┬──── Video ──── VideoProduct ────
           │                                        │                  │
           ├──── Follow                        CartItem              Order
           ├──── SavedItem                         │                  │
-          ├──── Commission                       Cart          OrderItem
+          ├──── Commission ── CreatorPayout   Cart          OrderItem
           ├──── Subscription                      │
           ├──── CreatorApplication           Checkout
           ├──── CreatorTarget
@@ -51,7 +51,22 @@ Product synced from a merchant's Shopify store.
 ### Order
 Purchase record linking buyer, merchant, and creator.
 - Fields: `id`, `orderNumber`, `buyerEmail`, `merchantId`, `creatorId`, `videoId`, `subtotal`, `shippingCost`, `total`, `platformFee`, `creatorCommission`, `status`
+- `creatorId` — Creator whose video drove the sale (set from cart item's `videoId` attribution)
+- `videoId` — The video that led to the purchase
 - Status: PENDING -> PAID -> FULFILLED -> SHIPPED -> DELIVERED | CANCELLED | REFUNDED
+
+### Commission
+Tracks creator earnings and platform fees per order.
+- Fields: `id`, `orderId`, `userId`, `amount`, `currency`, `type`, `status`, `payableAt`, `payoutId`, `paidAt`, `stripeTransferId`
+- `payableAt` — Date when CREATOR_SALE commissions become eligible for payout (30 days after order)
+- `payoutId` — Links to `CreatorPayout` when the commission has been paid out
+- Status lifecycle: PENDING → PAID (via weekly cron) or FAILED (if order refunded)
+
+### CreatorPayout
+Scheduled payout to a creator, grouping one or more commissions.
+- Fields: `id`, `userId`, `amount`, `currency`, `stripeTransferId`, `status`, `scheduledFor`, `processedAt`, `failureReason`
+- Created by the weekly payout cron job (`/api/cron/payouts`)
+- Status: PENDING → PROCESSING → COMPLETED | FAILED
 
 ## Enums
 
@@ -64,6 +79,8 @@ Purchase record linking buyer, merchant, and creator.
 | ReportReason | SEXUAL_CONTENT, VIOLENCE, HATE_SPEECH, SPAM, SCAM, INVOLVES_MINOR, COPYRIGHT, SELF_HARM, OTHER |
 | ModerationAction | APPROVED, REJECTED, HIDDEN, RESTORED, USER_WARNED, USER_BANNED |
 | CommissionType | CREATOR_SALE (5%), PLATFORM_FEE (10%) |
+| CommissionStatus | PENDING, PAID, FAILED |
+| PayoutStatus | PENDING, PROCESSING, COMPLETED, FAILED |
 | Plan | FREE, CREATOR, PRO |
 
 ## Cascade Behavior
@@ -82,3 +99,7 @@ Performance-critical indexes are defined on:
 - `Order(merchantId, createdAt)` — Merchant order listing
 - `Event(videoId, type)` — Analytics aggregation
 - `MerchantProduct(merchantId, available)` — Product listing
+- `Commission(userId, status)` — Creator earnings queries
+- `Commission(status, payableAt)` — Payout cron eligibility
+- `CreatorPayout(userId, status)` — Creator payout history
+- `CreatorPayout(status, scheduledFor)` — Payout processing

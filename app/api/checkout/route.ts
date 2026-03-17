@@ -442,10 +442,39 @@ async function handleConfirm(
       },
     }));
 
+  // Look up video creators for commission attribution
+  const videoIds = cart.items
+    .map((item) => item.videoId)
+    .filter((id): id is string => !!id);
+  const uniqueVideoIds = Array.from(new Set(videoIds));
+  const videoCreators = uniqueVideoIds.length > 0
+    ? await prisma.video.findMany({
+        where: { id: { in: uniqueVideoIds } },
+        select: { id: true, userId: true },
+      })
+    : [];
+  const videoCreatorMap = new Map(videoCreators.map((v) => [v.id, v.userId]));
+
+  // Build a map of merchantId -> creatorId (first video attribution per merchant group)
+  const merchantCreatorMap = new Map<string, { creatorId: string; videoId: string }>();
+  for (const item of cart.items) {
+    if (!item.videoId) continue;
+    const mp = merchantProductMap.get(item.merchantProductId as string);
+    if (!mp) continue;
+    const creatorId = videoCreatorMap.get(item.videoId);
+    if (creatorId && !merchantCreatorMap.has(mp.merchant.id)) {
+      // Don't attribute commission if the creator IS the merchant
+      if (creatorId !== mp.merchant.userId) {
+        merchantCreatorMap.set(mp.merchant.id, { creatorId, videoId: item.videoId });
+      }
+    }
+  }
+
   const createdOrders: { id: string; orderNumber: string }[] = [];
   let primaryOrderId = "";
   let primaryOrderNumber = "";
   const transferGroup = paymentIntent.transfer_group ?? `checkout_${paymentIntentId}`;
+  const payableAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30-day hold
   const shippingAddressJson = {
     line1: address.address1,
     line2: address.address2 ?? "",
@@ -477,6 +506,43 @@ async function handleConfirm(
       }
     }
 
+    // Determine creator attribution for this merchant group
+    const creatorAttribution = merchantCreatorMap.get(merchantId);
+
+    // Build commission records
+    const commissionRecords: Array<{
+      userId: string;
+      amount: number;
+      currency: string;
+      type: "PLATFORM_FEE" | "CREATOR_SALE";
+      status: "PENDING";
+      payableAt: Date | null;
+    }> = [];
+
+    // Platform fee commission (always, if user is authenticated)
+    if (user.id) {
+      commissionRecords.push({
+        userId: user.id,
+        amount: fees.platformFee,
+        currency: "EUR",
+        type: "PLATFORM_FEE",
+        status: "PENDING",
+        payableAt: null, // Platform fee doesn't need hold
+      });
+    }
+
+    // Creator commission (5% to the creator whose video drove the sale)
+    if (creatorAttribution && fees.creatorCommission > 0) {
+      commissionRecords.push({
+        userId: creatorAttribution.creatorId,
+        amount: fees.creatorCommission,
+        currency: "EUR",
+        type: "CREATOR_SALE",
+        status: "PENDING",
+        payableAt, // 30-day hold for refund protection
+      });
+    }
+
     const order = await prisma.order.create({
       data: {
         buyerEmail: user.email,
@@ -484,6 +550,8 @@ async function handleConfirm(
         buyerUserId: user.id ?? undefined,
         shippingAddress: shippingAddressJson,
         merchantId,
+        creatorId: creatorAttribution?.creatorId,
+        videoId: creatorAttribution?.videoId,
         checkoutId: checkout.id,
         subtotal: group.subtotal,
         shippingCost: merchantShipping,
@@ -502,16 +570,8 @@ async function handleConfirm(
             total: gi.merchantProduct.price * gi.cartItem.quantity,
           })),
         },
-        commissions: user.id ? {
-          create: [
-            {
-              userId: user.id,
-              amount: fees.platformFee,
-              currency: "EUR",
-              type: "PLATFORM_FEE" as const,
-              status: "PENDING" as const,
-            },
-          ],
+        commissions: commissionRecords.length > 0 ? {
+          create: commissionRecords,
         } : undefined,
       },
     });

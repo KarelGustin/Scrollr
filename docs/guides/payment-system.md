@@ -48,10 +48,23 @@ Merchants connect their Stripe account during onboarding:
 3. `stripeConnectOnboarded` is set to `true`
 
 ### Payouts
-After a successful checkout:
-- Merchant receives their share via Stripe Connect transfer
-- Creator commission is tracked in the `Commission` table
-- Platform fee is retained by Scrollr's Stripe account
+
+**Merchant payouts** happen immediately at checkout:
+- Merchant receives their 85% share via Stripe Connect transfer right after payment
+
+**Creator payouts** are delayed for refund protection:
+- Creator commissions (5%) are created with a **30-day hold** (`payableAt` field)
+- A weekly cron job (`/api/cron/payouts`) processes eligible commissions:
+  1. Finds all PENDING CREATOR_SALE commissions where `payableAt <= now`
+  2. Verifies the order hasn't been refunded/cancelled
+  3. Groups commissions by creator
+  4. Creates a `CreatorPayout` record
+  5. Transfers funds via Stripe Connect to the creator's account
+  6. Marks commissions as PAID
+- If the creator hasn't completed Stripe onboarding, their payout is deferred to the next cycle
+- Failed payouts leave commissions as PENDING for automatic retry next week
+
+**Platform fee** is retained by Scrollr's Stripe account (never transferred out)
 
 ### Stripe Customer
 
@@ -68,15 +81,46 @@ Commission {
   amount     → EUR amount
   type       → CREATOR_SALE (5%) or PLATFORM_FEE (10%)
   status     → PENDING | PAID | FAILED
+  payableAt  → Date when eligible for payout (30-day hold for CREATOR_SALE)
+  payoutId   → Links to CreatorPayout when paid
 }
 ```
 
+### Creator Payout Model
+
+```
+CreatorPayout {
+  userId          → Creator receiving payout
+  amount          → Total EUR amount
+  stripeTransferId → Stripe transfer reference
+  status          → PENDING | PROCESSING | COMPLETED | FAILED
+  scheduledFor    → When the payout was executed
+  processedAt     → When the transfer completed
+  commissions[]   → Commissions included in this payout
+}
+```
+
+### Refund Flow
+
+Scrollr owns the refund process since payments go through Scrollr's Stripe account:
+
+1. Merchant initiates refund via `POST /api/refunds`
+2. Stripe PaymentIntent is refunded with `reverse_transfer: true` (reverses merchant transfer)
+3. If creator commission was already paid out, the creator's Stripe transfer is reversed
+4. If creator commission is still PENDING (within 30-day hold), it's marked FAILED (no transfer to reverse)
+5. Order status → REFUNDED, all commissions → FAILED
+
+This is why creator payouts have a 30-day hold — most merchants have a 14-day refund window, and the extra buffer covers edge cases.
+
 ## Implementation Files
 
-- `lib/stripe-connect.ts` — Stripe Connect helpers (`createMarketplacePaymentIntent` with optional `customer` and `setupFutureUsage` params)
+- `lib/stripe-connect.ts` — Stripe Connect helpers (`createMarketplacePaymentIntent`, `transferCreatorCommission`, `refundPayment`)
 - `lib/stripe-customer.ts` — Stripe Customer ID management (`getOrCreateStripeCustomer`)
-- `app/api/stripe/checkout/route.ts` — Standard cart checkout session
+- `app/api/checkout/route.ts` — Standard cart checkout (creates orders + commissions with 30-day hold)
 - `app/api/checkout/quick/route.ts` — Quick checkout (Buy Now) for single products
+- `app/api/cron/payouts/route.ts` — Weekly cron job for processing creator payouts
+- `app/api/refunds/route.ts` — Refund processing (reverses merchant + creator transfers)
+- `app/api/earnings/route.ts` — Creator earnings dashboard (pending, ready, paid, payout history)
 - `app/api/webhooks/stripe/route.ts` — Stripe webhook handler
 - `stores/cartStore.ts` — Client-side cart state
 

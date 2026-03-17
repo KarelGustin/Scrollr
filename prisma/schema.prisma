@@ -33,6 +33,7 @@ model User {
   carts          Cart[]
   merchant       Merchant?
   commissions    Commission[]
+  creatorPayouts CreatorPayout[]
   orders         Order[]
   reports             Report[]       @relation("ReporterReports")
   moderationLogs      ModerationLog[]
@@ -215,6 +216,7 @@ model CartItem {
   product           Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
   merchantProductId String?
   merchantProduct   MerchantProduct? @relation(fields: [merchantProductId], references: [id], onDelete: Cascade)
+  videoId           String?          // Which video drove this add-to-cart (for creator attribution)
   selectedSize      String?
   quantity          Int              @default(1)
   createdAt         DateTime         @default(now())
@@ -383,15 +385,19 @@ model Commission {
   userId    String           // Creator who earned it
   user      User             @relation(fields: [userId], references: [id])
   amount    Float
-  currency  String           @default("USD")
+  currency  String           @default("EUR")
   type      CommissionType
   status    CommissionStatus @default(PENDING)
   stripeTransferId String?
+  payableAt DateTime?        // Date when this commission becomes eligible for payout (30-day hold for refund protection)
   paidAt    DateTime?
+  payoutId  String?
+  payout    CreatorPayout?   @relation(fields: [payoutId], references: [id])
   createdAt DateTime         @default(now())
 
   @@index([userId, status])
   @@index([orderId])
+  @@index([status, payableAt])
 }
 
 enum OrderStatus {
@@ -407,6 +413,34 @@ enum OrderStatus {
 enum CommissionType {
   CREATOR_SALE    // 5% to creator (from platform's 15%)
   PLATFORM_FEE   // 10% to Scrollr (15% total - 5% creator)
+}
+
+// ── Creator Payout Scheduling ──
+
+model CreatorPayout {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id])
+  amount            Float              // Total payout amount in EUR
+  currency          String             @default("EUR")
+  stripeTransferId  String?            @unique
+  status            PayoutStatus       @default(PENDING)
+  commissions       Commission[]       // Commissions included in this payout
+  scheduledFor      DateTime           // When this payout was scheduled to execute
+  processedAt       DateTime?
+  failureReason     String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([userId, status])
+  @@index([status, scheduledFor])
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 enum CommissionStatus {

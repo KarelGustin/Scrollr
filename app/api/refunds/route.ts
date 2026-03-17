@@ -83,12 +83,23 @@ export async function POST(req: NextRequest) {
     // Refund the captured payment.
     await refundPayment({ paymentIntentId: order.stripePaymentId });
 
-    // Best effort: reverse transfer if it was created separately.
+    // Best effort: reverse merchant transfer if it was created separately.
     if (order.stripeTransferId) {
       try {
         await getStripe().transfers.createReversal(order.stripeTransferId);
       } catch (error) {
-        console.error("Stripe transfer reversal failed:", error);
+        console.error("Stripe merchant transfer reversal failed:", error);
+      }
+    }
+
+    // Best effort: reverse any creator commission transfers that were already paid out
+    for (const commission of order.commissions) {
+      if (commission.status === "PAID" && commission.stripeTransferId) {
+        try {
+          await getStripe().transfers.createReversal(commission.stripeTransferId);
+        } catch (error) {
+          console.error(`Stripe creator transfer reversal failed for commission ${commission.id}:`, error);
+        }
       }
     }
 
