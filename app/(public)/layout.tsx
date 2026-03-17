@@ -11,8 +11,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
   return (
     <>
-      {user && <Sidebar />}
-      <main className={`pb-[76px] md:pb-0 ${user ? "md:ml-[200px]" : ""}`}>{children}</main>
+      <Sidebar />
+      <main className="pb-[76px] md:pb-0 md:ml-[224px]">{children}</main>
       <BottomNav user={user} pathname={pathname} />
     </>
   );

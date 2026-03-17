@@ -20,7 +20,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const { cart, sessionId, isNew } = await getOrCreateCart();
   const body = await req.json();
-  const { productId, merchantProductId, selectedSize, quantity = 1 } = body;
+  const { productId, merchantProductId, selectedSize, videoId, quantity = 1 } = body;
 
   if (!productId && !merchantProductId) {
     return NextResponse.json(
@@ -67,11 +67,14 @@ export async function POST(req: NextRequest) {
       },
       update: {
         quantity: { increment: quantity },
+        // Update videoId if a new one is provided (latest attribution wins)
+        ...(videoId ? { videoId } : {}),
       },
       create: {
         cartId: cart.id,
         merchantProductId,
         selectedSize: selectedSize ?? null,
+        videoId: videoId ?? null,
         quantity,
       },
       include: cartItemInclude,

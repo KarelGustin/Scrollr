@@ -36,14 +36,14 @@ export default function ContextPanel({ videos }: ContextPanelProps) {
   };
 
   return (
-    <div className="max-w-lg px-5 py-5">
+    <div className="w-full px-6 py-8">
       {/* Creator / Store info */}
       <ContextCreatorInfo user={currentVideo.user} />
 
       {/* Product list */}
       {hasProducts && (
-        <div className="mt-5">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted mb-2">
+        <div className="mt-8">
+          <p className="retail-kicker mb-3">
             Shop this video
           </p>
           <div className="space-y-3">
@@ -60,7 +60,7 @@ export default function ContextPanel({ videos }: ContextPanelProps) {
 
       {/* Related */}
       {firstProduct?.merchantProductId && (
-        <div className="mt-5">
+        <div className="mt-8">
           <ContextRelatedProducts
             merchantProductId={firstProduct.merchantProductId}
           />

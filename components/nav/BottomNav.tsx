@@ -10,6 +10,7 @@ interface AppSession {
   name: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  heightCm?: number | null;
   role: string;
 }
 
@@ -41,6 +42,14 @@ const OrdersIcon = (active: boolean) => (
     <line x1="16" y1="13" x2="8" y2="13" />
     <line x1="16" y1="17" x2="8" y2="17" />
     <polyline points="10 9 9 9 8 9" />
+  </svg>
+);
+
+const CartIcon = (active: boolean) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="21" r="1" />
+    <circle cx="20" cy="21" r="1" />
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
   </svg>
 );
 
@@ -79,9 +88,10 @@ const StoreIcon = (active: boolean) => (
 
 const unauthenticatedTabs: Tab[] = [
   { label: "Feed", href: "/discover", icon: HomeIcon },
-  { label: "Discover", href: "/discover", icon: DiscoverIcon },
-  { label: "Orders", href: "/orders", requiresAuth: true, icon: OrdersIcon },
-  { label: "Profile", href: "/profile", requiresAuth: true, icon: ProfileIcon },
+  { label: "Discover", href: "/search", icon: DiscoverIcon },
+  { label: "Orders", href: "/orders", icon: OrdersIcon },
+  { label: "Cart", href: "/checkout", icon: CartIcon },
+  { label: "Profile", href: "/login", icon: ProfileIcon },
 ];
 
 const consumerTabs: Tab[] = [
@@ -94,7 +104,7 @@ const consumerTabs: Tab[] = [
 const creatorTabs: Tab[] = [
   { label: "Feed", href: "/feed", icon: HomeIcon },
   { label: "Discover", href: "/discover", icon: DiscoverIcon },
-  { label: "", href: "/dashboard/videos?upload=true", icon: UploadIcon },
+  { label: "", href: "/create", icon: UploadIcon },
   { label: "Orders", href: "/orders", icon: OrdersIcon },
   { label: "Dashboard", href: "/dashboard", icon: DashboardIcon },
 ];
@@ -103,6 +113,7 @@ const merchantTabs: Tab[] = [
   { label: "Feed", href: "/feed", icon: HomeIcon },
   { label: "Discover", href: "/discover", icon: DiscoverIcon },
   { label: "Orders", href: "/orders", icon: OrdersIcon },
+  { label: "Profile", href: "/profile", icon: ProfileIcon },
   { label: "My Store", href: "/merchant", icon: StoreIcon },
 ];
 
@@ -122,6 +133,7 @@ function getTabsForUser(user: AppSession | null): Tab[] {
 function isActive(href: string, pathname: string): boolean {
   if (href === "/feed") return pathname === "/feed";
   if (href === "/discover") return pathname === "/discover" || pathname.startsWith("/discover/");
+  if (href === "/search") return pathname === "/search" || pathname.startsWith("/search/");
   if (href === "/dashboard") return pathname === "/dashboard" && !pathname.startsWith("/dashboard/");
   if (href === "/profile") return pathname.startsWith("/profile");
   if (href === "/merchant") return pathname.startsWith("/merchant");
@@ -150,10 +162,10 @@ export function BottomNav({ user, pathname }: BottomNavProps) {
   return (
     <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-40 safe-bottom transition-colors ${
       isVideoPage
-        ? "bg-black/40 backdrop-blur-xl border-t border-white/10"
-        : "bg-bg/80 backdrop-blur-xl border-t border-border"
+        ? "bg-black/35 backdrop-blur-xl border-t border-white/10"
+        : "bg-bg/92 backdrop-blur-xl border-t border-border"
     }`}>
-      <div className="flex items-center justify-around max-w-lg mx-auto h-[52px]">
+      <div className="flex items-center justify-around max-w-lg mx-auto h-[58px] px-2">
         {tabs.map((tab) => {
           const active = isActive(tab.href, pathname);
           return (
@@ -161,7 +173,7 @@ export function BottomNav({ user, pathname }: BottomNavProps) {
               key={tab.href + tab.label}
               href={tab.href}
               onClick={(e) => handleTabClick(e, tab)}
-              className={`flex flex-col items-center justify-center gap-0.5 px-4 py-1 transition-colors ${
+              className={`flex flex-col items-center justify-center gap-1 px-3 py-1 transition-colors ${
                 isVideoPage
                   ? active ? "text-white" : "text-white/50"
                   : active ? "text-text" : "text-muted"
@@ -169,7 +181,7 @@ export function BottomNav({ user, pathname }: BottomNavProps) {
             >
               {tab.icon(active)}
               {tab.label && (
-                <span className="text-[10px] font-medium">{tab.label}</span>
+                <span className="text-[9px] font-semibold uppercase tracking-[0.14em]">{tab.label}</span>
               )}
             </Link>
           );

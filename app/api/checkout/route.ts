@@ -116,24 +116,37 @@ function createCartSnapshot(
  *   action: "create-intent" — creates Stripe PaymentIntent for the cart total
  *   action: "confirm"       — after payment, creates Shopify orders + DB records
  */
+type CheckoutUser = {
+  id: string | null;
+  email: string;
+};
+
 export async function POST(req: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "You must be signed in to checkout" },
-        { status: 401 }
-      );
-    }
-
+    const authenticatedUser = await getUser();
     const body = await req.json();
     const action = String(body?.action ?? "");
 
+    // Support guest checkout: use authenticated user if available, else require email
+    let checkoutUser: CheckoutUser;
+    if (authenticatedUser) {
+      checkoutUser = { id: authenticatedUser.id, email: authenticatedUser.email };
+    } else {
+      const guestEmail = String(body?.email ?? "").trim().toLowerCase();
+      if (!guestEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+        return NextResponse.json(
+          { error: "Please provide a valid email address to checkout as guest" },
+          { status: 400 }
+        );
+      }
+      checkoutUser = { id: null, email: guestEmail };
+    }
+
     if (action === "create-intent") {
-      return handleCreateIntent(user, body);
+      return handleCreateIntent(checkoutUser, body);
     }
     if (action === "confirm") {
-      return handleConfirm(user, body);
+      return handleConfirm(checkoutUser, body);
     }
 
     return NextResponse.json(
@@ -150,7 +163,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleCreateIntent(
-  user: { id: string; email: string },
+  user: CheckoutUser,
   body: {
     address: unknown;
     shippingOption: unknown;
@@ -210,7 +223,7 @@ async function handleCreateIntent(
     currency: "eur",
     transferGroup,
     metadata: {
-      userId: user.id,
+      userId: user.id ?? "guest",
       cartId: cart.id,
       cartHash: snapshot.hash,
       subtotalCents: String(snapshot.subtotalCents),
@@ -233,7 +246,7 @@ async function handleCreateIntent(
 }
 
 async function handleConfirm(
-  user: { id: string; email: string },
+  user: CheckoutUser,
   body: {
     paymentIntentId: unknown;
     address: unknown;
@@ -283,11 +296,15 @@ async function handleConfirm(
   }
 
   const metadata = paymentIntent.metadata ?? {};
-  if (metadata.userId !== user.id) {
-    return NextResponse.json(
-      { error: "Payment intent does not belong to this user" },
-      { status: 403 }
-    );
+  const expectedUserId = user.id ?? "guest";
+  if (metadata.userId !== expectedUserId) {
+    // For guests, also verify by email
+    if (metadata.buyerEmail !== user.email) {
+      return NextResponse.json(
+        { error: "Payment intent does not belong to this user" },
+        { status: 403 }
+      );
+    }
   }
 
   const expectedSubtotalCents = parsePositiveInt(metadata.subtotalCents);
@@ -366,8 +383,8 @@ async function handleConfirm(
   type MerchantGroup = {
     merchantId: string;
     merchantUserId: string;
-    domain: string;
-    accessToken: string;
+    domain: string | null;
+    accessToken: string | null;
     stripeConnectAccountId: string | null;
     stripeConnectOnboarded: boolean;
     items: GroupItem[];
@@ -419,16 +436,45 @@ async function handleConfirm(
     (await prisma.checkout.create({
       data: {
         stripePaymentIntentId: paymentIntentId,
-        buyerUserId: user.id,
+        buyerUserId: user.id ?? undefined,
         buyerEmail: user.email,
         total,
       },
     }));
 
+  // Look up video creators for commission attribution
+  const videoIds = cart.items
+    .map((item) => item.videoId)
+    .filter((id): id is string => !!id);
+  const uniqueVideoIds = Array.from(new Set(videoIds));
+  const videoCreators = uniqueVideoIds.length > 0
+    ? await prisma.video.findMany({
+        where: { id: { in: uniqueVideoIds } },
+        select: { id: true, userId: true },
+      })
+    : [];
+  const videoCreatorMap = new Map(videoCreators.map((v) => [v.id, v.userId]));
+
+  // Build a map of merchantId -> creatorId (first video attribution per merchant group)
+  const merchantCreatorMap = new Map<string, { creatorId: string; videoId: string }>();
+  for (const item of cart.items) {
+    if (!item.videoId) continue;
+    const mp = merchantProductMap.get(item.merchantProductId as string);
+    if (!mp) continue;
+    const creatorId = videoCreatorMap.get(item.videoId);
+    if (creatorId && !merchantCreatorMap.has(mp.merchant.id)) {
+      // Don't attribute commission if the creator IS the merchant
+      if (creatorId !== mp.merchant.userId) {
+        merchantCreatorMap.set(mp.merchant.id, { creatorId, videoId: item.videoId });
+      }
+    }
+  }
+
   const createdOrders: { id: string; orderNumber: string }[] = [];
   let primaryOrderId = "";
   let primaryOrderNumber = "";
   const transferGroup = paymentIntent.transfer_group ?? `checkout_${paymentIntentId}`;
+  const payableAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30-day hold
   const shippingAddressJson = {
     line1: address.address1,
     line2: address.address2 ?? "",
@@ -460,19 +506,58 @@ async function handleConfirm(
       }
     }
 
+    // Determine creator attribution for this merchant group
+    const creatorAttribution = merchantCreatorMap.get(merchantId);
+
+    // Build commission records
+    const commissionRecords: Array<{
+      userId: string;
+      amount: number;
+      currency: string;
+      type: "PLATFORM_FEE" | "CREATOR_SALE";
+      status: "PENDING";
+      payableAt: Date | null;
+    }> = [];
+
+    // Platform fee commission (always, if user is authenticated)
+    if (user.id) {
+      commissionRecords.push({
+        userId: user.id,
+        amount: fees.platformFee,
+        currency: "EUR",
+        type: "PLATFORM_FEE",
+        status: "PENDING",
+        payableAt: null, // Platform fee doesn't need hold
+      });
+    }
+
+    // Creator commission (5% to the creator whose video drove the sale)
+    if (creatorAttribution && fees.creatorCommission > 0) {
+      commissionRecords.push({
+        userId: creatorAttribution.creatorId,
+        amount: fees.creatorCommission,
+        currency: "EUR",
+        type: "CREATOR_SALE",
+        status: "PENDING",
+        payableAt, // 30-day hold for refund protection
+      });
+    }
+
     const order = await prisma.order.create({
       data: {
         buyerEmail: user.email,
         buyerName: `${address.firstName} ${address.lastName}`,
-        buyerUserId: user.id,
+        buyerUserId: user.id ?? undefined,
         shippingAddress: shippingAddressJson,
         merchantId,
+        creatorId: creatorAttribution?.creatorId,
+        videoId: creatorAttribution?.videoId,
         checkoutId: checkout.id,
         subtotal: group.subtotal,
         shippingCost: merchantShipping,
         total: fees.total,
         platformFee: fees.platformFee,
-        creatorCommission: 0,
+        creatorCommission: fees.creatorCommission,
         currency: "EUR",
         stripePaymentId: paymentIntentId,
         stripeTransferId,
@@ -485,17 +570,9 @@ async function handleConfirm(
             total: gi.merchantProduct.price * gi.cartItem.quantity,
           })),
         },
-        commissions: {
-          create: [
-            {
-              userId: user.id,
-              amount: fees.platformFee,
-              currency: "EUR",
-              type: "PLATFORM_FEE" as const,
-              status: "PENDING" as const,
-            },
-          ],
-        },
+        commissions: commissionRecords.length > 0 ? {
+          create: commissionRecords,
+        } : undefined,
       },
     });
 

@@ -67,6 +67,13 @@ const creatorLinks: NavLink[] = [
   { href: "/dashboard/settings", label: "Settings", icon: <SettingsIcon /> },
 ];
 
+const guestLinks: NavLink[] = [
+  { href: "/discover", label: "Feed", icon: <FeedIcon /> },
+  { href: "/search", label: "Discover", icon: <DiscoverIcon /> },
+  { href: "/orders", label: "Orders", icon: <OrdersIcon /> },
+  { href: "/checkout", label: "Cart", icon: <CartIcon /> },
+];
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -106,29 +113,28 @@ export function Sidebar() {
     </svg>
   );
 
-  if (!user) return null;
-
   return (
-    <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-[200px] bg-card border-r border-border flex-col z-40 transition-all">
-      <div className="px-5 pt-5 pb-6">
-        <Link href="/feed" className="text-lg font-display font-bold text-text">
+    <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-[224px] bg-card/95 border-r border-border flex-col z-40 transition-all backdrop-blur-sm">
+      <div className="px-6 pt-7 pb-6">
+        <p className="retail-kicker mb-2">Shoppable Feed</p>
+        <Link href={user ? "/feed" : "/discover"} className="text-[1.85rem] leading-none font-editorial font-semibold text-text">
           Scrollr
         </Link>
       </div>
 
-      <nav className="flex-1 px-3 flex flex-col gap-0.5">
-        {consumerLinks.map((link) => (
+      <nav className="flex-1 px-4 flex flex-col gap-1">
+        {(user ? consumerLinks : guestLinks).map((link) => (
           <Link
             key={link.href}
             href={link.href}
             title={link.label}
-            className={`flex items-center gap-2.5 px-2 py-2.5 rounded-xl text-sm transition-colors ${
+            className={`flex items-center gap-3 px-3 py-3 rounded-md text-[0.8rem] uppercase tracking-[0.16em] transition-colors ${
               isActive(link.href)
-                ? "bg-accent/10 font-semibold text-accent"
-                : "text-muted hover:text-text hover:bg-surface"
+                ? "bg-text text-accent-fg"
+                : "text-muted hover:text-text hover:bg-surface/75"
             }`}
           >
-            <span className={`w-5 h-5 flex items-center justify-center ${isActive(link.href) ? "text-accent" : ""}`}>
+            <span className={`w-5 h-5 flex items-center justify-center ${isActive(link.href) ? "text-accent-fg" : ""}`}>
               {link.icon}
             </span>
             <span>{link.label}</span>
@@ -161,46 +167,60 @@ export function Sidebar() {
         )}
       </nav>
 
-      <div className="px-3 pb-4 space-y-2">
-        {/* Theme toggle */}
+      <div className="px-4 pb-5 space-y-3">
         <button
           onClick={cycleTheme}
           title={`Theme: ${theme}`}
-          className="flex items-center gap-2 w-full px-2 py-2 text-sm text-muted hover:text-text rounded-xl hover:bg-surface transition-all"
+          className="flex items-center gap-2 w-full px-3 py-2 text-[0.72rem] uppercase tracking-[0.16em] text-muted hover:text-text rounded-md hover:bg-surface transition-all border border-border/80"
         >
           {themeIcon}
           <span className="capitalize">{theme}</span>
         </button>
 
-        {/* User profile */}
-        <div className="border-t border-border pt-3">
-          <Link
-            href="/profile"
-            className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-surface transition-colors"
-          >
-            <div className="w-7 h-7 rounded-full bg-surface flex items-center justify-center text-xs font-bold text-text border border-border">
-              {(user.name || user.username || "?").charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-text truncate">{user.name || user.username}</p>
-              <p className="text-[10px] text-muted truncate">@{user.username}</p>
-            </div>
-          </Link>
+        {user ? (
+          <div className="border-t border-border pt-4">
+            <Link
+              href="/profile"
+              className="flex items-center gap-3 px-3 py-3 rounded-md hover:bg-surface transition-colors retail-panel"
+            >
+              <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-xs font-bold text-text border border-border">
+                {(user.name || user.username || "?").charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text truncate">{user.name || user.username}</p>
+                <p className="text-[10px] text-muted truncate">@{user.username}</p>
+              </div>
+            </Link>
 
-          {/* Sign out */}
-          <button
-            onClick={handleSignOut}
-            title="Sign Out"
-            className="flex items-center gap-2 w-full px-2 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-xl transition-all mt-1"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            <span>Sign Out</span>
-          </button>
-        </div>
+            <button
+              onClick={handleSignOut}
+              title="Sign Out"
+              className="flex items-center justify-center gap-2 w-full px-3 py-3 text-[0.74rem] uppercase tracking-[0.16em] text-destructive hover:bg-destructive/10 rounded-md transition-all mt-2 border border-destructive/20"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Sign Out</span>
+            </button>
+          </div>
+        ) : (
+          <div className="border-t border-border pt-4 space-y-2">
+            <Link
+              href="/login"
+              className="flex items-center justify-center w-full px-3 py-3 text-[0.74rem] font-semibold uppercase tracking-[0.16em] text-text rounded-md border border-border hover:bg-surface transition-colors"
+            >
+              Log In
+            </Link>
+            <Link
+              href="/register"
+              className="flex items-center justify-center w-full px-3 py-3 text-[0.74rem] font-semibold uppercase tracking-[0.16em] text-accent-fg bg-accent rounded-md hover:bg-accent/90 transition-colors"
+            >
+              Create Account
+            </Link>
+          </div>
+        )}
       </div>
     </aside>
   );

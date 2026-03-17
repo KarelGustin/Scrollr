@@ -24,6 +24,7 @@ export async function middleware(request: NextRequest) {
     pathname === "/" ||
     pathname === "/search" ||
     pathname === "/discover" ||
+    pathname === "/checkout" ||
     pathname === "/onboarding" ||
     pathname === "/apply" ||
     pathname === "/merchant-register" ||
@@ -76,7 +77,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/orders") ||
     pathname.startsWith("/account") ||
     pathname.startsWith("/profile") ||
-    pathname.startsWith("/checkout") ||
     pathname.startsWith("/merchant") ||
     pathname.startsWith("/api/merchant/") ||
     pathname.startsWith("/admin") ||

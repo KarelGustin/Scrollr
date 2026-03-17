@@ -20,6 +20,7 @@ async function getCreator(username: string) {
       name: true,
       avatarUrl: true,
       bio: true,
+      heightCm: true,
       _count: {
         select: {
           followers: true,
@@ -135,6 +136,7 @@ export default async function CreatorProfilePage({ params }: PageProps) {
     name: creator.name,
     avatarUrl: creator.avatarUrl,
     bio: creator.bio,
+    heightCm: creator.heightCm,
     followersCount: creator._count.followers,
     followingCount: creator._count.following,
     videosCount: creator.videos.length,
@@ -166,6 +168,8 @@ export default async function CreatorProfilePage({ params }: PageProps) {
             compareAtPrice: mp?.compareAtPrice ?? null,
             images: null,
             variants: null,
+            creatorTaggedSize: vp.creatorTaggedSize ?? null,
+            creatorHeightCm: creator.heightCm ?? null,
           };
         }),
     })),

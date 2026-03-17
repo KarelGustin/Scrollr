@@ -30,6 +30,7 @@ export default function OnboardingPage() {
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
+  const [heightCm, setHeightCm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
@@ -46,6 +47,8 @@ export default function OnboardingPage() {
     router.replace("/login?callbackUrl=/onboarding");
     return null;
   }
+
+  const showHeightField = user.role === "CREATOR" || user.role === "ADMIN";
 
   const checkUsername = async (value: string) => {
     setUsername(value);
@@ -98,7 +101,11 @@ export default function OnboardingPage() {
       const res = await fetch("/api/user/username", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name || undefined, bio: bio || undefined }),
+        body: JSON.stringify({
+          name: name || undefined,
+          bio: bio || undefined,
+          heightCm: showHeightField && heightCm ? Number(heightCm) : undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -207,6 +214,24 @@ export default function OnboardingPage() {
                 />
                 <p className="text-xs text-muted mt-1">{bio.length}/160</p>
               </div>
+              {showHeightField && (
+                <div>
+                  <label className="text-xs text-muted block mb-1.5">Height (cm)</label>
+                  <input
+                    type="number"
+                    min="120"
+                    max="250"
+                    inputMode="numeric"
+                    value={heightCm}
+                    onChange={(e) => setHeightCm(e.target.value.replace(/[^\d]/g, "").slice(0, 3))}
+                    placeholder="178"
+                    className="w-full bg-surface border border-border rounded-xl px-3 py-2.5 text-sm text-text focus:outline-none focus:border-accent/50"
+                  />
+                  <p className="text-xs text-muted mt-1">
+                    Used as a live fit guide on your tagged products.
+                  </p>
+                </div>
+              )}
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex gap-3">
                 <button

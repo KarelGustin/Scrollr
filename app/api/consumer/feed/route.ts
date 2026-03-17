@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getRankedFeedVideos } from "@/lib/feed-ranking";
 import type { FeedVideo } from "@/types";
 
 const videoInclude = {
   user: {
-    select: { id: true, username: true, name: true, avatarUrl: true },
+    select: { id: true, username: true, name: true, avatarUrl: true, heightCm: true },
   },
   products: {
     include: {
@@ -54,6 +55,7 @@ function mapVideos(videos: Awaited<ReturnType<typeof prisma.video.findMany>>): F
       username: v.user.username ?? "anonymous",
       name: v.user.name,
       avatarUrl: v.user.avatarUrl,
+      heightCm: v.user.heightCm,
     },
     products: v.products
       .filter((vp: any) => vp.product ? vp.product.published : vp.merchantProduct?.available)
@@ -77,12 +79,14 @@ function mapVideos(videos: Awaited<ReturnType<typeof prisma.video.findMany>>): F
           inventoryQuantity: mp?.inventoryQuantity ?? null,
           compareAtPrice: mp?.compareAtPrice ?? null,
           variants: null,
+          creatorTaggedSize: vp.creatorTaggedSize ?? null,
+          creatorHeightCm: v.user.heightCm ?? null,
         };
       }),
   }));
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -116,22 +120,11 @@ export async function GET() {
 
   // Fallback: show discovery videos ranked by score
   suggested = true;
-  const fallbackVideos = await prisma.video.findMany({
-    where: {
-      status: "READY",
-      published: true,
-      hlsUrl: { not: null },
-      products: { some: {} },
-    },
-    include: {
-      ...videoInclude,
-      score: true,
-    },
-    take: 30,
+  const fallbackVideos = await getRankedFeedVideos({
+    viewerSessionId: request.cookies.get("cart_session")?.value ?? null,
+    viewerUserId: user.id,
+    limit: 30,
   });
 
-  // Sort by score descending
-  fallbackVideos.sort((a, b) => (b.score?.score ?? 0) - (a.score?.score ?? 0));
-
-  return NextResponse.json({ videos: mapVideos(fallbackVideos), suggested });
+  return NextResponse.json({ videos: fallbackVideos, suggested });
 }

@@ -8,10 +8,16 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
   const skip = (page - 1) * limit;
 
+  const merchantId = searchParams.get("merchantId")?.trim() || "";
+
   const where: Record<string, unknown> = {
     available: true,
     merchant: { active: true },
   };
+
+  if (merchantId) {
+    where.merchantId = merchantId;
+  }
 
   if (search) {
     where.OR = [

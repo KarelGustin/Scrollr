@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "@/components/ui/Spinner";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 
 interface OrderItem {
   id: string;
@@ -42,6 +43,8 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 };
 
 export default function OrdersPage() {
+  const { user, status } = useAuth();
+  const isAuthenticated = status === "authenticated" && !!user;
   const { data: orders, isLoading } = useQuery<Order[]>({
     queryKey: ["consumer-orders"],
     queryFn: async () => {
@@ -49,7 +52,16 @@ export default function OrdersPage() {
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
+    enabled: isAuthenticated,
   });
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" className="text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg">
@@ -61,7 +73,37 @@ export default function OrdersPage() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4">
-        {isLoading ? (
+        {!isAuthenticated ? (
+          <div className="text-center py-20">
+            <div className="w-14 h-14 rounded-full bg-surface flex items-center justify-center mx-auto mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+            </div>
+            <h2 className="text-base font-display font-bold text-text mb-1">Track orders after checkout</h2>
+            <p className="text-sm text-muted mb-3">
+              Guest checkout is supported. Order confirmations and shipping updates are sent to your email.
+            </p>
+            <p className="text-sm text-muted mb-5">
+              Sign in with the same email later if you want your orders listed here.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/checkout"
+                className="inline-flex items-center justify-center px-5 py-2 bg-accent text-accent-fg text-sm font-semibold rounded-full hover:bg-accent/90 transition-colors"
+              >
+                Open Cart
+              </Link>
+              <Link
+                href="/login?callbackUrl=/orders"
+                className="inline-flex items-center justify-center px-5 py-2 bg-surface text-text text-sm font-semibold rounded-full hover:bg-surface/80 transition-colors"
+              >
+                Log In To View Orders
+              </Link>
+            </div>
+          </div>
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Spinner size="lg" className="text-accent" />
           </div>

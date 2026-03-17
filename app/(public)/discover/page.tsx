@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 import CartButtonInline from "@/components/feed/CartButtonInline";
 import CategoryPills from "@/components/search/CategoryPills";
 import type { FeedVideo } from "@/types";
-import { formatPrice } from "@/lib/format";
 import DiscoverFeedClient from "./DiscoverFeedClient";
+import { getRankedFeedVideos } from "@/lib/feed-ranking";
 
 export const metadata: Metadata = {
   title: "Discover - Scrollr",
@@ -27,117 +29,25 @@ export default async function DiscoverPage({
   let feedVideos: FeedVideo[] = [];
 
   try {
+    const cookieStore = await cookies();
+    const viewerSessionId = cookieStore.get("cart_session")?.value ?? null;
+    const user = await getUser();
     const [cats, videos] = await Promise.all([
       prisma.category.findMany({
         where: { active: true },
         orderBy: { position: "asc" },
         select: { id: true, name: true, slug: true, description: true, imageUrl: true },
       }),
-      prisma.video.findMany({
-        where: {
-          status: "READY",
-          published: true,
-          hlsUrl: { not: null },
-          products: {
-            some: activeCategory
-              ? {
-                  product: {
-                    published: true,
-                    tags: { contains: activeCategory, mode: "insensitive" },
-                  },
-                }
-              : {},
-          },
-        },
-        include: {
-          user: {
-            select: { id: true, username: true, name: true, avatarUrl: true },
-          },
-          products: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  brand: true,
-                  price: true,
-                  priceDisplay: true,
-                  imageUrl: true,
-                  affiliateUrl: true,
-                  description: true,
-                  sizes: true,
-                  published: true,
-                },
-              },
-              merchantProduct: {
-                select: {
-                  id: true,
-                  title: true,
-                  description: true,
-                  imageUrl: true,
-                  images: true,
-                  price: true,
-                  compareAtPrice: true,
-                  vendor: true,
-                  productUrl: true,
-                  inventoryQuantity: true,
-                  available: true,
-                },
-              },
-            },
-            orderBy: { position: "asc" },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 30,
+      getRankedFeedVideos({
+        viewerSessionId,
+        viewerUserId: user?.id ?? null,
+        limit: 30,
+        category: activeCategory,
       }),
     ]);
 
     categories = cats;
-
-    feedVideos = videos.map((v) => ({
-      id: v.id,
-      hlsUrl: v.hlsUrl!,
-      thumbnailUrl: v.thumbnailUrl,
-      duration: v.duration,
-      user: {
-        id: v.user.id,
-        username: v.user.username ?? "anonymous",
-        name: v.user.name,
-        avatarUrl: v.user.avatarUrl,
-      },
-      products: v.products
-        .filter((vp) =>
-          vp.product ? vp.product.published : vp.merchantProduct?.available,
-        )
-        .map((vp) => {
-          const mp = vp.merchantProduct;
-          const p = vp.product;
-          const mpPrice = mp?.price ?? null;
-          const mpImages = (mp?.images as string[] | null) ?? null;
-          return {
-            id: p?.id ?? mp?.id ?? vp.id,
-            name: mp?.title ?? p?.name ?? "Unknown",
-            brand: p?.brand ?? null,
-            price: mpPrice ?? p?.price ?? null,
-            priceDisplay:
-              mpPrice != null
-                ? formatPrice(mpPrice)
-                : (p?.priceDisplay ?? null),
-            imageUrl: mp?.imageUrl ?? p?.imageUrl ?? null,
-            images: mpImages,
-            affiliateUrl: p?.affiliateUrl ?? mp?.productUrl ?? "",
-            description: mp?.description ?? p?.description ?? null,
-            sizes: (p?.sizes as string[] | null) ?? null,
-            merchantProductId: mp?.id ?? null,
-            merchantUrl: mp?.productUrl ?? null,
-            vendor: mp?.vendor ?? null,
-            inventoryQuantity: mp?.inventoryQuantity ?? null,
-            compareAtPrice: mp?.compareAtPrice ?? null,
-            variants: null,
-          };
-        }),
-    }));
+    feedVideos = videos;
   } catch (error) {
     console.error("Discover page data fetch failed:", error);
   }

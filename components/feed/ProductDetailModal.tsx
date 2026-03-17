@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { FeedVideoProduct } from "@/types";
-import { useAuth } from "@/lib/auth-context";
 import { formatPrice } from "@/lib/format";
 
 interface ProductDetailModalProps {
@@ -31,7 +30,6 @@ export default function ProductDetailModal({
   product,
   onClose,
   onAddToCart,
-  onShopNow,
   onBuyNow,
 }: ProductDetailModalProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -41,27 +39,20 @@ export default function ProductDetailModal({
   const [ugcVideos, setUgcVideos] = useState<UgcVideo[]>([]);
   const [loadingUgc, setLoadingUgc] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const touchStartX = useRef(0);
-  const { status } = useAuth();
 
-  // Determine available sizes from variants or sizes array
   const availableSizes = product?.variants
-    ? product.variants
-        .filter((v) => v.available)
-        .map((v) => v.title)
+    ? product.variants.filter((v) => v.available).map((v) => v.title)
     : product?.sizes ?? [];
 
   const hasSizes = availableSizes && availableSizes.length > 0;
 
-  // Image list: use images array if available, fall back to imageUrl
   const imageList = product?.images?.length
     ? product.images
     : product?.imageUrl
       ? [product.imageUrl]
       : [];
 
-  // Stock status
   const getStockStatus = () => {
     if (!product) return null;
 
@@ -85,14 +76,12 @@ export default function ProductDetailModal({
 
   const stockStatus = product ? getStockStatus() : null;
 
-  // Reset state when product changes
   useEffect(() => {
     setSelectedSize(null);
     setAddedToCart(false);
     setSizeRequired(false);
     setCurrentImageIndex(0);
     setUgcVideos([]);
-    setShowAuthPrompt(false);
 
     if (product?.merchantProductId) {
       setLoadingUgc(true);
@@ -106,7 +95,6 @@ export default function ProductDetailModal({
     }
   }, [product?.id, product?.merchantProductId]);
 
-  // Close on escape
   useEffect(() => {
     if (!product) return;
     const handler = (e: KeyboardEvent) => {
@@ -118,16 +106,7 @@ export default function ProductDetailModal({
 
   if (!product) return null;
 
-  const requireAuth = (): boolean => {
-    if (status !== "authenticated") {
-      setShowAuthPrompt(true);
-      return true;
-    }
-    return false;
-  };
-
   const handleAddToCart = () => {
-    if (requireAuth()) return;
     if (hasSizes && !selectedSize) {
       setSizeRequired(true);
       return;
@@ -139,7 +118,6 @@ export default function ProductDetailModal({
   };
 
   const handleBuyNow = () => {
-    if (requireAuth()) return;
     if (hasSizes && !selectedSize) {
       setSizeRequired(true);
       return;
@@ -150,8 +128,13 @@ export default function ProductDetailModal({
 
   const displayBrand = product.vendor || product.brand;
   const storeUrl = product.merchantUrl || product.affiliateUrl;
+  const fitNote = [
+    product.creatorHeightCm != null ? `${product.creatorHeightCm} cm` : null,
+    product.creatorTaggedSize ? `wears ${product.creatorTaggedSize}` : null,
+  ]
+    .filter(Boolean)
+    .join(" • ");
 
-  // Touch handlers for image carousel
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
@@ -169,44 +152,19 @@ export default function ProductDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center md:p-6" onClick={onClose}>
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 animate-in fade-in duration-200" />
+      <div className="absolute inset-0 bg-[#171411]/55 backdrop-blur-sm animate-in fade-in duration-200" />
 
-      {/* Sheet */}
       <div
         ref={sheetRef}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full bg-surface border-t border-border rounded-t-2xl p-6 pb-8 animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto md:max-w-2xl md:max-h-[90vh] md:rounded-2xl md:border md:shadow-2xl"
+        className="relative w-full bg-card border-t border-border rounded-t-[30px] p-5 pb-8 animate-in slide-in-from-bottom duration-300 max-h-[88vh] overflow-y-auto md:max-w-2xl md:max-h-[90vh] md:rounded-[24px] md:border md:shadow-[0_35px_80px_-35px_rgba(23,20,17,0.6)]"
       >
-        {/* Handle */}
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-5 md:hidden" />
 
-        {/* Auth prompt inline */}
-        {showAuthPrompt && (
-          <div className="mb-4 p-4 bg-card border border-border rounded-xl text-center">
-            <p className="text-sm font-semibold text-text mb-1">Sign in to shop</p>
-            <p className="text-xs text-muted mb-3">Create a free account to purchase products</p>
-            <div className="flex gap-2">
-              <Link
-                href="/login"
-                className="flex-1 py-2 text-sm font-medium text-text border border-border rounded-xl hover:bg-surface transition-colors text-center"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="flex-1 py-2 text-sm font-semibold text-white bg-accent rounded-xl hover:bg-accent/90 transition-colors text-center"
-              >
-                Register
-              </Link>
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-5 md:flex-row">
           {imageList.length > 0 && (
             <div
-              className="relative w-28 h-28 rounded-xl overflow-hidden flex-shrink-0"
+              className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden flex-shrink-0 md:w-60 md:h-80 md:aspect-auto"
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
@@ -215,17 +173,15 @@ export default function ProductDetailModal({
                 alt={product.name}
                 fill
                 className="object-cover"
-                sizes="112px"
+                sizes="(min-width: 768px) 240px, 100vw"
               />
-              {/* Image counter */}
               {imageList.length > 1 && (
-                <div className="absolute top-1 right-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                <div className="absolute top-3 right-3 bg-black/60 text-white text-[10px] font-medium uppercase tracking-[0.14em] px-2 py-1 rounded-md">
                   {currentImageIndex + 1}/{imageList.length}
                 </div>
               )}
-              {/* Dot indicators for multiple images */}
               {imageList.length > 1 && (
-                <div className="absolute bottom-1 inset-x-0 flex justify-center gap-1">
+                <div className="absolute bottom-3 inset-x-0 flex justify-center gap-1">
                   {imageList.map((_, i) => (
                     <span
                       key={i}
@@ -238,54 +194,80 @@ export default function ProductDetailModal({
               )}
             </div>
           )}
+
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-display font-bold text-text">
+            <p className="retail-kicker mb-2">Product details</p>
+            <h3 className="text-[2rem] leading-none font-display font-semibold tracking-[-0.03em] text-text">
               {product.name}
             </h3>
             {displayBrand && (
-              <p className="text-sm text-muted mt-0.5">{displayBrand}</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-muted mt-3">{displayBrand}</p>
             )}
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-3">
               {product.price != null && (
-                <p className="text-xl font-bold text-accent">
+                <p className="text-xl font-semibold text-text">
                   {formatPrice(product.price)}
                 </p>
               )}
               {product.compareAtPrice != null && product.price != null && product.compareAtPrice > product.price && (
-                <p className="text-sm text-muted line-through">
+                <p className="text-xs uppercase tracking-[0.14em] text-muted line-through">
                   {formatPrice(product.compareAtPrice)}
                 </p>
               )}
             </div>
 
-            {/* Stock indicator */}
             {stockStatus && (
               <div className="mt-1.5">
                 {stockStatus === "in" && (
-                  <span className="text-xs font-medium text-green-500">In Stock</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-green-600">In Stock</span>
                 )}
                 {stockStatus === "low" && (
-                  <span className="text-xs font-medium text-amber-500">Low Stock</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-600">Low Stock</span>
                 )}
                 {stockStatus === "out" && (
-                  <span className="text-xs font-medium text-red-500">Out of Stock</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600">Out of Stock</span>
                 )}
+              </div>
+            )}
+
+            {fitNote && (
+              <div className="mt-4 rounded-xl border border-border bg-surface/60 px-3 py-2">
+                <p className="retail-kicker mb-1">Live fit guide</p>
+                <p className="text-sm text-text">{fitNote}</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Description */}
+        <div className="flex items-center gap-3 mt-5 py-4 border-t border-b border-border">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
+            <rect x="1" y="3" width="15" height="13" />
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+            <circle cx="5.5" cy="18.5" r="2.5" />
+            <circle cx="18.5" cy="18.5" r="2.5" />
+          </svg>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-text font-semibold">
+              Estimated delivery: 3-7 business days
+            </p>
+            <p className="text-[11px] text-muted mt-1">
+              Shipping calculated at checkout &middot; Sold by {displayBrand || "merchant"}
+            </p>
+          </div>
+        </div>
+
         {product.description && (
-          <p className="text-sm text-muted mt-4 leading-relaxed">
-            {product.description}
-          </p>
+          <div className="mt-5">
+            <p className="retail-kicker mb-2">Description</p>
+            <p className="text-sm text-muted leading-relaxed">
+              {product.description}
+            </p>
+          </div>
         )}
 
-        {/* Size picker */}
         {hasSizes && (
-          <div className="mt-4">
-            <p className={`text-xs font-medium mb-2 ${sizeRequired ? "text-red-500" : "text-muted"}`}>
+          <div className="mt-5">
+            <p className={`retail-kicker mb-3 ${sizeRequired ? "!text-red-600" : ""}`}>
               {sizeRequired ? "Please select a size" : "Select Size"}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -303,11 +285,11 @@ export default function ProductDetailModal({
                       setSizeRequired(false);
                     }}
                     disabled={isUnavailable}
-                    className={`px-3.5 py-2 text-sm font-medium rounded-xl border transition-colors ${
+                    className={`px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] rounded-md border transition-colors ${
                       isUnavailable
                         ? "border-border bg-card text-muted/40 cursor-not-allowed line-through"
                         : selectedSize === size
-                          ? "border-accent bg-accent/10 text-accent"
+                          ? "border-text bg-text text-accent-fg"
                           : "border-border bg-card text-text hover:border-text/20"
                     }`}
                   >
@@ -319,14 +301,12 @@ export default function ProductDetailModal({
           </div>
         )}
 
-        {/* Action buttons */}
         <div className="flex gap-3 mt-6">
-          {/* Buy Now — primary */}
           {onBuyNow && (
             <button
               onClick={handleBuyNow}
               disabled={stockStatus === "out"}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-[11px] font-semibold uppercase tracking-[0.16em] transition-all duration-200 ${
                 stockStatus === "out"
                   ? "bg-muted/20 text-muted cursor-not-allowed"
                   : "bg-accent text-accent-fg hover:bg-accent/90"
@@ -339,11 +319,10 @@ export default function ProductDetailModal({
             </button>
           )}
 
-          {/* Add to Cart — secondary when Buy Now exists, primary otherwise */}
           <button
             onClick={handleAddToCart}
             disabled={stockStatus === "out" || addedToCart}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-[11px] font-semibold uppercase tracking-[0.16em] transition-all duration-200 ${
               addedToCart
                 ? "bg-green-500 text-white"
                 : stockStatus === "out"
@@ -367,7 +346,7 @@ export default function ProductDetailModal({
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="9" cy="21" r="1" />
                   <circle cx="20" cy="21" r="1" />
-                  <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                 </svg>
                 Add to Cart
               </>
@@ -375,14 +354,13 @@ export default function ProductDetailModal({
           </button>
         </div>
 
-        {/* Visit Store link */}
         {storeUrl && (
           <div className="mt-3 text-center">
             <a
               href={storeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-muted hover:text-text transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.14em] text-muted hover:text-text transition-colors"
             >
               Visit Store
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -394,53 +372,44 @@ export default function ProductDetailModal({
           </div>
         )}
 
-        {/* UGC Section */}
         {(ugcVideos.length > 0 || loadingUgc) && (
           <div className="mt-6 border-t border-border pt-4">
             {loadingUgc && (
               <div className="flex items-center gap-2 text-sm text-muted">
                 <div className="w-4 h-4 border-2 border-muted/30 border-t-muted rounded-full animate-spin" />
-                Loading featured videos...
+                Loading related videos...
               </div>
             )}
-            {ugcVideos.length > 0 && (
-              <div>
-                <h3 className="text-sm font-display font-bold text-text mb-3">
-                  Featured by Creators
-                </h3>
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                  {ugcVideos.map((video) => (
+
+            {!loadingUgc && ugcVideos.length > 0 && (
+              <>
+                <p className="retail-kicker mb-3">Seen in videos</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {ugcVideos.slice(0, 6).map((ugc) => (
                     <Link
-                      key={video.id}
-                      href={`/@${video.user.username}/${video.id}`}
-                      className="flex-shrink-0 group"
+                      key={ugc.id}
+                      href={`/@${ugc.user.username}/${ugc.id}`}
+                      className="group block"
                     >
-                      <div className="relative w-20 rounded-xl overflow-hidden bg-surface" style={{ aspectRatio: "9/16" }}>
-                        {video.thumbnailUrl ? (
+                      <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-surface">
+                        {ugc.thumbnailUrl ? (
                           <Image
-                            src={video.thumbnailUrl}
-                            alt={`Video by ${video.user.username}`}
+                            src={ugc.thumbnailUrl}
+                            alt={ugc.title || "UGC video"}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            sizes="80px"
+                            sizes="120px"
                           />
                         ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-muted">
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
-                            </svg>
+                          <div className="absolute inset-0 flex items-center justify-center text-muted text-xs">
+                            No preview
                           </div>
                         )}
-                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1.5 pt-4">
-                          <p className="text-[10px] text-white font-medium truncate">
-                            @{video.user.username}
-                          </p>
-                        </div>
                       </div>
                     </Link>
                   ))}
                 </div>
-              </div>
+              </>
             )}
           </div>
         )}

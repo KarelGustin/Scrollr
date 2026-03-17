@@ -12,15 +12,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, status } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const allowGuestAccess = pathname === "/orders";
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (status === "unauthenticated" && !allowGuestAccess) {
       router.replace("/login");
     }
     if (status === "authenticated" && user && !user.username) {
       router.replace("/onboarding");
     }
-  }, [status, user, router]);
+  }, [allowGuestAccess, status, user, router]);
 
   if (status === "loading") {
     return (
@@ -30,14 +31,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) return null;
+  if (!user && !allowGuestAccess) return null;
 
   return (
     <div className="min-h-screen bg-bg">
-      <MessagePopup />
+      {user && <MessagePopup />}
       <Sidebar />
 
-      <main className="pb-[76px] md:pb-0 md:ml-[200px]">{children}</main>
+      <main className="pb-[76px] md:pb-0 md:ml-[224px]">{children}</main>
 
       <BottomNav user={user} pathname={pathname} />
     </div>

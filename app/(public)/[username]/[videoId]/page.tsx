@@ -20,6 +20,7 @@ async function getCreatorFeed(username: string) {
       username: true,
       name: true,
       avatarUrl: true,
+      heightCm: true,
       videos: {
         where: {
           status: "READY",
@@ -79,6 +80,7 @@ async function getCreatorFeed(username: string) {
       username: user.username!,
       name: user.name,
       avatarUrl: user.avatarUrl,
+      heightCm: user.heightCm,
     },
     products: video.products
       .filter((vp) => (vp.product ? vp.product.published : vp.merchantProduct?.available))
@@ -102,6 +104,8 @@ async function getCreatorFeed(username: string) {
           compareAtPrice: mp?.compareAtPrice ?? null,
           images: null,
           variants: null,
+          creatorTaggedSize: vp.creatorTaggedSize ?? null,
+          creatorHeightCm: user.heightCm ?? null,
         };
       }),
   }));
@@ -112,6 +116,7 @@ async function getCreatorFeed(username: string) {
       username: user.username,
       name: user.name,
       avatarUrl: user.avatarUrl,
+      heightCm: user.heightCm,
     },
     feedVideos,
   };

@@ -31,11 +31,11 @@ export default function DiscoverFeedClient({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["discover-feed"],
+    queryKey: ["discover-feed", activeCategory],
     queryFn: async ({ pageParam }) => {
       const url = pageParam
-        ? `/api/feed?cursor=${pageParam}&limit=10`
-        : `/api/feed?limit=10`;
+        ? `/api/feed?cursor=${pageParam}&limit=10${activeCategory ? `&category=${encodeURIComponent(activeCategory)}` : ""}`
+        : `/api/feed?limit=10${activeCategory ? `&category=${encodeURIComponent(activeCategory)}` : ""}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Feed fetch failed");
       return res.json() as Promise<{ items: FeedVideo[]; nextCursor: string | null }>;

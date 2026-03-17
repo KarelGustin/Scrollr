@@ -13,9 +13,10 @@ import { Spinner } from "@/components/ui/Spinner";
 import type { ShippingAddress } from "./AddressForm";
 import type { ShippingOption } from "./ShippingOptions";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-);
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripePublishableKey
+  ? loadStripe(stripePublishableKey)
+  : null;
 
 interface PaymentFormProps {
   amount: number; // in cents
@@ -24,6 +25,7 @@ interface PaymentFormProps {
   onBack: () => void;
   address: ShippingAddress;
   shippingOption: ShippingOption;
+  guestEmail?: string; // For guest checkout
 }
 
 /**
@@ -36,6 +38,7 @@ function CheckoutForm({
   onBack,
   address,
   shippingOption,
+  guestEmail,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -86,6 +89,7 @@ function CheckoutForm({
             paymentIntentId: paymentIntent.id,
             address,
             shippingOption,
+            ...(guestEmail ? { email: guestEmail } : {}),
           }),
         });
 
@@ -174,6 +178,16 @@ export function PaymentForm(props: PaymentFormProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!stripePublishableKey) {
+      const msg = "Stripe is not configured. Set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to enable checkout.";
+      setError(msg);
+      setLoading(false);
+      props.onError(msg);
+    }
+  }, [props]);
+
+  useEffect(() => {
+    if (!stripePublishableKey) return;
     let cancelled = false;
 
     async function createIntent() {
@@ -187,6 +201,7 @@ export function PaymentForm(props: PaymentFormProps) {
             action: "create-intent",
             address: props.address,
             shippingOption: props.shippingOption,
+            ...(props.guestEmail ? { email: props.guestEmail } : {}),
           }),
         });
         if (!res.ok) {

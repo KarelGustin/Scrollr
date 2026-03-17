@@ -29,7 +29,7 @@ const US_STATES = [
 ];
 
 const inputClass =
-  "w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors";
+  "w-full bg-card border border-border rounded-md px-4 py-3 text-sm text-text placeholder:text-muted/70 focus:outline-none focus:ring-1 focus:ring-text/20 focus:border-text/30 transition-colors";
 
 export function AddressForm({ onSubmit, initialAddress, loading }: AddressFormProps) {
   const [form, setForm] = useState<ShippingAddress>(
@@ -92,15 +92,18 @@ export function AddressForm({ onSubmit, initialAddress, loading }: AddressFormPr
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-base font-display font-bold text-text mb-1">
+    <form onSubmit={handleSubmit} className="space-y-5 retail-panel rounded-md p-4 sm:p-5">
+      <div>
+      <p className="retail-kicker mb-2">Shipping details</p>
+      <h2 className="text-[1.85rem] leading-none font-display font-semibold tracking-[-0.03em] text-text">
         Shipping Address
       </h2>
+      </div>
 
       {/* Name row */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-muted mb-1.5">
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-1.5">
             First Name
           </label>
           <input
@@ -115,7 +118,7 @@ export function AddressForm({ onSubmit, initialAddress, loading }: AddressFormPr
           )}
         </div>
         <div>
-          <label className="block text-xs font-medium text-muted mb-1.5">
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-1.5">
             Last Name
           </label>
           <input
@@ -133,7 +136,7 @@ export function AddressForm({ onSubmit, initialAddress, loading }: AddressFormPr
 
       {/* Address 1 */}
       <div>
-        <label className="block text-xs font-medium text-muted mb-1.5">
+        <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-1.5">
           Address
         </label>
         <input
@@ -150,7 +153,7 @@ export function AddressForm({ onSubmit, initialAddress, loading }: AddressFormPr
 
       {/* Address 2 */}
       <div>
-        <label className="block text-xs font-medium text-muted mb-1.5">
+        <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-1.5">
           Apartment / Suite (optional)
         </label>
         <input
@@ -165,7 +168,7 @@ export function AddressForm({ onSubmit, initialAddress, loading }: AddressFormPr
       {/* City / State / Zip */}
       <div className="grid grid-cols-6 gap-3">
         <div className="col-span-3">
-          <label className="block text-xs font-medium text-muted mb-1.5">
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-1.5">
             City
           </label>
           <input
@@ -180,7 +183,7 @@ export function AddressForm({ onSubmit, initialAddress, loading }: AddressFormPr
           )}
         </div>
         <div className="col-span-1">
-          <label className="block text-xs font-medium text-muted mb-1.5">
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-1.5">
             State
           </label>
           <select
@@ -200,7 +203,7 @@ export function AddressForm({ onSubmit, initialAddress, loading }: AddressFormPr
           )}
         </div>
         <div className="col-span-2">
-          <label className="block text-xs font-medium text-muted mb-1.5">
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-1.5">
             Zip Code
           </label>
           <input
@@ -218,7 +221,7 @@ export function AddressForm({ onSubmit, initialAddress, loading }: AddressFormPr
 
       {/* Country */}
       <div>
-        <label className="block text-xs font-medium text-muted mb-1.5">
+        <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-1.5">
           Country
         </label>
         <select
@@ -234,7 +237,7 @@ export function AddressForm({ onSubmit, initialAddress, loading }: AddressFormPr
         )}
       </div>
 
-      <Button type="submit" size="lg" loading={loading} className="w-full rounded-xl">
+      <Button type="submit" size="lg" loading={loading} className="w-full rounded-md uppercase tracking-[0.14em] text-[11px]">
         Continue to Shipping
       </Button>
     </form>

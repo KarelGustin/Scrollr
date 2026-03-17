@@ -15,6 +15,7 @@ model User {
   name              String?
   avatarUrl         String?
   bio               String?
+  heightCm          Int?
   stripeConnectId   String?  @unique
   stripeConnectOnboarded Boolean @default(false)
   stripeCustomerId  String?  @unique
@@ -33,10 +34,13 @@ model User {
   carts          Cart[]
   merchant       Merchant?
   commissions    Commission[]
+  creatorPayouts CreatorPayout[]
   orders         Order[]
   reports             Report[]       @relation("ReporterReports")
   moderationLogs      ModerationLog[]
   creatorApplications CreatorApplication[]
+  merchantApplications MerchantApplication[]
+  creatorTargets      CreatorTarget[]
   following           Follow[]       @relation("UserFollowing")
   followers           Follow[]       @relation("UserFollowers")
   savedItems          SavedItem[]
@@ -102,6 +106,7 @@ model VideoProduct {
   product           Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
   merchantProductId String?
   merchantProduct   MerchantProduct? @relation(fields: [merchantProductId], references: [id], onDelete: Cascade)
+  creatorTaggedSize String?
   position          Int              @default(0)
   createdAt         DateTime         @default(now())
 
@@ -214,6 +219,7 @@ model CartItem {
   product           Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
   merchantProductId String?
   merchantProduct   MerchantProduct? @relation(fields: [merchantProductId], references: [id], onDelete: Cascade)
+  videoId           String?          // Which video drove this add-to-cart (for creator attribution)
   selectedSize      String?
   quantity          Int              @default(1)
   createdAt         DateTime         @default(now())
@@ -245,19 +251,20 @@ enum Plan {
 // ── Marketplace Models ──
 
 model Merchant {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shopifyDomain     String   @unique    // e.g. "mystore.myshopify.com"
-  shopifyAccessToken String
-  shopifyShopId     String?  @unique
-  storeName         String?
-  storeLogoUrl      String?
-  shippingPolicy    String?
-  returnPolicy      String?
-  active            Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopifyDomain      String?  @unique    // e.g. "mystore.myshopify.com" (null for CSV-only stores)
+  shopifyAccessToken String?
+  shopifyShopId      String?  @unique
+  storeType          String   @default("shopify") // "shopify" | "csv" | "woocommerce"
+  storeName          String?
+  storeLogoUrl       String?
+  shippingPolicy     String?
+  returnPolicy       String?
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   slug                    String?   @unique
   storeDescription        String?
@@ -265,6 +272,13 @@ model Merchant {
   stripeConnectAccountId  String?
   stripeConnectOnboarded  Boolean   @default(false)
   syncStatus              String    @default("IDLE")
+
+  // CSV/non-Shopify shipping configuration
+  shippingRateStandard    Float?    // Standard shipping price
+  shippingRateExpress     Float?    // Express shipping price
+  shippingDaysMin         Int?      // Min delivery days
+  shippingDaysMax         Int?      // Max delivery days
+  notificationEmail       String?   // Email for order notifications (non-Shopify)
 
   merchantProducts MerchantProduct[]
   orders           Order[]
@@ -374,15 +388,19 @@ model Commission {
   userId    String           // Creator who earned it
   user      User             @relation(fields: [userId], references: [id])
   amount    Float
-  currency  String           @default("USD")
+  currency  String           @default("EUR")
   type      CommissionType
   status    CommissionStatus @default(PENDING)
   stripeTransferId String?
+  payableAt DateTime?        // Date when this commission becomes eligible for payout (30-day hold for refund protection)
   paidAt    DateTime?
+  payoutId  String?
+  payout    CreatorPayout?   @relation(fields: [payoutId], references: [id])
   createdAt DateTime         @default(now())
 
   @@index([userId, status])
   @@index([orderId])
+  @@index([status, payableAt])
 }
 
 enum OrderStatus {
@@ -396,8 +414,36 @@ enum OrderStatus {
 }
 
 enum CommissionType {
-  CREATOR_SALE    // 3% to creator
-  PLATFORM_FEE   // 1% to Scrollr
+  CREATOR_SALE    // 5% to creator (from platform's 15%)
+  PLATFORM_FEE   // 10% to Scrollr (15% total - 5% creator)
+}
+
+// ── Creator Payout Scheduling ──
+
+model CreatorPayout {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id])
+  amount            Float              // Total payout amount in EUR
+  currency          String             @default("EUR")
+  stripeTransferId  String?            @unique
+  status            PayoutStatus       @default(PENDING)
+  commissions       Commission[]       // Commissions included in this payout
+  scheduledFor      DateTime           // When this payout was scheduled to execute
+  processedAt       DateTime?
+  failureReason     String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([userId, status])
+  @@index([status, scheduledFor])
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 enum CommissionStatus {
@@ -469,21 +515,72 @@ enum ModerationAction {
 // ── Creator Application Models ──
 
 model CreatorApplication {
-  id          String                   @id @default(cuid())
-  userId      String
-  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status      CreatorApplicationStatus @default(PENDING)
-  category    String
-  socialLinks Json
-  pitch       String
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  adminNote   String?
-  createdAt   DateTime                 @default(now())
-  updatedAt   DateTime                 @updatedAt
+  id              String                   @id @default(cuid())
+  userId          String
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          CreatorApplicationStatus @default(PENDING)
+  category        String
+  socialLinks     Json
+  pitch           String
+  primaryPlatform String?                  // "instagram" | "tiktok" | "youtube"
+  followerCount   Int?                     // Self-reported follower count
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  adminNote       String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
 
   @@index([status, createdAt])
   @@index([userId, createdAt(sort: Desc)])
+}
+
+// ── Merchant Application Models ──
+
+model MerchantApplication {
+  id              String                    @id @default(cuid())
+  userId          String
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          MerchantApplicationStatus @default(PENDING)
+  storeName       String
+  storeUrl        String?                   // Existing store URL (Shopify, own website, etc.)
+  storeType       String                    // "shopify" | "woocommerce" | "csv" | "other"
+  category        String                    // Product category
+  description     String                    // What they sell
+  monthlyRevenue  String?                   // Revenue range
+  socialLinks     Json?                     // Social media links
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  adminNote       String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+enum MerchantApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ── Creator Performance Tracking ──
+
+model CreatorTarget {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month           String   // "2026-03" format
+  postsRequired   Int      @default(10)
+  postsCompleted  Int      @default(0)
+  totalSales      Float    @default(0)
+  totalCommission Float    @default(0)
+  warningIssued   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, month])
+  @@index([userId, month])
 }
 
 enum CreatorApplicationStatus {

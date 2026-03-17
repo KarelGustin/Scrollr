@@ -44,12 +44,13 @@ const config: Config = {
         warning: "#F59E0B",
       },
       borderRadius: {
-        DEFAULT: "14px",
+        DEFAULT: "10px",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
-        display: ["'Plus Jakarta Sans'", "system-ui", "-apple-system", "sans-serif"],
-        accent: ["Syne", "system-ui", "-apple-system", "sans-serif"],
+        sans: ["-apple-system", "BlinkMacSystemFont", "'SF Pro Text'", "'SF Pro Display'", "Inter", "system-ui", "sans-serif"],
+        display: ["-apple-system", "BlinkMacSystemFont", "'SF Pro Display'", "'SF Pro Text'", "Inter", "system-ui", "sans-serif"],
+        editorial: ["-apple-system", "BlinkMacSystemFont", "'SF Pro Display'", "'SF Pro Text'", "Inter", "system-ui", "sans-serif"],
+        accent: ["-apple-system", "BlinkMacSystemFont", "'SF Pro Display'", "'SF Pro Text'", "Inter", "system-ui", "sans-serif"],
       },
       keyframes: {
         "slide-up": {

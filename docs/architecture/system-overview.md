@@ -88,8 +88,8 @@ scrollr/
 | Role | Capabilities |
 |------|-------------|
 | USER | Browse feed, follow creators, add to cart, checkout |
-| CREATOR | Upload videos, tag products, earn 3% commission, analytics |
-| MERCHANT | Manage Shopify store, product sync, order fulfillment, storefront |
+| CREATOR | Upload videos, tag products, earn 5% commission, cross-post to IG/TikTok, analytics |
+| MERCHANT | Manage store (Shopify/CSV/WooCommerce), product sync, order fulfillment, storefront |
 | ADMIN | Full platform management, moderation, user/content/merchant CRUD |
 
 ## Trust Levels (Progressive)
@@ -136,7 +136,8 @@ All prices and transactions use **EUR** (Euro) globally.
 
 - The video feed is accessible to **anonymous users** without authentication
 - Users can scroll and browse freely without signing in
-- Authentication is gated at the point of **purchase** (checkout, cart, Buy Now)
+- **Guest checkout** is supported — no account required to purchase (email only)
+- Cart is session-based and works for both authenticated and anonymous users
 - Infinite scroll with cursor-based pagination for seamless browsing
 
 ## Buy Now Flow
@@ -145,6 +146,54 @@ A single-product quick checkout flow enables in-feed purchases:
 - "Buy Now" button on product cards opens an in-feed checkout sheet
 - Uses `POST /api/checkout/quick` for streamlined single-product checkout
 - Supports Stripe Link for returning customers via stored `stripeCustomerId`
+
+## Creator Posting Flow
+
+Creators upload content via the `/create` page with a 4-step flow:
+
+1. **Select**: Choose video from device gallery (no in-browser recording)
+2. **Preview**: Full-screen video preview with trim info
+3. **Details**: Add caption (300 chars) + tag up to 5 products from merchant stores
+   - Filter by merchant, search by product name
+   - Products shown with image, price, and merchant name
+4. **Post**: Upload to Cloudflare Stream + cross-post options
+
+### Cross-Posting
+After posting, creators can share to Instagram and TikTok via:
+- **Web Share API** (native share sheet on iOS/Android)
+- **File download fallback** for desktop browsers
+
+### Creator Targets
+- Minimum: 10 posts/month (soft target)
+- Tracked via `CreatorTarget` model (monthly)
+- Warning issued if target not met
+
+## Merchant Flow
+
+### Application
+Merchants apply at `/apply/merchant` with a 4-step form:
+1. **Brand**: Store name and URL
+2. **Platform**: Shopify, WooCommerce, CSV, or Other
+3. **Details**: Product category, description, monthly revenue, social presence
+4. **Review**: Summary with edit links
+
+API: `POST /api/merchant-application` creates a `MerchantApplication` record (status: PENDING).
+
+### Onboarding
+After approval, merchants set up their store at `/merchant/onboarding`:
+1. **Store Setup**: Name, logo, slug (URL), description with live preview
+2. **Shipping**: Standard/express rates, delivery times, return window
+3. **Products**: Shopify sync (or CSV/WooCommerce — coming soon)
+4. **Payments**: Stripe Connect onboarding for receiving 85% of sales
+
+### Storefront
+Each merchant gets a public storefront at `/store/[slug]` with:
+- Theme support (light/dark)
+- Product grid with category filtering
+- UGC videos section ("As Seen In") showing creator content tagged to the merchant's products
+- Product detail modal with variant selection, image carousel, add-to-cart
+- Follow button, product count
+- Responsive grid (2/3/4 columns based on screen size)
 
 ## Request Flow
 

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 function serializeMerchant(merchant: {
   id: string;
   userId: string;
-  shopifyDomain: string;
+  shopifyDomain: string | null;
   storeName: string | null;
   storeLogoUrl: string | null;
   shippingPolicy: string | null;

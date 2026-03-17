@@ -1,146 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import {
-  computeVideoScores,
-  areScoresStale,
-  getViewerInterests,
-  calculatePersonalizationBoost,
-} from "@/lib/recommendation";
+import { getUser } from "@/lib/auth";
+import { getRankedFeedPage } from "@/lib/feed-ranking";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const cursor = searchParams.get("cursor");
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "10"), 50);
-
-  // Recompute scores if stale
-  const stale = await areScoresStale();
-  if (stale) {
-    await computeVideoScores();
-  }
-
-  // Get viewer session for personalization
   const viewerSessionId = req.cookies.get("cart_session")?.value;
-  const viewerInterests = viewerSessionId
-    ? await getViewerInterests(viewerSessionId)
-    : new Map<string, number>();
-
-  // Fetch all eligible videos with scores and product tags
-  const videos = await prisma.video.findMany({
-    where: {
-      status: "READY",
-      published: true,
-      hlsUrl: { not: null },
-      products: { some: {} },
-    },
-    include: {
-      user: {
-        select: { id: true, username: true, name: true, avatarUrl: true },
-      },
-      products: {
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
-              brand: true,
-              price: true,
-              priceDisplay: true,
-              imageUrl: true,
-              affiliateUrl: true,
-              tags: true,
-            },
-          },
-          merchantProduct: {
-            select: {
-              id: true,
-              title: true,
-              imageUrl: true,
-              images: true,
-              price: true,
-              compareAtPrice: true,
-              vendor: true,
-              productUrl: true,
-              inventoryQuantity: true,
-              available: true,
-            },
-          },
-        },
-        orderBy: { position: "asc" },
-      },
-      score: true,
-    },
+  const category = searchParams.get("category");
+  const user = await getUser();
+  const feed = await getRankedFeedPage({
+    viewerSessionId,
+    viewerUserId: user?.id ?? null,
+    limit,
+    cursor,
+    category,
   });
 
-  // Score and sort with personalization
-  const scored = videos.map((v) => {
-    const baseScore = v.score?.score ?? 0.5; // cold start default
-
-    // Collect all tags from this video's products
-    const videoTags = v.products
-      .flatMap((vp) =>
-        vp.product?.tags
-          ? vp.product.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean)
-          : []
-      );
-
-    const boost = calculatePersonalizationBoost(videoTags, viewerInterests);
-    const finalScore = baseScore * boost;
-
-    // Add slight randomization within tiers to prevent stale ordering
-    const jitter = (Math.random() - 0.5) * 0.05;
-
-    return { video: v, finalScore: finalScore + jitter };
-  });
-
-  // Sort by final score descending
-  scored.sort((a, b) => b.finalScore - a.finalScore);
-
-  // Apply cursor-based pagination using index position
-  let startIndex = 0;
-  if (cursor) {
-    const cursorIndex = scored.findIndex((s) => s.video.id === cursor);
-    if (cursorIndex >= 0) startIndex = cursorIndex + 1;
-  }
-
-  const page = scored.slice(startIndex, startIndex + limit + 1);
-  const hasMore = page.length > limit;
-  const items = hasMore ? page.slice(0, limit) : page;
-  const nextCursor = hasMore ? items[items.length - 1].video.id : null;
-
-  const feed = items.map((s) => ({
-    id: s.video.id,
-    hlsUrl: s.video.hlsUrl!,
-    thumbnailUrl: s.video.thumbnailUrl,
-    duration: s.video.duration,
-    user: {
-      id: s.video.user.id,
-      username: s.video.user.username ?? "anonymous",
-      name: s.video.user.name,
-      avatarUrl: s.video.user.avatarUrl,
-    },
-    products: s.video.products.map((vp) => {
-      const mp = vp.merchantProduct;
-      const p = vp.product;
-      return {
-        id: p?.id ?? mp?.id ?? vp.id,
-        name: mp?.title ?? p?.name ?? "Unknown",
-        brand: p?.brand ?? null,
-        price: mp?.price ?? p?.price ?? null,
-        priceDisplay: mp ? new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(mp.price) : p?.priceDisplay ?? null,
-        imageUrl: mp?.imageUrl ?? p?.imageUrl ?? null,
-        images: (mp as any)?.images as string[] | null ?? null,
-        affiliateUrl: p?.affiliateUrl ?? mp?.productUrl ?? "",
-        description: null,
-        sizes: null,
-        merchantProductId: mp?.id ?? null,
-        merchantUrl: mp?.productUrl ?? null,
-        vendor: mp?.vendor ?? null,
-        inventoryQuantity: mp?.inventoryQuantity ?? null,
-        compareAtPrice: mp?.compareAtPrice ?? null,
-        variants: null,
-      };
-    }),
-  }));
-
-  return NextResponse.json({ items: feed, nextCursor });
+  return NextResponse.json(feed);
 }

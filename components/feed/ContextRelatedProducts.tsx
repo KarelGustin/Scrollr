@@ -56,13 +56,13 @@ export default function ContextRelatedProducts({ merchantProductId }: ContextRel
   if (loading) {
     return (
       <div>
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted mb-2">
+        <p className="retail-kicker mb-3">
           More from this store
         </p>
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
-              <div className="w-12 h-12 rounded-lg bg-surface animate-pulse flex-shrink-0" />
+            <div key={i} className="retail-panel flex items-center gap-3 p-3 rounded-xl">
+              <div className="w-14 h-16 rounded-lg bg-surface animate-pulse flex-shrink-0" />
               <div className="flex-1 space-y-1.5">
                 <div className="h-3 w-2/3 rounded bg-surface animate-pulse" />
                 <div className="h-3 w-1/3 rounded bg-surface animate-pulse" />
@@ -78,7 +78,7 @@ export default function ContextRelatedProducts({ merchantProductId }: ContextRel
 
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-wider text-muted mb-2">
+      <p className="retail-kicker mb-3">
         More from this store
       </p>
       <div className="space-y-2">
@@ -88,25 +88,25 @@ export default function ContextRelatedProducts({ merchantProductId }: ContextRel
           return (
             <div
               key={product.id}
-              className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-border/80 transition-colors"
+              className="retail-panel flex items-center gap-3 p-3 rounded-xl hover:border-text/20 transition-colors"
             >
               {product.imageUrl ? (
-                <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-surface">
+                <div className="relative w-14 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-surface">
                   <Image
                     src={product.imageUrl}
                     alt={product.title}
                     fill
                     className="object-cover"
-                    sizes="48px"
+                    sizes="56px"
                   />
                 </div>
               ) : (
-                <div className="w-12 h-12 rounded-lg flex-shrink-0 bg-surface" />
+                <div className="w-14 h-16 rounded-lg flex-shrink-0 bg-surface" />
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-text truncate">{product.title}</p>
+                <p className="text-base font-display font-semibold tracking-[-0.02em] text-text truncate">{product.title}</p>
                 {product.vendor && (
-                  <p className="text-xs text-muted truncate">{product.vendor}</p>
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-muted truncate mt-1">{product.vendor}</p>
                 )}
               </div>
               <span className="text-sm font-semibold text-text flex-shrink-0 mr-2">
@@ -115,7 +115,7 @@ export default function ContextRelatedProducts({ merchantProductId }: ContextRel
               <button
                 onClick={() => handleAdd(product)}
                 disabled={isAdding || isAdded}
-                className={`flex-shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+                className={`flex-shrink-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] rounded-md transition-all flex items-center gap-1.5 ${
                   isAdded
                     ? "bg-green-500/15 text-green-500"
                     : "bg-accent text-accent-fg hover:bg-accent/90"

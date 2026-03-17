@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       email,
       name: buyerName,
       shippingAddress,
+      videoId,
     } = body;
 
     if (!merchantProductId || !email || !buyerName || !shippingAddress) {
@@ -115,6 +116,51 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Look up creator attribution from video
+    let creatorId: string | undefined;
+    if (videoId) {
+      const video = await prisma.video.findUnique({
+        where: { id: videoId },
+        select: { userId: true },
+      });
+      // Don't attribute commission if creator IS the merchant
+      if (video && video.userId !== merchant.userId) {
+        creatorId = video.userId;
+      }
+    }
+
+    const payableAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30-day hold
+
+    // Build commission records
+    const commissionRecords: Array<{
+      userId: string;
+      amount: number;
+      currency: string;
+      type: "PLATFORM_FEE" | "CREATOR_SALE";
+      status: "PENDING";
+      payableAt: Date | null;
+    }> = [
+      {
+        userId: merchant.userId,
+        amount: fees.platformFee,
+        currency: "EUR",
+        type: "PLATFORM_FEE",
+        status: "PENDING",
+        payableAt: null,
+      },
+    ];
+
+    if (creatorId && fees.creatorCommission > 0) {
+      commissionRecords.push({
+        userId: creatorId,
+        amount: fees.creatorCommission,
+        currency: "EUR",
+        type: "CREATOR_SALE",
+        status: "PENDING",
+        payableAt,
+      });
+    }
+
     const order = await prisma.order.create({
       data: {
         buyerEmail: email,
@@ -122,12 +168,14 @@ export async function POST(req: NextRequest) {
         buyerUserId: user.id,
         shippingAddress: shippingAddressJson,
         merchantId: merchant.id,
+        creatorId,
+        videoId: videoId ?? undefined,
         checkoutId: checkout.id,
         subtotal,
         shippingCost,
         total: fees.total,
         platformFee: fees.platformFee,
-        creatorCommission: 0,
+        creatorCommission: fees.creatorCommission,
         currency: "EUR",
         stripePaymentId: paymentIntent.id,
         stripeTransferId,
@@ -141,13 +189,7 @@ export async function POST(req: NextRequest) {
           }],
         },
         commissions: {
-          create: [{
-            userId: merchant.userId,
-            amount: fees.platformFee,
-            currency: "EUR",
-            type: "PLATFORM_FEE",
-            status: "PENDING",
-          }],
+          create: commissionRecords,
         },
       },
     });

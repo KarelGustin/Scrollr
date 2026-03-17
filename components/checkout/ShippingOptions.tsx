@@ -114,10 +114,13 @@ export function ShippingOptions({
   }
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-base font-display font-bold text-text mb-1">
+    <div className="space-y-5 retail-panel rounded-md p-4 sm:p-5">
+      <div>
+      <p className="retail-kicker mb-2">Delivery</p>
+      <h2 className="text-[1.85rem] leading-none font-display font-semibold tracking-[-0.03em] text-text">
         Shipping Method
       </h2>
+      </div>
 
       <div className="space-y-2">
         {options.map((opt, index) => (
@@ -125,20 +128,20 @@ export function ShippingOptions({
             key={`${opt.name}-${index}`}
             type="button"
             onClick={() => setSelected(index)}
-            className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${
+            className={`w-full flex items-center gap-3 p-4 rounded-md border transition-all text-left ${
               selected === index
-                ? "border-accent bg-accent/5 ring-1 ring-accent/30"
-                : "border-border bg-surface hover:border-muted"
+                ? "border-text bg-surface ring-1 ring-text/10"
+                : "border-border bg-card hover:border-text/20"
             }`}
           >
             {/* Radio indicator */}
             <div
               className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                selected === index ? "border-accent" : "border-border"
+                selected === index ? "border-text" : "border-border"
               }`}
             >
               {selected === index && (
-                <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+                <div className="w-2.5 h-2.5 rounded-full bg-text" />
               )}
             </div>
 
@@ -159,7 +162,7 @@ export function ShippingOptions({
       </div>
 
       <div className="flex gap-3 pt-2">
-        <Button variant="secondary" onClick={onBack} className="rounded-xl">
+        <Button variant="secondary" onClick={onBack} className="rounded-md uppercase tracking-[0.14em] text-[11px]">
           Back
         </Button>
         <Button
@@ -167,7 +170,7 @@ export function ShippingOptions({
           loading={externalLoading}
           disabled={selected === null}
           onClick={() => selected !== null && onSelect(options[selected])}
-          className="flex-1 rounded-xl"
+          className="flex-1 rounded-md uppercase tracking-[0.14em] text-[11px]"
         >
           Continue to Payment
         </Button>

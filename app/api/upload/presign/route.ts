@@ -21,9 +21,10 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { productIds, merchantProductIds, title, description, location, fileSizeMB } = body as {
+  const { productIds, merchantProductIds, taggedMerchantProducts, title, description, location, fileSizeMB } = body as {
     productIds?: string[];
     merchantProductIds?: string[];
+    taggedMerchantProducts?: { merchantProductId: string; creatorTaggedSize?: string | null }[];
     title?: string;
     description?: string;
     location?: string;
@@ -84,12 +85,21 @@ export async function POST(req: NextRequest) {
   }
 
   // If merchant product IDs were provided, link them to the video
-  if (merchantProductIds && merchantProductIds.length > 0) {
+  const merchantProductsToCreate: {
+    merchantProductId: string;
+    creatorTaggedSize?: string | null;
+  }[] =
+    taggedMerchantProducts && taggedMerchantProducts.length > 0
+      ? taggedMerchantProducts
+      : merchantProductIds?.map((merchantProductId) => ({ merchantProductId })) ?? [];
+
+  if (merchantProductsToCreate.length > 0) {
     const startPosition = productIds?.length ?? 0;
     await prisma.videoProduct.createMany({
-      data: merchantProductIds.map((merchantProductId, index) => ({
+      data: merchantProductsToCreate.map((product, index) => ({
         videoId: video.id,
-        merchantProductId,
+        merchantProductId: product.merchantProductId,
+        creatorTaggedSize: product.creatorTaggedSize?.trim() || null,
         position: startPosition + index,
       })),
     });
