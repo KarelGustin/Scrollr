@@ -472,7 +472,7 @@ async function handleConfirm(
         shippingCost: merchantShipping,
         total: fees.total,
         platformFee: fees.platformFee,
-        creatorCommission: 0,
+        creatorCommission: fees.creatorCommission,
         currency: "EUR",
         stripePaymentId: paymentIntentId,
         stripeTransferId,
