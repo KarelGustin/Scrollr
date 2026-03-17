@@ -233,6 +233,13 @@ export default function LoginPage() {
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </Link>
+
+              <Link
+                href="/discover"
+                className="block w-full text-center py-3 text-sm font-medium text-muted hover:text-text transition-colors"
+              >
+                Back to Scrollr feed
+              </Link>
             </>
           )}
         </div>

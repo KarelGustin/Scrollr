@@ -23,9 +23,9 @@ export default function ProductRow({ products, onProductClick }: ProductRowProps
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-20 pb-[calc(74px+env(safe-area-inset-bottom,0px))] md:pb-7 lg:hidden">
+    <div className="absolute bottom-0 left-0 right-0 z-20 pb-[calc(70px+env(safe-area-inset-bottom,0px))] md:pb-7 lg:hidden">
       <div
-        className="flex gap-3 px-4 pb-2 overflow-x-auto scrollbar-hide"
+        className="flex gap-2.5 px-4 pb-1.5 overflow-x-auto scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {products.map((product) => {
@@ -42,46 +42,46 @@ export default function ProductRow({ products, onProductClick }: ProductRowProps
                 e.stopPropagation();
                 onProductClick(product);
               }}
-              className="flex-shrink-0 group flex items-center gap-3 bg-[#171411]/70 backdrop-blur-xl border border-white/[0.12] rounded-xl p-3 pr-4 text-left transition-all active:scale-[0.97] max-w-[264px] shadow-[0_18px_36px_-26px_rgba(0,0,0,0.75)]"
+              className="flex-shrink-0 group flex items-center gap-2.5 bg-[#171411]/68 backdrop-blur-xl border border-white/[0.12] rounded-2xl px-2.5 py-2 pr-3 text-left transition-all active:scale-[0.985] max-w-[226px] shadow-[0_16px_30px_-22px_rgba(0,0,0,0.78)]"
             >
               {product.imageUrl && (
                 <img
                   src={product.imageUrl}
                   alt={product.name}
-                  className="w-16 h-20 rounded-lg object-cover flex-shrink-0 ring-1 ring-white/10"
+                  className="w-12 h-15 rounded-xl object-cover flex-shrink-0 ring-1 ring-white/8"
                 />
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-lg font-display font-semibold tracking-[-0.02em] text-white truncate leading-tight">
+                <p className="text-[13px] font-display font-semibold tracking-[-0.02em] text-white truncate leading-tight">
                   {product.name}
                 </p>
                 {displayBrand && (
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/55 truncate mt-1">
+                  <p className="text-[9px] uppercase tracking-[0.14em] text-white/78 truncate mt-0.5">
                     {displayBrand}
                   </p>
                 )}
-                {fitNote && (
-                  <p className="text-[10px] text-[#f3ebdf]/80 mt-1 truncate">
-                    Fit guide: {fitNote}
-                  </p>
-                )}
-                <div className="flex items-center gap-1.5 mt-2">
+                <div className="flex items-center gap-2 mt-1.5">
                   {product.price != null && (
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-xs font-semibold text-white">
                       {formatPrice(product.price)}
                     </span>
                   )}
                   {product.compareAtPrice != null && product.price != null && product.compareAtPrice > product.price && (
-                    <span className="text-[10px] uppercase tracking-[0.14em] text-white/35 line-through">
+                    <span className="text-[9px] uppercase tracking-[0.12em] text-white/56 line-through">
                       {formatPrice(product.compareAtPrice)}
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#f6f1e8] bg-white/10 px-2 py-1 rounded-md">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                      <line x1="3" y1="6" x2="21" y2="6" />
-                    </svg>
-                    Shop
+                </div>
+                <div className="flex items-center justify-between gap-2 mt-1.5">
+                  {fitNote ? (
+                    <p className="text-[9px] text-white/84 truncate">
+                      {fitNote}
+                    </p>
+                  ) : (
+                    <div />
+                  )}
+                  <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/90">
+                    Tap to view
                   </span>
                 </div>
               </div>

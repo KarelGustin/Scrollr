@@ -18,9 +18,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (status === "unauthenticated" && !allowGuestAccess) {
       router.replace("/login");
     }
-    if (status === "authenticated" && user && !user.username) {
-      router.replace("/onboarding");
-    }
   }, [allowGuestAccess, status, user, router]);
 
   if (status === "loading") {

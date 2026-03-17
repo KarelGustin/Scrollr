@@ -78,25 +78,18 @@ const UploadIcon = () => (
   </div>
 );
 
-const StoreIcon = (active: boolean) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l1-4h16l1 4" />
-    <path d="M3 9v11a1 1 0 001 1h16a1 1 0 001-1V9" />
-    <path d="M9 21V13h6v8" />
-  </svg>
-);
-
 const unauthenticatedTabs: Tab[] = [
   { label: "Feed", href: "/discover", icon: HomeIcon },
-  { label: "Discover", href: "/search", icon: DiscoverIcon },
-  { label: "Orders", href: "/orders", icon: OrdersIcon },
+  { label: "Discover", href: "/discover", icon: DiscoverIcon },
   { label: "Cart", href: "/checkout", icon: CartIcon },
+  { label: "Orders", href: "/orders", icon: OrdersIcon },
   { label: "Profile", href: "/login", icon: ProfileIcon },
 ];
 
 const consumerTabs: Tab[] = [
   { label: "Feed", href: "/feed", icon: HomeIcon },
   { label: "Discover", href: "/discover", icon: DiscoverIcon },
+  { label: "Cart", href: "/checkout", icon: CartIcon },
   { label: "Orders", href: "/orders", icon: OrdersIcon },
   { label: "Profile", href: "/profile", icon: ProfileIcon },
 ];
@@ -109,21 +102,12 @@ const creatorTabs: Tab[] = [
   { label: "Dashboard", href: "/dashboard", icon: DashboardIcon },
 ];
 
-const merchantTabs: Tab[] = [
-  { label: "Feed", href: "/feed", icon: HomeIcon },
-  { label: "Discover", href: "/discover", icon: DiscoverIcon },
-  { label: "Orders", href: "/orders", icon: OrdersIcon },
-  { label: "Profile", href: "/profile", icon: ProfileIcon },
-  { label: "My Store", href: "/merchant", icon: StoreIcon },
-];
-
 function getTabsForUser(user: AppSession | null): Tab[] {
   if (!user) return unauthenticatedTabs;
   switch (user.role) {
-    case "MERCHANT":
-      return merchantTabs;
     case "CREATOR":
     case "ADMIN":
+    case "MERCHANT":
       return consumerTabs;
     default:
       return consumerTabs;
@@ -133,7 +117,6 @@ function getTabsForUser(user: AppSession | null): Tab[] {
 function isActive(href: string, pathname: string): boolean {
   if (href === "/feed") return pathname === "/feed";
   if (href === "/discover") return pathname === "/discover" || pathname.startsWith("/discover/");
-  if (href === "/search") return pathname === "/search" || pathname.startsWith("/search/");
   if (href === "/dashboard") return pathname === "/dashboard" && !pathname.startsWith("/dashboard/");
   if (href === "/profile") return pathname.startsWith("/profile");
   if (href === "/merchant") return pathname.startsWith("/merchant");
