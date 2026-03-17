@@ -61,43 +61,6 @@ export default function CreatePage() {
       .catch(() => {});
   }, []);
 
-  // Auth gate
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" className="text-accent" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    router.replace("/login?callbackUrl=/create");
-    return null;
-  }
-
-  // File selection handler
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate video file
-    if (!file.type.startsWith("video/")) {
-      alert("Please select a video file");
-      return;
-    }
-
-    // Max 500MB
-    if (file.size > 500 * 1024 * 1024) {
-      alert("File size must be under 500MB");
-      return;
-    }
-
-    setSelectedFile(file);
-    const url = URL.createObjectURL(file);
-    setVideoPreviewUrl(url);
-    setStep("preview");
-  };
-
   // Search products by merchant
   const searchProducts = useCallback(async (merchantId: string, query: string) => {
     if (!query.trim() && !merchantId) return;
@@ -140,6 +103,43 @@ export default function CreatePage() {
     }, 300);
     return () => clearTimeout(timer);
   }, [selectedMerchant, productSearch, showProductSearch, searchProducts]);
+
+  // Auth gate
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" className="text-accent" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    router.replace("/login?callbackUrl=/create");
+    return null;
+  }
+
+  // File selection handler
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate video file
+    if (!file.type.startsWith("video/")) {
+      alert("Please select a video file");
+      return;
+    }
+
+    // Max 500MB
+    if (file.size > 500 * 1024 * 1024) {
+      alert("File size must be under 500MB");
+      return;
+    }
+
+    setSelectedFile(file);
+    const url = URL.createObjectURL(file);
+    setVideoPreviewUrl(url);
+    setStep("preview");
+  };
 
   const addProduct = (product: TaggedProduct) => {
     if (taggedProducts.length >= 5) return;

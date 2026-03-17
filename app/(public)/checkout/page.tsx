@@ -102,8 +102,8 @@ export default function PublicCheckoutPage() {
     ? ["address", "shipping", "payment", "confirmation"]
     : ["email", "address", "shipping", "payment", "confirmation"];
 
-  const visibleSteps = allSteps.filter((s) => s !== "confirmation");
-  const currentStepIndex = visibleSteps.indexOf(step);
+  const visibleSteps = allSteps.filter((s): s is Exclude<Step, "confirmation"> => s !== "confirmation");
+  const currentStepIndex = visibleSteps.indexOf(step as typeof visibleSteps[number]);
 
   const fmt = new Intl.NumberFormat("en-EU", {
     style: "currency",

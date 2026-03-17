@@ -383,8 +383,8 @@ async function handleConfirm(
   type MerchantGroup = {
     merchantId: string;
     merchantUserId: string;
-    domain: string;
-    accessToken: string;
+    domain: string | null;
+    accessToken: string | null;
     stripeConnectAccountId: string | null;
     stripeConnectOnboarded: boolean;
     items: GroupItem[];
