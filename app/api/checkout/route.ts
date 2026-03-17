@@ -116,24 +116,37 @@ function createCartSnapshot(
  *   action: "create-intent" — creates Stripe PaymentIntent for the cart total
  *   action: "confirm"       — after payment, creates Shopify orders + DB records
  */
+type CheckoutUser = {
+  id: string | null;
+  email: string;
+};
+
 export async function POST(req: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "You must be signed in to checkout" },
-        { status: 401 }
-      );
-    }
-
+    const authenticatedUser = await getUser();
     const body = await req.json();
     const action = String(body?.action ?? "");
 
+    // Support guest checkout: use authenticated user if available, else require email
+    let checkoutUser: CheckoutUser;
+    if (authenticatedUser) {
+      checkoutUser = { id: authenticatedUser.id, email: authenticatedUser.email };
+    } else {
+      const guestEmail = String(body?.email ?? "").trim().toLowerCase();
+      if (!guestEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+        return NextResponse.json(
+          { error: "Please provide a valid email address to checkout as guest" },
+          { status: 400 }
+        );
+      }
+      checkoutUser = { id: null, email: guestEmail };
+    }
+
     if (action === "create-intent") {
-      return handleCreateIntent(user, body);
+      return handleCreateIntent(checkoutUser, body);
     }
     if (action === "confirm") {
-      return handleConfirm(user, body);
+      return handleConfirm(checkoutUser, body);
     }
 
     return NextResponse.json(
@@ -150,7 +163,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleCreateIntent(
-  user: { id: string; email: string },
+  user: CheckoutUser,
   body: {
     address: unknown;
     shippingOption: unknown;
@@ -210,7 +223,7 @@ async function handleCreateIntent(
     currency: "eur",
     transferGroup,
     metadata: {
-      userId: user.id,
+      userId: user.id ?? "guest",
       cartId: cart.id,
       cartHash: snapshot.hash,
       subtotalCents: String(snapshot.subtotalCents),
@@ -233,7 +246,7 @@ async function handleCreateIntent(
 }
 
 async function handleConfirm(
-  user: { id: string; email: string },
+  user: CheckoutUser,
   body: {
     paymentIntentId: unknown;
     address: unknown;
@@ -283,11 +296,15 @@ async function handleConfirm(
   }
 
   const metadata = paymentIntent.metadata ?? {};
-  if (metadata.userId !== user.id) {
-    return NextResponse.json(
-      { error: "Payment intent does not belong to this user" },
-      { status: 403 }
-    );
+  const expectedUserId = user.id ?? "guest";
+  if (metadata.userId !== expectedUserId) {
+    // For guests, also verify by email
+    if (metadata.buyerEmail !== user.email) {
+      return NextResponse.json(
+        { error: "Payment intent does not belong to this user" },
+        { status: 403 }
+      );
+    }
   }
 
   const expectedSubtotalCents = parsePositiveInt(metadata.subtotalCents);
@@ -419,7 +436,7 @@ async function handleConfirm(
     (await prisma.checkout.create({
       data: {
         stripePaymentIntentId: paymentIntentId,
-        buyerUserId: user.id,
+        buyerUserId: user.id ?? undefined,
         buyerEmail: user.email,
         total,
       },
@@ -464,7 +481,7 @@ async function handleConfirm(
       data: {
         buyerEmail: user.email,
         buyerName: `${address.firstName} ${address.lastName}`,
-        buyerUserId: user.id,
+        buyerUserId: user.id ?? undefined,
         shippingAddress: shippingAddressJson,
         merchantId,
         checkoutId: checkout.id,
@@ -485,7 +502,7 @@ async function handleConfirm(
             total: gi.merchantProduct.price * gi.cartItem.quantity,
           })),
         },
-        commissions: {
+        commissions: user.id ? {
           create: [
             {
               userId: user.id,
@@ -495,7 +512,7 @@ async function handleConfirm(
               status: "PENDING" as const,
             },
           ],
-        },
+        } : undefined,
       },
     });
 

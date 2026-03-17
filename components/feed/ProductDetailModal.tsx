@@ -127,7 +127,7 @@ export default function ProductDetailModal({
   };
 
   const handleAddToCart = () => {
-    if (requireAuth()) return;
+    // Cart is session-based, no auth required for adding items
     if (hasSizes && !selectedSize) {
       setSizeRequired(true);
       return;
@@ -139,7 +139,7 @@ export default function ProductDetailModal({
   };
 
   const handleBuyNow = () => {
-    if (requireAuth()) return;
+    // Buy Now also works for guests — they'll enter email at checkout
     if (hasSizes && !selectedSize) {
       setSizeRequired(true);
       return;

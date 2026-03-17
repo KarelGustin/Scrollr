@@ -69,6 +69,7 @@ export default function CartDrawer() {
 
   const handleCheckout = () => {
     closeCart();
+    // Use public checkout route (supports both authenticated and guest checkout)
     router.push("/checkout");
   };
 
