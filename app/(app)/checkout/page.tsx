@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/lib/auth-context";
 import { AddressForm, type ShippingAddress } from "@/components/checkout/AddressForm";
 import {
   ShippingOptions,
