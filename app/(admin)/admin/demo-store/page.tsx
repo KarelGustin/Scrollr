@@ -51,7 +51,7 @@ export default function DemoStorePage() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/admin/demo-store?slug=${slug}`, {
+      const res = await fetch(`/api/admin/demo-store?slug=${encodeURIComponent(slug)}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete demo store");
