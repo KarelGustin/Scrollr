@@ -4,13 +4,25 @@ import { prisma } from "@/lib/prisma";
 
 async function requireAdmin() {
   const user = await getUser();
-  if (!user) return null;
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { role: true },
-  });
-  if (dbUser?.role !== "ADMIN") return null;
-  return user;
+  if (user) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true },
+    });
+    if (dbUser?.role !== "ADMIN") return null;
+    return user;
+  }
+
+  // Dev fallback: when Supabase is not configured, allow if an ADMIN user exists
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    const adminUser = await prisma.user.findFirst({
+      where: { role: "ADMIN" },
+      select: { id: true, email: true, username: true, name: true, avatarUrl: true, bio: true },
+    });
+    return adminUser;
+  }
+
+  return null;
 }
 
 const DEMO_PRODUCTS = [
@@ -73,8 +85,7 @@ export async function POST(request: NextRequest) {
   const merchant = await prisma.merchant.create({
     data: {
       userId: merchantUser.id,
-      shopifyDomain: `${slug}.myshopify.com`,
-      shopifyAccessToken: `demo_tok_${Date.now()}`,
+      storeType: "csv",
       storeName,
       slug,
       storeDescription: `Welcome to ${storeName}! Browse our curated collection of premium fashion essentials.`,
