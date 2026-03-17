@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     select: { id: true },
   });
 
-  return NextResponse.json({ taken: !!existing });
+  return NextResponse.json({ taken: !!existing, available: !existing });
 }
 
 /** Set username (registration): PATCH /api/user/username */
@@ -79,11 +79,12 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { username, name, avatarUrl, bio } = body as {
+  const { username, name, avatarUrl, bio, heightCm } = body as {
     username?: string;
     name?: string;
     avatarUrl?: string | null;
     bio?: string | null;
+    heightCm?: number | null;
   };
 
   // Validate username if provided
@@ -116,6 +117,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (heightCm !== undefined && heightCm !== null) {
+    if (!Number.isInteger(heightCm) || heightCm < 120 || heightCm > 250) {
+      return NextResponse.json(
+        { error: "Height must be between 120 and 250 cm" },
+        { status: 400 }
+      );
+    }
+  }
+
   const user = await prisma.user.update({
     where: { id: appUser.id },
     data: {
@@ -123,6 +133,7 @@ export async function POST(req: NextRequest) {
       ...(name !== undefined && { name }),
       ...(avatarUrl !== undefined && { avatarUrl }),
       ...(bio !== undefined && { bio }),
+      ...(heightCm !== undefined && { heightCm }),
     },
   });
 
@@ -131,6 +142,7 @@ export async function POST(req: NextRequest) {
     name: user.name,
     avatarUrl: user.avatarUrl,
     bio: user.bio,
+    heightCm: user.heightCm,
   });
 }
 

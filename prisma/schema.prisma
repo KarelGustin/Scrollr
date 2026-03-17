@@ -15,6 +15,7 @@ model User {
   name              String?
   avatarUrl         String?
   bio               String?
+  heightCm          Int?
   stripeConnectId   String?  @unique
   stripeConnectOnboarded Boolean @default(false)
   stripeCustomerId  String?  @unique
@@ -105,6 +106,7 @@ model VideoProduct {
   product           Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
   merchantProductId String?
   merchantProduct   MerchantProduct? @relation(fields: [merchantProductId], references: [id], onDelete: Cascade)
+  creatorTaggedSize String?
   position          Int              @default(0)
   createdAt         DateTime         @default(now())
 

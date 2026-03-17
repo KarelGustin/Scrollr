@@ -11,6 +11,10 @@ interface UploadState {
 
 interface UploadOptions {
   merchantProductIds?: string[];
+  taggedMerchantProducts?: {
+    merchantProductId: string;
+    creatorTaggedSize?: string | null;
+  }[];
   caption?: string;
   location?: string;
 }
@@ -32,7 +36,12 @@ export function useUpload() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          merchantProductIds: options?.merchantProductIds,
+          taggedMerchantProducts: options?.taggedMerchantProducts,
+          merchantProductIds:
+            options?.merchantProductIds ??
+            options?.taggedMerchantProducts?.map(
+              (product) => product.merchantProductId
+            ),
           title: options?.caption,
           description: options?.caption,
           location: options?.location,

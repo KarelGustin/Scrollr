@@ -6,26 +6,26 @@
 
 :root {
   /* Full color values for direct CSS use */
-  --bg: #FAFAF8;
-  --surface: #F3F2EE;
-  --card: #FFFFFF;
-  --border: #E8E7E3;
-  --text: #1A1A1A;
-  --muted: #6B6B6B;
-  --accent: #FF6B4A;
-  --accent-fg: #FFFFFF;
+  --bg: #f6f1e8;
+  --surface: #efe7dc;
+  --card: #fbf7f0;
+  --border: #d8cec1;
+  --text: #171411;
+  --muted: #6f675d;
+  --accent: #171411;
+  --accent-fg: #f7f2ea;
   --destructive: #ef4444;
-  --radius: 14px;
+  --radius: 10px;
 
   /* RGB channels for Tailwind alpha support */
-  --c-bg: 250 250 248;
-  --c-surface: 243 242 238;
-  --c-card: 255 255 255;
-  --c-border: 232 231 227;
-  --c-text: 26 26 26;
-  --c-muted: 107 107 107;
-  --c-accent: 255 107 74;
-  --c-accent-fg: 255 255 255;
+  --c-bg: 246 241 232;
+  --c-surface: 239 231 220;
+  --c-card: 251 247 240;
+  --c-border: 216 206 193;
+  --c-text: 23 20 17;
+  --c-muted: 111 103 93;
+  --c-accent: 23 20 17;
+  --c-accent-fg: 247 242 234;
   --c-destructive: 239 68 68;
 
   /* Secondary palette */
@@ -35,24 +35,24 @@
 }
 
 .dark {
-  --bg: #0A0A0A;
-  --surface: #141414;
-  --card: #1C1C1E;
-  --border: #2C2C2E;
-  --text: #F5F5F5;
-  --muted: #8E8E93;
-  --accent: #FF6B4A;
-  --accent-fg: #FFFFFF;
+  --bg: #141210;
+  --surface: #1d1a17;
+  --card: #24201d;
+  --border: #3a342e;
+  --text: #f6f0e8;
+  --muted: #b3a89d;
+  --accent: #f0e6d8;
+  --accent-fg: #171411;
   --destructive: #FF453A;
 
-  --c-bg: 10 10 10;
-  --c-surface: 20 20 20;
-  --c-card: 28 28 30;
-  --c-border: 44 44 46;
-  --c-text: 245 245 245;
-  --c-muted: 142 142 147;
-  --c-accent: 255 107 74;
-  --c-accent-fg: 255 255 255;
+  --c-bg: 20 18 16;
+  --c-surface: 29 26 23;
+  --c-card: 36 32 29;
+  --c-border: 58 52 46;
+  --c-text: 246 240 232;
+  --c-muted: 179 168 157;
+  --c-accent: 240 230 216;
+  --c-accent-fg: 23 20 17;
   --c-destructive: 255 69 58;
 }
 
@@ -74,6 +74,8 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+  font-feature-settings: "ss01" 1, "ss02" 1, "cv01" 1, "cv11" 1;
 }
 
 :focus-visible {
@@ -257,6 +259,25 @@ body {
 .section-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 107, 74, 0.2), transparent);
+}
+
+.retail-kicker {
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: rgb(var(--c-muted) / 0.92);
+}
+
+.retail-panel {
+  background: linear-gradient(180deg, rgb(var(--c-card)) 0%, rgb(var(--c-bg)) 100%);
+  border: 1px solid rgb(var(--c-border) / 0.9);
+  box-shadow: 0 18px 40px -30px rgba(23, 20, 17, 0.35);
+}
+
+.retail-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--c-border) / 0.9), transparent);
 }
 
 /* ========== Landing warm overrides ========== */

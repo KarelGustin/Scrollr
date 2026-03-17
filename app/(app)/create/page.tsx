@@ -16,6 +16,7 @@ interface TaggedProduct {
   price: number;
   vendor: string | null;
   merchantName: string | null;
+  creatorTaggedSize: string;
 }
 
 interface MerchantOption {
@@ -85,6 +86,7 @@ export default function CreatePage() {
             price: p.price as number,
             vendor: p.vendor as string | null,
             merchantName: (p.merchant as Record<string, unknown>)?.storeName as string | null,
+            creatorTaggedSize: "",
           }))
         );
       }
@@ -151,13 +153,26 @@ export default function CreatePage() {
     setTaggedProducts((prev) => prev.filter((p) => p.merchantProductId !== merchantProductId));
   };
 
+  const updateTaggedProductSize = (merchantProductId: string, creatorTaggedSize: string) => {
+    setTaggedProducts((prev) =>
+      prev.map((product) =>
+        product.merchantProductId === merchantProductId
+          ? { ...product, creatorTaggedSize }
+          : product
+      )
+    );
+  };
+
   // Upload and post
   const handlePost = async () => {
     if (!selectedFile) return;
 
     try {
       const videoId = await upload(selectedFile, {
-        merchantProductIds: taggedProducts.map((p) => p.merchantProductId),
+        taggedMerchantProducts: taggedProducts.map((product) => ({
+          merchantProductId: product.merchantProductId,
+          creatorTaggedSize: product.creatorTaggedSize.trim() || null,
+        })),
         caption,
       });
 
@@ -399,6 +414,24 @@ export default function CreatePage() {
                         <p className="text-xs text-muted">
                           {product.merchantName} &middot; &euro;{product.price.toFixed(2)}
                         </p>
+                        <div className="mt-2">
+                          <label className="text-[10px] uppercase tracking-[0.14em] text-muted block mb-1">
+                            Creator wears
+                          </label>
+                          <input
+                            type="text"
+                            value={product.creatorTaggedSize}
+                            onChange={(e) =>
+                              updateTaggedProductSize(
+                                product.merchantProductId,
+                                e.target.value.slice(0, 20)
+                              )
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="e.g. S, 38, 30/32"
+                            className="w-full max-w-[160px] bg-surface border border-border rounded-md px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-accent/50"
+                          />
+                        </div>
                       </div>
                       <button
                         onClick={() => removeProduct(product.merchantProductId)}
@@ -423,6 +456,11 @@ export default function CreatePage() {
             )}
 
             {/* Post button */}
+            {taggedProducts.length > 0 && (
+              <p className="text-xs text-muted -mt-2">
+                Add the size you wore for each tagged item so shoppers can use it as a live fit guide.
+              </p>
+            )}
             <button
               onClick={handlePost}
               disabled={uploading}

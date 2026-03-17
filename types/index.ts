@@ -25,6 +25,7 @@ export type FeedVideo = {
     username: string;
     name: string | null;
     avatarUrl: string | null;
+    heightCm: number | null;
   };
   products: FeedVideoProduct[];
 };
@@ -47,6 +48,8 @@ export type FeedVideoProduct = {
   inventoryQuantity: number | null;
   compareAtPrice: number | null;
   variants: { id: string; title: string; price: number; inventoryQuantity: number | null; available: boolean }[] | null;
+  creatorTaggedSize: string | null;
+  creatorHeightCm: number | null;
 };
 
 // Legacy compat — kept for existing code that may reference it
@@ -90,6 +93,7 @@ export type UserProfile = {
   name: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  heightCm: number | null;
 };
 
 export type SubscriptionInfo = Subscription & {

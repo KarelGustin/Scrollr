@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest) {
   const { prisma } = await import("@/lib/prisma");
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { role: true },
+    select: { role: true, heightCm: true },
   });
 
   return NextResponse.json({
@@ -22,6 +22,7 @@ export async function GET(_req: NextRequest) {
     name: user.name,
     avatarUrl: user.avatarUrl,
     bio: user.bio,
+    heightCm: dbUser?.heightCm ?? user.heightCm,
     role: dbUser?.role ?? "USER",
   });
 }

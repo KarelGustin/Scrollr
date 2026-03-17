@@ -16,6 +16,7 @@ export default function SettingsPage() {
     avatarUrl: "",
     bio: "",
     username: "",
+    heightCm: "",
   });
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>(
     {}
@@ -36,9 +37,10 @@ export default function SettingsPage() {
         avatarUrl: user.avatarUrl ?? "",
         bio: user.bio ?? "",
         username: user.username ?? "",
+        heightCm: user.heightCm != null ? String(user.heightCm) : "",
       });
     }
-  }, [user?.name, user?.avatarUrl, user?.bio, user?.username]);
+  }, [user?.name, user?.avatarUrl, user?.bio, user?.username, user?.heightCm]);
 
   const validateProfile = (): boolean => {
     const errors: Record<string, string> = {};
@@ -55,6 +57,12 @@ export default function SettingsPage() {
         new URL(profile.avatarUrl);
       } catch {
         errors.avatarUrl = "Must be a valid URL";
+      }
+    }
+    if (profile.heightCm) {
+      const heightValue = Number(profile.heightCm);
+      if (!Number.isInteger(heightValue) || heightValue < 120 || heightValue > 250) {
+        errors.heightCm = "Height must be between 120 and 250 cm";
       }
     }
     setProfileErrors(errors);
@@ -94,6 +102,7 @@ export default function SettingsPage() {
           name: profile.name,
           avatarUrl: profile.avatarUrl || null,
           bio: profile.bio || null,
+          heightCm: profile.heightCm ? Number(profile.heightCm) : null,
         }),
       });
 
@@ -179,6 +188,22 @@ export default function SettingsPage() {
           error={profileErrors.avatarUrl}
           placeholder="https://example.com/avatar.jpg"
         />
+
+        {(user?.role === "CREATOR" || user?.role === "ADMIN") && (
+          <Input
+            label="Height (cm)"
+            type="number"
+            value={profile.heightCm}
+            onChange={(e) =>
+              setProfile({
+                ...profile,
+                heightCm: e.target.value.replace(/[^\d]/g, "").slice(0, 3),
+              })
+            }
+            error={profileErrors.heightCm}
+            placeholder="178"
+          />
+        )}
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-muted">

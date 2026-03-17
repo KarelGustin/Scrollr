@@ -11,6 +11,7 @@ interface AppSession {
   name: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  heightCm: number | null;
   role: string;
 }
 

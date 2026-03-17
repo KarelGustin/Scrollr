@@ -21,6 +21,7 @@ interface CreatorData {
   name: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  heightCm?: number | null;
   followersCount: number;
   followingCount: number;
   videosCount: number;
@@ -55,6 +56,7 @@ export default function CreatorProfile({ creator }: { creator: CreatorData }) {
           username: creator.username,
           name: creator.name,
           avatarUrl: creator.avatarUrl,
+          heightCm: creator.heightCm ?? null,
         },
         products: video.products,
       })),
@@ -100,6 +102,12 @@ export default function CreatorProfile({ creator }: { creator: CreatorData }) {
           <h2 className="text-lg font-bold text-text">
             {creator.name || `@${creator.username}`}
           </h2>
+
+          {creator.heightCm != null && (
+            <p className="text-xs uppercase tracking-[0.12em] text-muted mt-1">
+              Height {creator.heightCm} cm
+            </p>
+          )}
 
           {/* Stats row */}
           <div className="flex items-center gap-8 mt-4">

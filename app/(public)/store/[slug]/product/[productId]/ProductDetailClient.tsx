@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useAddToCart } from "@/hooks/useCart";
-import { useAuth } from "@/lib/auth-context";
 import { formatPrice } from "@/lib/format";
 import { ButtonSpinner } from "@/components/ui/ButtonSpinner";
 
@@ -28,13 +27,11 @@ export function ProductDetailClient({ product, variants, isDark }: ProductDetail
   );
   const [addedToCart, setAddedToCart] = useState(false);
   const addToCart = useAddToCart();
-  const { status } = useAuth();
 
   const hasSizes = variants.length > 1;
   const currentVariantTitle = variants.find((v) => v.id === selectedVariant)?.title;
 
   const handleAddToCart = () => {
-    if (status !== "authenticated") return;
     const mpId = selectedVariant ?? product.id;
     addToCart.mutate(
       { merchantProductId: mpId, selectedSize: currentVariantTitle },

@@ -24,25 +24,32 @@ export async function PUT(
   }
 
   const body = await req.json();
-  const { productIds, merchantProductIds } = body as {
+  const { productIds, merchantProductIds, merchantProducts } = body as {
     productIds?: string[];
     merchantProductIds?: string[];
+    merchantProducts?: { merchantProductId: string; creatorTaggedSize?: string | null }[];
   };
 
   const hasProductIds = Array.isArray(productIds) && productIds.length > 0;
   const hasMerchantProductIds =
     Array.isArray(merchantProductIds) && merchantProductIds.length > 0;
+  const hasMerchantProducts =
+    Array.isArray(merchantProducts) && merchantProducts.length > 0;
 
-  if (!hasProductIds && !hasMerchantProductIds) {
+  if (!hasProductIds && !hasMerchantProductIds && !hasMerchantProducts) {
     return NextResponse.json(
-      { error: "productIds or merchantProductIds must be provided as an array" },
+      { error: "productIds, merchantProductIds, or merchantProducts must be provided as an array" },
       { status: 400 }
     );
   }
 
   const totalProducts =
     (hasProductIds ? productIds.length : 0) +
-    (hasMerchantProductIds ? merchantProductIds.length : 0);
+    (hasMerchantProducts
+      ? merchantProducts.length
+      : hasMerchantProductIds
+        ? merchantProductIds.length
+        : 0);
 
   if (totalProducts > 7) {
     return NextResponse.json(
@@ -56,6 +63,7 @@ export async function PUT(
     videoId: string;
     productId?: string;
     merchantProductId?: string;
+    creatorTaggedSize?: string | null;
     position: number;
   }[] = [];
 
@@ -80,17 +88,29 @@ export async function PUT(
   }
 
   // Verify merchant products exist and are available (no ownership check needed)
-  if (hasMerchantProductIds) {
-    const merchantProducts = await prisma.merchantProduct.findMany({
-      where: { id: { in: merchantProductIds }, available: true },
+  if (hasMerchantProductIds || hasMerchantProducts) {
+    const merchantProductsPayload: {
+      merchantProductId: string;
+      creatorTaggedSize?: string | null;
+    }[] = hasMerchantProducts
+      ? merchantProducts
+      : (merchantProductIds ?? []).map((merchantProductId) => ({ merchantProductId }));
+    const availableMerchantProducts = await prisma.merchantProduct.findMany({
+      where: {
+        id: {
+          in: merchantProductsPayload.map((product) => product.merchantProductId),
+        },
+        available: true,
+      },
       select: { id: true },
     });
-    const validMerchantIds = new Set(merchantProducts.map((mp) => mp.id));
-    for (const mpId of merchantProductIds) {
-      if (validMerchantIds.has(mpId)) {
+    const validMerchantIds = new Set(availableMerchantProducts.map((mp) => mp.id));
+    for (const product of merchantProductsPayload) {
+      if (validMerchantIds.has(product.merchantProductId)) {
         videoProductData.push({
           videoId: id,
-          merchantProductId: mpId,
+          merchantProductId: product.merchantProductId,
+          creatorTaggedSize: product.creatorTaggedSize?.trim() || null,
           position: position++,
         });
       }

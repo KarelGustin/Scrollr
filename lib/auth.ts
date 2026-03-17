@@ -8,6 +8,7 @@ export interface AppUser {
   name: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  heightCm: number | null;
 }
 
 /**
@@ -32,6 +33,7 @@ export async function getUser(): Promise<AppUser | null> {
       name: true,
       avatarUrl: true,
       bio: true,
+      heightCm: true,
     },
   });
 
@@ -49,6 +51,7 @@ export async function getUser(): Promise<AppUser | null> {
         name: true,
         avatarUrl: true,
         bio: true,
+        heightCm: true,
       },
     });
   }

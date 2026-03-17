@@ -177,18 +177,21 @@ export default function PublicCheckoutPage() {
   return (
     <div className="min-h-screen bg-bg">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-bg/80 backdrop-blur-xl border-b border-border">
-        <div className="px-5 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-display font-bold text-text">Checkout</h1>
+      <div className="sticky top-0 z-20 bg-bg/90 backdrop-blur-xl border-b border-border">
+        <div className="px-5 py-4 flex items-center justify-between">
+          <div>
+            <p className="retail-kicker mb-1">Secure checkout</p>
+            <h1 className="text-[1.9rem] leading-none font-display font-semibold tracking-[-0.03em] text-text">Checkout</h1>
+          </div>
           {step !== "confirmation" && (
-            <span className="text-xs text-muted">
+            <span className="text-[10px] uppercase tracking-[0.16em] text-muted">
               Step {currentStepIndex + 1} of {visibleSteps.length}
             </span>
           )}
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
         {/* Progress bar */}
         {step !== "confirmation" && (
           <div className="mb-8">
@@ -197,12 +200,12 @@ export default function PublicCheckoutPage() {
                 <div key={s} className="flex-1">
                   <div
                     className={`h-1.5 rounded-full transition-colors ${
-                      i <= currentStepIndex ? "bg-accent" : "bg-border"
+                      i <= currentStepIndex ? "bg-text" : "bg-border"
                     }`}
                   />
                   <p
-                    className={`text-[10px] mt-1.5 font-medium capitalize ${
-                      i === currentStepIndex ? "text-text" : i < currentStepIndex ? "text-accent" : "text-muted"
+                    className={`text-[9px] mt-2 font-semibold uppercase tracking-[0.14em] ${
+                      i === currentStepIndex ? "text-text" : i < currentStepIndex ? "text-text" : "text-muted"
                     }`}
                   >
                     {s}
@@ -219,7 +222,8 @@ export default function PublicCheckoutPage() {
             {/* Guest email step */}
             {step === "email" && (
               <div className="space-y-5">
-                <h2 className="text-base font-display font-bold text-text">
+                <p className="retail-kicker mb-2">Guest checkout</p>
+                <h2 className="text-[1.85rem] leading-none font-display font-semibold tracking-[-0.03em] text-text">
                   Contact Information
                 </h2>
                 <p className="text-sm text-muted">
@@ -234,7 +238,7 @@ export default function PublicCheckoutPage() {
                       setEmailError("");
                     }}
                     placeholder="your@email.com"
-                    className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text focus:outline-none focus:border-accent/50 placeholder:text-muted/60"
+                    className="w-full bg-card border border-border rounded-md px-4 py-3 text-sm text-text focus:outline-none focus:border-text/30 placeholder:text-muted/60"
                     onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()}
                   />
                   {emailError && (
@@ -243,12 +247,12 @@ export default function PublicCheckoutPage() {
                 </div>
                 <button
                   onClick={handleEmailSubmit}
-                  className="w-full py-3 bg-accent text-accent-fg rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors"
+                  className="w-full py-3 bg-accent text-accent-fg rounded-md text-[11px] font-semibold uppercase tracking-[0.16em] hover:bg-accent/90 transition-colors"
                 >
                   Continue to Shipping
                 </button>
                 <div className="text-center">
-                  <Link href="/login?callbackUrl=/checkout" className="text-xs text-accent hover:text-accent/80 transition-colors">
+                  <Link href="/login?callbackUrl=/checkout" className="text-[11px] uppercase tracking-[0.14em] text-muted hover:text-text transition-colors">
                     Already have an account? Sign in
                   </Link>
                 </div>
@@ -300,8 +304,9 @@ export default function PublicCheckoutPage() {
           {/* Cart summary sidebar — grouped by merchant */}
           {step !== "confirmation" && (
             <div className="lg:col-span-2">
-              <div className="bg-card rounded-2xl border border-border p-4 sticky top-20">
-                <h3 className="text-sm font-display font-bold text-text mb-4">
+              <div className="retail-panel rounded-md p-4 sm:p-5 sticky top-24">
+                <p className="retail-kicker mb-2">Review</p>
+                <h3 className="text-[1.75rem] leading-none font-display font-semibold tracking-[-0.03em] text-text mb-5">
                   Order Summary
                 </h3>
 
@@ -313,14 +318,14 @@ export default function PublicCheckoutPage() {
                         {group.logo && (
                           <img src={group.logo} alt="" className="w-4 h-4 rounded-full object-cover" />
                         )}
-                        <p className="text-xs font-semibold text-muted uppercase tracking-wider">
+                        <p className="text-[10px] font-semibold text-muted uppercase tracking-[0.18em]">
                           {group.name}
                         </p>
                       </div>
                       <div className="space-y-2">
                         {group.items.map((item) => (
                           <div key={item.id} className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-surface border border-border overflow-hidden shrink-0">
+                            <div className="w-12 h-14 rounded-sm bg-surface border border-border overflow-hidden shrink-0">
                               {itemImage(item) ? (
                                 <img src={itemImage(item)!} alt="" className="w-full h-full object-cover" />
                               ) : (
@@ -328,8 +333,8 @@ export default function PublicCheckoutPage() {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-text truncate">{itemName(item)}</p>
-                              <p className="text-xs text-muted">
+                              <p className="text-base font-display font-semibold tracking-[-0.02em] text-text truncate">{itemName(item)}</p>
+                              <p className="text-[11px] uppercase tracking-[0.14em] text-muted mt-1">
                                 Qty: {item.quantity}
                                 {item.selectedSize && ` / ${item.selectedSize}`}
                               </p>
@@ -345,7 +350,7 @@ export default function PublicCheckoutPage() {
                 </div>
 
                 {/* Totals */}
-                <div className="border-t border-border pt-3 space-y-2">
+                <div className="border-t border-border pt-4 space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted">Subtotal</span>
                     <span className="text-text">{fmt.format(subtotal)}</span>
@@ -362,9 +367,9 @@ export default function PublicCheckoutPage() {
                       <span className="text-muted truncate ml-2">{effectiveEmail}</span>
                     </div>
                   )}
-                  <div className="flex items-center justify-between text-sm font-semibold pt-2 border-t border-border">
-                    <span className="text-text">Total</span>
-                    <span className="text-text text-base">{fmt.format(total)}</span>
+                  <div className="flex items-center justify-between text-sm font-semibold pt-3 border-t border-border">
+                    <span className="text-text uppercase tracking-[0.14em] text-[11px]">Total</span>
+                    <span className="text-text text-lg font-display font-semibold tracking-[-0.02em]">{fmt.format(total)}</span>
                   </div>
                 </div>
               </div>
