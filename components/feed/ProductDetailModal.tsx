@@ -275,6 +275,24 @@ export default function ProductDetailModal({
           </div>
         </div>
 
+        {/* Shipping & merchant info */}
+        <div className="flex items-center gap-3 mt-4 py-3 border-t border-b border-border">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
+            <rect x="1" y="3" width="15" height="13" />
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+            <circle cx="5.5" cy="18.5" r="2.5" />
+            <circle cx="18.5" cy="18.5" r="2.5" />
+          </svg>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-text font-medium">
+              Estimated delivery: 3-7 business days
+            </p>
+            <p className="text-[10px] text-muted">
+              Shipping calculated at checkout &middot; Sold by {displayBrand || "merchant"}
+            </p>
+          </div>
+        </div>
+
         {/* Description */}
         {product.description && (
           <p className="text-sm text-muted mt-4 leading-relaxed">

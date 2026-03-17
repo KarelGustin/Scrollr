@@ -146,9 +146,16 @@ export default function CartDrawer() {
               {grouped.map((group) => (
                 <div key={`${group.type}-${group.groupId}`} className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-muted uppercase tracking-wider">
-                      {group.label}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-semibold text-muted uppercase tracking-wider">
+                        {group.label}
+                      </p>
+                      {group.type === "merchant" && (
+                        <span className="text-[10px] text-muted bg-surface px-1.5 py-0.5 rounded-md">
+                          Ships separately
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={() => handleShopAll(group)}
                       className="text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
@@ -175,7 +182,7 @@ export default function CartDrawer() {
                           <div className="flex items-center gap-2">
                             {display.price && (
                               <p className="text-xs text-accent">
-                                {display.price}
+                                &euro;{typeof display.price === "string" ? display.price : Number(display.price).toFixed(2)}
                               </p>
                             )}
                             {item.selectedSize && (
