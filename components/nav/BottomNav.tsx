@@ -94,7 +94,7 @@ const consumerTabs: Tab[] = [
 const creatorTabs: Tab[] = [
   { label: "Feed", href: "/feed", icon: HomeIcon },
   { label: "Discover", href: "/discover", icon: DiscoverIcon },
-  { label: "", href: "/dashboard/videos?upload=true", icon: UploadIcon },
+  { label: "", href: "/create", icon: UploadIcon },
   { label: "Orders", href: "/orders", icon: OrdersIcon },
   { label: "Dashboard", href: "/dashboard", icon: DashboardIcon },
 ];
