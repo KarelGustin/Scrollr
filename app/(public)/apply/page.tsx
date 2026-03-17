@@ -63,10 +63,19 @@ const PLATFORMS = [
   },
 ];
 
+const FOLLOWER_RANGES = [
+  { id: "1k-5k", label: "1K - 5K" },
+  { id: "5k-10k", label: "5K - 10K" },
+  { id: "10k-50k", label: "10K - 50K" },
+  { id: "50k-100k", label: "50K - 100K" },
+  { id: "100k+", label: "100K+" },
+];
+
 const STEPS = [
   { id: "category", title: "What do you create?", description: "Pick the category that best describes your content" },
-  { id: "socials", title: "Your social presence", description: "Link at least one account so we can verify you" },
-  { id: "pitch", title: "Tell us about yourself", description: "A short pitch about what you create or sell" },
+  { id: "socials", title: "Your social presence", description: "Link your main account so we can verify you" },
+  { id: "verify", title: "Verify your reach", description: "Select your primary platform and follower count" },
+  { id: "pitch", title: "Tell us about yourself", description: "A short pitch about what you create" },
   { id: "review", title: "Review & submit", description: "Make sure everything looks good" },
 ];
 
@@ -77,6 +86,8 @@ export default function ApplyPage() {
   const [step, setStep] = useState(0);
   const [category, setCategory] = useState("");
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
+  const [primaryPlatform, setPrimaryPlatform] = useState("");
+  const [followerRange, setFollowerRange] = useState("");
   const [pitch, setPitch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -155,7 +166,8 @@ export default function ApplyPage() {
   const canProceed = () => {
     if (step === 0) return !!category;
     if (step === 1) return hasSocialLink;
-    if (step === 2) return pitch.trim().length > 0;
+    if (step === 2) return !!primaryPlatform && !!followerRange;
+    if (step === 3) return pitch.trim().length > 0;
     return true;
   };
 
@@ -167,7 +179,7 @@ export default function ApplyPage() {
       const res = await fetch("/api/creator-application", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, socialLinks, pitch }),
+        body: JSON.stringify({ category, socialLinks, pitch, primaryPlatform, followerRange }),
       });
 
       if (!res.ok) {
@@ -299,7 +311,7 @@ export default function ApplyPage() {
                   </div>
                 </div>
               ))}
-              <p className="text-xs text-muted">At least one link is required.</p>
+              <p className="text-xs text-muted">At least one link is required so we can verify your audience.</p>
 
               <div className="flex gap-3">
                 <button
@@ -319,23 +331,54 @@ export default function ApplyPage() {
             </div>
           )}
 
-          {/* Step 2: Pitch */}
+          {/* Step 2: Verify — Primary platform + follower count */}
           {step === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <textarea
-                  value={pitch}
-                  onChange={(e) => setPitch(e.target.value.slice(0, 200))}
-                  placeholder="I create styling videos and review affordable fashion finds for my 50k Instagram audience..."
-                  rows={4}
-                  className="w-full bg-surface border border-border rounded-xl px-3 py-2.5 text-sm text-text resize-none focus:outline-none focus:border-accent/50 placeholder:text-muted/60 transition-colors"
-                />
-                <div className="flex items-center justify-between mt-1.5">
-                  <p className="text-xs text-muted">What do you create or sell? Who&apos;s your audience?</p>
-                  <p className={`text-xs ${pitch.length >= 180 ? "text-warning" : "text-muted"}`}>
-                    {pitch.length}/200
-                  </p>
+                <p className="text-xs font-medium text-muted mb-2">Primary platform</p>
+                <p className="text-xs text-muted mb-3">Which platform has your largest audience?</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {PLATFORMS.filter((p) => socialLinks[p.id]?.trim()).map((platform) => (
+                    <button
+                      key={platform.id}
+                      onClick={() => setPrimaryPlatform(platform.id)}
+                      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-150 border ${
+                        primaryPlatform === platform.id
+                          ? "border-accent bg-accent/5 text-accent"
+                          : "border-border bg-surface text-text hover:border-muted"
+                      }`}
+                    >
+                      <span className="text-muted">{platform.icon}</span>
+                      {platform.label}
+                    </button>
+                  ))}
                 </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium text-muted mb-2">Follower count</p>
+                <p className="text-xs text-muted mb-3">Approximate followers on your primary platform</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {FOLLOWER_RANGES.map((range) => (
+                    <button
+                      key={range.id}
+                      onClick={() => setFollowerRange(range.id)}
+                      className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 border ${
+                        followerRange === range.id
+                          ? "border-accent bg-accent/5 text-accent"
+                          : "border-border bg-surface text-text hover:border-muted"
+                      }`}
+                    >
+                      {range.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-surface border border-border rounded-xl p-3">
+                <p className="text-xs text-muted">
+                  We&apos;ll verify your follower count on {primaryPlatform ? PLATFORMS.find((p) => p.id === primaryPlatform)?.label : "your platform"} before approving. Creators earn <span className="text-accent font-semibold">5% commission</span> on every sale from their content.
+                </p>
               </div>
 
               <div className="flex gap-3">
@@ -350,14 +393,51 @@ export default function ApplyPage() {
                   disabled={!canProceed()}
                   className="flex-1 py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-xl disabled:opacity-50 hover:bg-accent/90 transition-colors"
                 >
+                  Continue
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Pitch */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <div>
+                <textarea
+                  value={pitch}
+                  onChange={(e) => setPitch(e.target.value.slice(0, 200))}
+                  placeholder="I create styling videos and review affordable fashion finds for my 50k Instagram audience..."
+                  rows={4}
+                  className="w-full bg-surface border border-border rounded-xl px-3 py-2.5 text-sm text-text resize-none focus:outline-none focus:border-accent/50 placeholder:text-muted/60 transition-colors"
+                />
+                <div className="flex items-center justify-between mt-1.5">
+                  <p className="text-xs text-muted">What do you create? Who&apos;s your audience?</p>
+                  <p className={`text-xs ${pitch.length >= 180 ? "text-warning" : "text-muted"}`}>
+                    {pitch.length}/200
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep(2)}
+                  className="flex-1 py-2.5 bg-card border border-border text-text text-sm font-semibold rounded-xl hover:bg-surface transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => setStep(4)}
+                  disabled={!canProceed()}
+                  className="flex-1 py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-xl disabled:opacity-50 hover:bg-accent/90 transition-colors"
+                >
                   Review
                 </button>
               </div>
             </div>
           )}
 
-          {/* Step 3: Review */}
-          {step === 3 && (
+          {/* Step 4: Review */}
+          {step === 4 && (
             <div className="space-y-5">
               {/* Category */}
               <div className="flex items-center justify-between">
@@ -407,6 +487,34 @@ export default function ApplyPage() {
 
               <div className="h-px bg-border" />
 
+              {/* Verification */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted mb-2">Verification</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted">
+                        {PLATFORMS.find((p) => p.id === primaryPlatform)?.icon}
+                      </span>
+                      <span className="text-sm font-medium text-text">
+                        {PLATFORMS.find((p) => p.id === primaryPlatform)?.label}
+                      </span>
+                    </div>
+                    <p className="text-sm text-text">
+                      {FOLLOWER_RANGES.find((r) => r.id === followerRange)?.label} followers
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setStep(2)}
+                  className="text-xs text-accent hover:text-accent/80 font-medium transition-colors"
+                >
+                  Edit
+                </button>
+              </div>
+
+              <div className="h-px bg-border" />
+
               {/* Pitch */}
               <div className="flex items-start justify-between">
                 <div className="flex-1 mr-4">
@@ -414,18 +522,26 @@ export default function ApplyPage() {
                   <p className="text-sm text-text">{pitch}</p>
                 </div>
                 <button
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   className="text-xs text-accent hover:text-accent/80 font-medium transition-colors shrink-0"
                 >
                   Edit
                 </button>
               </div>
 
+              {/* Commission info */}
+              <div className="bg-accent/5 border border-accent/20 rounded-xl p-3">
+                <p className="text-xs text-text font-medium mb-1">What you&apos;ll earn</p>
+                <p className="text-xs text-muted">
+                  As an approved creator, you earn <span className="text-accent font-semibold">5% commission</span> on every sale driven by your content. Minimum target: <span className="font-medium text-text">10 posts/month</span>.
+                </p>
+              </div>
+
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   className="flex-1 py-2.5 bg-card border border-border text-text text-sm font-semibold rounded-xl hover:bg-surface transition-colors"
                 >
                   Back

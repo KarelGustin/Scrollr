@@ -56,10 +56,12 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { category, socialLinks, pitch } = body as {
+  const { category, socialLinks, pitch, primaryPlatform, followerRange } = body as {
     category: string;
     socialLinks: Record<string, string>;
     pitch: string;
+    primaryPlatform?: string;
+    followerRange?: string;
   };
 
   // Validate category
@@ -98,12 +100,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Parse follower count from range
+  const followerCountMap: Record<string, number> = {
+    "1k-5k": 3000,
+    "5k-10k": 7500,
+    "10k-50k": 30000,
+    "50k-100k": 75000,
+    "100k+": 150000,
+  };
+
   const application = await prisma.creatorApplication.create({
     data: {
       userId: user.id,
       category,
       socialLinks: filteredLinks,
       pitch: pitch.trim(),
+      primaryPlatform: primaryPlatform || null,
+      followerCount: followerRange ? (followerCountMap[followerRange] ?? null) : null,
     },
   });
 

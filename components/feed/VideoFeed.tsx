@@ -138,10 +138,12 @@ export default function VideoFeed({
   };
 
   const handleAddToCart = (product: FeedVideoProduct, selectedSize?: string) => {
+    const currentVideo = videos[currentIndex];
+    const videoId = currentVideo?.id;
     if (product.merchantProductId) {
-      addToCart.mutate({ merchantProductId: product.merchantProductId, selectedSize });
+      addToCart.mutate({ merchantProductId: product.merchantProductId, selectedSize, videoId });
     } else {
-      addToCart.mutate({ productId: product.id });
+      addToCart.mutate({ productId: product.id, videoId });
     }
     setSelectedProduct(null);
 

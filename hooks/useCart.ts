@@ -21,17 +21,19 @@ export function useAddToCart() {
       productId,
       merchantProductId,
       selectedSize,
+      videoId,
       quantity = 1,
     }: {
       productId?: string;
       merchantProductId?: string;
       selectedSize?: string;
+      videoId?: string;
       quantity?: number;
     }) => {
       const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, merchantProductId, selectedSize, quantity }),
+        body: JSON.stringify({ productId, merchantProductId, selectedSize, videoId, quantity }),
       });
       if (!res.ok) throw new Error("Failed to add to cart");
       return res.json();

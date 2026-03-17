@@ -87,8 +87,8 @@ export async function calculateShippingRatesForCart(
   const merchantGroups = new Map<
     string,
     {
-      domain: string;
-      accessToken: string;
+      domain: string | null;
+      accessToken: string | null;
       lineItems: { variant_id: number; quantity: number }[];
     }
   >();
@@ -121,6 +121,7 @@ export async function calculateShippingRatesForCart(
   const allRates: ShippingOption[] = [];
   const merchantEntries = Array.from(merchantGroups.values());
   for (const group of merchantEntries) {
+    if (!group.domain || !group.accessToken) continue;
     try {
       const shopifyRates = await getShippingRates(
         group.domain,

@@ -94,15 +94,62 @@ export async function GET() {
     amount: c.amount,
     currency: c.currency,
     status: c.status,
+    payableAt: c.payableAt?.toISOString() ?? null,
+    paidAt: c.paidAt?.toISOString() ?? null,
     createdAt: c.createdAt.toISOString(),
   }));
+
+  // Next payout info: earliest payableAt among PENDING commissions
+  const nextPayableCommission = await prisma.commission.findFirst({
+    where: { userId: user.id, type: "CREATOR_SALE", status: "PENDING", payableAt: { not: null } },
+    orderBy: { payableAt: "asc" },
+    select: { payableAt: true },
+  });
+
+  // Aggregate amount that will be payable within the next payout cycle
+  const readyForPayout = await prisma.commission.aggregate({
+    where: {
+      userId: user.id,
+      type: "CREATOR_SALE",
+      status: "PENDING",
+      payableAt: { lte: now },
+    },
+    _sum: { amount: true },
+  });
+
+  // Recent payouts
+  const recentPayouts = await prisma.creatorPayout.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      amount: true,
+      currency: true,
+      status: true,
+      scheduledFor: true,
+      processedAt: true,
+      createdAt: true,
+    },
+  });
 
   return NextResponse.json({
     totalEarned,
     pendingAmount,
+    readyForPayout: readyForPayout._sum.amount ?? 0,
+    nextPayableAt: nextPayableCommission?.payableAt?.toISOString() ?? null,
     thisMonth,
     commissions: commissionList,
     monthlyChart,
+    recentPayouts: recentPayouts.map((p) => ({
+      id: p.id,
+      amount: p.amount,
+      currency: p.currency,
+      status: p.status,
+      scheduledFor: p.scheduledFor.toISOString(),
+      processedAt: p.processedAt?.toISOString() ?? null,
+      createdAt: p.createdAt.toISOString(),
+    })),
     stripeConnectId: dbUser?.stripeConnectId ?? null,
     stripeConnectOnboarded: dbUser?.stripeConnectOnboarded ?? false,
   });

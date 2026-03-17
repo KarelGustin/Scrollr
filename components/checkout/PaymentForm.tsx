@@ -24,6 +24,7 @@ interface PaymentFormProps {
   onBack: () => void;
   address: ShippingAddress;
   shippingOption: ShippingOption;
+  guestEmail?: string; // For guest checkout
 }
 
 /**
@@ -36,6 +37,7 @@ function CheckoutForm({
   onBack,
   address,
   shippingOption,
+  guestEmail,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -86,6 +88,7 @@ function CheckoutForm({
             paymentIntentId: paymentIntent.id,
             address,
             shippingOption,
+            ...(guestEmail ? { email: guestEmail } : {}),
           }),
         });
 
@@ -187,6 +190,7 @@ export function PaymentForm(props: PaymentFormProps) {
             action: "create-intent",
             address: props.address,
             shippingOption: props.shippingOption,
+            ...(props.guestEmail ? { email: props.guestEmail } : {}),
           }),
         });
         if (!res.ok) {
