@@ -92,10 +92,39 @@ Update cart item quantity.
 ### DELETE /api/cart/items/{id}
 Remove item from cart.
 
+## Merchant Products
+
+### GET /api/merchant-products
+List merchant products with search, pagination, and filtering.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| search | string | Search by title, vendor, type, or tags |
+| merchantId | string | Filter by merchant ID |
+| page | number | Page number (default 1) |
+| limit | number | Items per page (default 20, max 100) |
+
+### GET /api/create/merchants
+List active merchants for product tagging in the creator posting flow.
+
+## Creator Application
+
+### GET /api/creator-application
+Get current user's creator application status.
+
+### POST /api/creator-application
+Submit creator application with category, social links, primary platform, follower count, and pitch.
+
 ## Checkout
 
-### POST /api/stripe/checkout
-Create Stripe checkout session for standard cart checkout (EUR).
+### POST /api/checkout
+Standard cart checkout. Supports both authenticated and **guest checkout** (email-only).
+
+Actions:
+- `create-intent` — Creates Stripe PaymentIntent for cart total
+- `confirm` — After payment, creates orders per merchant
+
+For guest checkout, include `email` field in the request body.
 
 ### POST /api/checkout/quick
 Quick checkout (Buy Now) for a single product. Creates a Stripe PaymentIntent for immediate purchase.

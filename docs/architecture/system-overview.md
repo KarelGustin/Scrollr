@@ -88,8 +88,8 @@ scrollr/
 | Role | Capabilities |
 |------|-------------|
 | USER | Browse feed, follow creators, add to cart, checkout |
-| CREATOR | Upload videos, tag products, earn 3% commission, analytics |
-| MERCHANT | Manage Shopify store, product sync, order fulfillment, storefront |
+| CREATOR | Upload videos, tag products, earn 5% commission, cross-post to IG/TikTok, analytics |
+| MERCHANT | Manage store (Shopify/CSV/WooCommerce), product sync, order fulfillment, storefront |
 | ADMIN | Full platform management, moderation, user/content/merchant CRUD |
 
 ## Trust Levels (Progressive)
@@ -136,7 +136,8 @@ All prices and transactions use **EUR** (Euro) globally.
 
 - The video feed is accessible to **anonymous users** without authentication
 - Users can scroll and browse freely without signing in
-- Authentication is gated at the point of **purchase** (checkout, cart, Buy Now)
+- **Guest checkout** is supported — no account required to purchase (email only)
+- Cart is session-based and works for both authenticated and anonymous users
 - Infinite scroll with cursor-based pagination for seamless browsing
 
 ## Buy Now Flow
@@ -145,6 +146,27 @@ A single-product quick checkout flow enables in-feed purchases:
 - "Buy Now" button on product cards opens an in-feed checkout sheet
 - Uses `POST /api/checkout/quick` for streamlined single-product checkout
 - Supports Stripe Link for returning customers via stored `stripeCustomerId`
+
+## Creator Posting Flow
+
+Creators upload content via the `/create` page with a 4-step flow:
+
+1. **Select**: Choose video from device gallery (no in-browser recording)
+2. **Preview**: Full-screen video preview with trim info
+3. **Details**: Add caption (300 chars) + tag up to 5 products from merchant stores
+   - Filter by merchant, search by product name
+   - Products shown with image, price, and merchant name
+4. **Post**: Upload to Cloudflare Stream + cross-post options
+
+### Cross-Posting
+After posting, creators can share to Instagram and TikTok via:
+- **Web Share API** (native share sheet on iOS/Android)
+- **File download fallback** for desktop browsers
+
+### Creator Targets
+- Minimum: 10 posts/month (soft target)
+- Tracked via `CreatorTarget` model (monthly)
+- Warning issued if target not met
 
 ## Request Flow
 

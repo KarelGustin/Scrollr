@@ -9,8 +9,8 @@ All prices and transactions use **EUR** (Euro) globally.
 | Party | Percentage | Description |
 |-------|-----------|-------------|
 | Merchant | 85% | Product seller |
-| Scrollr | 15% | Platform fee |
-| Creator | 0% | No independent creator commissions |
+| Scrollr | 10% | Platform fee |
+| Creator | 5% | Commission on sales driven by creator content |
 | Stripe | ~2% | Payment processing fee (separate) |
 
 ## Checkout Flows
@@ -66,7 +66,7 @@ Commission {
   orderId    → Links to the sale
   userId     → Creator who earned it
   amount     → EUR amount
-  type       → CREATOR_SALE (3%) or PLATFORM_FEE (1%)
+  type       → CREATOR_SALE (5%) or PLATFORM_FEE (10%)
   status     → PENDING | PAID | FAILED
 }
 ```
@@ -80,10 +80,22 @@ Commission {
 - `app/api/webhooks/stripe/route.ts` — Stripe webhook handler
 - `stores/cartStore.ts` — Client-side cart state
 
+## Guest Checkout
+
+Scrollr supports guest checkout — no account required to purchase:
+- Cart is session-based (cookie), works for both authenticated and guest users
+- Guests enter their email at checkout for order confirmation
+- Orders are created with `buyerEmail` only (no `buyerUserId`)
+- Guest checkout page is at `/checkout` (public route)
+- "Already have an account? Sign in" link available for returning users
+- After purchase, guests can optionally create an account
+
 ## Multi-Merchant Cart
 
 The cart supports items from multiple merchants in a single checkout:
-- Items are grouped by merchant
+- Items are grouped by merchant with clear merchant labels
+- "Ships separately" indicator per merchant group in cart
 - Separate shipping rates per merchant
+- Shipping estimates shown in product detail modal
 - Single payment, multiple orders
 - Atomic: all orders succeed or none do
