@@ -11,7 +11,7 @@ export default function AuthGateOverlay({ onClose }: AuthGateOverlayProps) {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       {/* Glassmorphic card */}
       <div className="relative mx-4 w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-8 text-center shadow-2xl backdrop-blur-xl">
-        {/* Optional close button */}
+        {/* Close button */}
         {onClose && (
           <button
             onClick={onClose}
@@ -41,13 +41,12 @@ export default function AuthGateOverlay({ onClose }: AuthGateOverlayProps) {
 
         {/* Heading */}
         <h2 className="mt-4 text-xl font-display font-semibold text-text">
-          Sign up to keep scrolling
+          Sign in to shop
         </h2>
 
         {/* Description */}
         <p className="mt-2 text-sm text-muted leading-relaxed">
-          Create a free account to unlock unlimited videos, save your favorites,
-          and shop products
+          Create a free account to add products to your cart, checkout, and save your favorites
         </p>
 
         {/* CTA buttons */}

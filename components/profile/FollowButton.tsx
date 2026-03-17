@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ButtonSpinner } from "@/components/ui/ButtonSpinner";
 
 export default function FollowButton({ creatorId }: { creatorId: string }) {
   const [isFollowing, setIsFollowing] = useState(false);
@@ -51,7 +52,7 @@ export default function FollowButton({ creatorId }: { creatorId: string }) {
           : "bg-accent text-accent-fg hover:bg-accent/90"
       }`}
     >
-      {loading ? "..." : isFollowing ? "Following" : "Follow"}
+      {loading ? <ButtonSpinner /> : isFollowing ? "Following" : "Follow"}
     </button>
   );
 }

@@ -1,8 +1,8 @@
 import { getStripe } from "./stripe";
 import type Stripe from "stripe";
 
-const PLATFORM_FEE_PERCENT = 10; // 10% to Scrollr
-const CREATOR_COMMISSION_PERCENT = 5; // 5% to creator
+const PLATFORM_FEE_PERCENT = 15; // 15% to Scrollr
+const CREATOR_COMMISSION_PERCENT = 0; // 0% — no independent creators
 const MERCHANT_PAYOUT_PERCENT = 85; // 85% to merchant
 
 /**
@@ -60,7 +60,7 @@ export async function createDashboardLink(accountId: string): Promise<string> {
 
 /**
  * Calculate fee split for a given order total.
- * Splits subtotal into: 85% merchant, 10% platform, 5% creator.
+ * Splits subtotal into: 85% merchant, 15% platform, 0% creator.
  */
 export function calculateFeeSplit(subtotal: number, shippingCost: number) {
   const platformFee = subtotal * (PLATFORM_FEE_PERCENT / 100);
@@ -80,6 +80,8 @@ export async function createMarketplacePaymentIntent(params: {
   currency: string;
   transferGroup: string;
   metadata?: Record<string, string>;
+  customer?: string;
+  setupFutureUsage?: "on_session";
 }): Promise<Stripe.PaymentIntent> {
   const stripe = getStripe();
   return stripe.paymentIntents.create({
@@ -88,6 +90,8 @@ export async function createMarketplacePaymentIntent(params: {
     transfer_group: params.transferGroup,
     automatic_payment_methods: { enabled: true },
     metadata: params.metadata || {},
+    ...(params.customer ? { customer: params.customer } : {}),
+    ...(params.setupFutureUsage ? { setup_future_usage: params.setupFutureUsage } : {}),
   });
 }
 

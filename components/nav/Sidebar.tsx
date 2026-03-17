@@ -109,9 +109,11 @@ export function Sidebar() {
   if (!user) return null;
 
   return (
-    <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-[200px] bg-card border-r border-border flex-col z-40">
+    <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-[200px] bg-card border-r border-border flex-col z-40 transition-all">
       <div className="px-5 pt-5 pb-6">
-        <Link href="/feed" className="text-lg font-display font-bold text-text">Scrollr</Link>
+        <Link href="/feed" className="text-lg font-display font-bold text-text">
+          Scrollr
+        </Link>
       </div>
 
       <nav className="flex-1 px-3 flex flex-col gap-0.5">
@@ -119,6 +121,7 @@ export function Sidebar() {
           <Link
             key={link.href}
             href={link.href}
+            title={link.label}
             className={`flex items-center gap-2.5 px-2 py-2.5 rounded-xl text-sm transition-colors ${
               isActive(link.href)
                 ? "bg-accent/10 font-semibold text-accent"
@@ -128,11 +131,12 @@ export function Sidebar() {
             <span className={`w-5 h-5 flex items-center justify-center ${isActive(link.href) ? "text-accent" : ""}`}>
               {link.icon}
             </span>
-            {link.label}
+            <span>{link.label}</span>
           </Link>
         ))}
 
-        {isCreator && (
+        {/* Creator nav hidden — merchant-first pivot */}
+        {false && isCreator && (
           <>
             <div className="h-px bg-border my-2" />
             <p className="text-[10px] text-muted uppercase tracking-wider px-2 mb-1">Creator</p>
@@ -140,6 +144,7 @@ export function Sidebar() {
               <Link
                 key={link.href}
                 href={link.href}
+                title={link.label}
                 className={`flex items-center gap-2.5 px-2 py-2.5 rounded-xl text-sm transition-colors ${
                   isActive(link.href)
                     ? "bg-accent/10 font-semibold text-accent"
@@ -149,7 +154,7 @@ export function Sidebar() {
                 <span className={`w-5 h-5 flex items-center justify-center ${isActive(link.href) ? "text-accent" : ""}`}>
                   {link.icon}
                 </span>
-                {link.label}
+                <span>{link.label}</span>
               </Link>
             ))}
           </>
@@ -160,6 +165,7 @@ export function Sidebar() {
         {/* Theme toggle */}
         <button
           onClick={cycleTheme}
+          title={`Theme: ${theme}`}
           className="flex items-center gap-2 w-full px-2 py-2 text-sm text-muted hover:text-text rounded-xl hover:bg-surface transition-all"
         >
           {themeIcon}
@@ -184,6 +190,7 @@ export function Sidebar() {
           {/* Sign out */}
           <button
             onClick={handleSignOut}
+            title="Sign Out"
             className="flex items-center gap-2 w-full px-2 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-xl transition-all mt-1"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -191,7 +198,7 @@ export function Sidebar() {
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            Sign Out
+            <span>Sign Out</span>
           </button>
         </div>
       </div>

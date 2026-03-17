@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
+import { ButtonSpinner } from "@/components/ui/ButtonSpinner";
 
 export default function VideoFollowPill({ creatorId }: { creatorId: string }) {
   const { user, status } = useAuth();
@@ -71,7 +72,7 @@ export default function VideoFollowPill({ creatorId }: { creatorId: string }) {
           : "bg-white/20 backdrop-blur-sm text-white"
       }`}
     >
-      {isFollowing ? "Following" : "Follow"}
+      {loading ? <ButtonSpinner className="h-3 w-3" /> : isFollowing ? "Following" : "Follow"}
     </button>
   );
 }

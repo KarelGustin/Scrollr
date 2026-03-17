@@ -28,6 +28,7 @@ export async function middleware(request: NextRequest) {
     pathname === "/apply" ||
     pathname === "/merchant-register" ||
     pathname === "/merchant-onboarding" ||
+    pathname === "/for-merchants" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
   ) {

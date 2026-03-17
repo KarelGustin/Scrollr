@@ -43,6 +43,13 @@ export default function VideoSlide({
   const isLongPressing = useRef(false);
   const [isPaused, setIsPaused] = useState(false);
 
+  // Progress bar
+  const [progress, setProgress] = useState(0);
+
+  // Double-tap to save
+  const lastTapTime = useRef(0);
+  const [showHeart, setShowHeart] = useState(false);
+
   // Set up HLS playback
   useEffect(() => {
     const el = videoRef.current;
@@ -106,8 +113,24 @@ export default function VideoSlide({
       }
       el.pause();
       hasStartedRef.current = false;
+      setProgress(0);
     }
   }, [isActive, video.id, video.duration, isMuted]);
+
+  // Progress bar via timeupdate
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    const handleTimeUpdate = () => {
+      if (el.duration && isFinite(el.duration)) {
+        setProgress((el.currentTime / el.duration) * 100);
+      }
+    };
+
+    el.addEventListener("timeupdate", handleTimeUpdate);
+    return () => el.removeEventListener("timeupdate", handleTimeUpdate);
+  }, []);
 
   const handlePlay = useCallback(() => {
     if (!hasStartedRef.current) {
@@ -120,15 +143,33 @@ export default function VideoSlide({
     }
   }, [video.id]);
 
-  // Tap = toggle mute with animated icon
+  // Tap = toggle mute with animated icon, double-tap = save
   const handleTap = useCallback(() => {
-    toggleMute();
+    const now = Date.now();
+    if (now - lastTapTime.current < 300) {
+      // Double tap — save/like
+      setShowHeart(true);
+      setTimeout(() => setShowHeart(false), 800);
+      fetch("/api/saved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoId: video.id }),
+      }).catch(() => {});
+      lastTapTime.current = 0;
+      return;
+    }
+    lastTapTime.current = now;
 
-    // Show mute/unmute icon animation
-    setShowMuteIcon(true);
-    if (muteIconTimeout.current) clearTimeout(muteIconTimeout.current);
-    muteIconTimeout.current = setTimeout(() => setShowMuteIcon(false), 800);
-  }, [toggleMute]);
+    // Single tap after delay (to distinguish from double tap)
+    setTimeout(() => {
+      if (lastTapTime.current === now) {
+        toggleMute();
+        setShowMuteIcon(true);
+        if (muteIconTimeout.current) clearTimeout(muteIconTimeout.current);
+        muteIconTimeout.current = setTimeout(() => setShowMuteIcon(false), 800);
+      }
+    }, 300);
+  }, [toggleMute, video.id]);
 
   // Long press handlers
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -161,7 +202,7 @@ export default function VideoSlide({
         setIsPaused(false);
       }
     } else {
-      // Was a short tap — toggle mute
+      // Was a short tap — toggle mute or double-tap save
       const target = e.target as HTMLElement;
       if (target.closest("button") || target.closest("a")) return;
       handleTap();
@@ -224,6 +265,30 @@ export default function VideoSlide({
             "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 50%)",
         }}
       />
+
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 right-0 z-30 h-[2px] bg-white/10">
+        <div
+          className="h-full bg-white/60 transition-[width] duration-200 ease-linear"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      {/* Heart animation (double-tap save) */}
+      {showHeart && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+          <svg
+            width="80"
+            height="80"
+            viewBox="0 0 24 24"
+            fill="#FF6B4A"
+            className="drop-shadow-lg"
+            style={{ animation: "heart-pop 0.8s ease-out forwards" }}
+          >
+            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+          </svg>
+        </div>
+      )}
 
       {/* Mute/unmute icon animation */}
       {showMuteIcon && (

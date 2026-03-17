@@ -23,7 +23,8 @@ User ─────┬──── Video ──── VideoProduct ────
 
 ### User
 Primary user account. Links to all user-generated content and actions.
-- Fields: `id`, `email`, `username`, `name`, `avatarUrl`, `bio`, `role`, `trustLevel`, `strikeCount`, `bannedUntil`
+- Fields: `id`, `email`, `username`, `name`, `avatarUrl`, `bio`, `role`, `trustLevel`, `strikeCount`, `bannedUntil`, `stripeCustomerId`
+- `stripeCustomerId` (String?, unique) — Stripe Customer ID for Stripe Link support and saved payment methods
 - Relations: videos, products, orders, commissions, follows, saved items
 
 ### Video
@@ -33,7 +34,8 @@ Short-form video content uploaded by creators.
 
 ### Merchant
 Shopify store owner who sells products on the platform.
-- Fields: `id`, `userId`, `shopifyDomain`, `shopifyAccessToken`, `storeName`, `slug`, `storeDescription`, `storeTheme`, `stripeConnectAccountId`, `active`
+- Fields: `id`, `userId`, `shopifyDomain`, `shopifyAccessToken`, `storeName`, `slug`, `storeDescription`, `storeTheme`, `stripeConnectAccountId`, `active`, `syncStatus`
+- `syncStatus` (String, default "IDLE") — Tracks product sync progress. Values: IDLE, SYNCING, COMPLETE, FAILED
 - Relations: merchantProducts, orders
 
 ### MerchantProduct

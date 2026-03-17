@@ -67,6 +67,7 @@ scrollr/
 │   ├── shopify.ts      # Shopify API wrapper
 │   ├── shopify-sync.ts # Product sync logic
 │   ├── stripe-connect.ts # Stripe Connect helpers
+│   ├── stripe-customer.ts # Stripe Customer ID helpers (getOrCreateStripeCustomer)
 │   ├── cloudflare.ts   # Cloudflare Stream API
 │   ├── moderation.ts   # AI content moderation
 │   ├── analytics.ts    # Event aggregation
@@ -100,11 +101,56 @@ scrollr/
 | ESTABLISHED | 7-30d | Full plan limits | Relaxed |
 | TRUSTED | 30+ days, 0 strikes | Full limits | Auto-approve |
 
+## Layout & UI
+
+### Desktop Split-Panel Layout
+At `lg+` breakpoints, Scrollr uses a split-panel layout:
+- **Left panel**: Phone-sized vertical video feed
+- **Right panel**: Context panel showing creator info, product details, and related products
+- The `FeedLayout` wrapper component manages the split-panel arrangement
+
+### Sidebar
+- At `lg+` the sidebar collapses to a 72px icon-only rail to maximize content space
+
+### Context Panel
+The right-side context panel displays:
+- Creator profile info (avatar, bio, follow button)
+- Product details for tagged products
+- Related products from the same merchant/category
+
+### Mobile
+- Full-screen vertical feed (mobile-first)
+- Bottom sheets for product details and checkout
+
+## PWA Support
+
+Scrollr is installable as a Progressive Web App:
+- `manifest.json` defines app name, icons, theme color, and display mode
+- Install banner prompts users to add Scrollr to their home screen
+
+## Currency
+
+All prices and transactions use **EUR** (Euro) globally.
+
+## Feed & Authentication
+
+- The video feed is accessible to **anonymous users** without authentication
+- Users can scroll and browse freely without signing in
+- Authentication is gated at the point of **purchase** (checkout, cart, Buy Now)
+- Infinite scroll with cursor-based pagination for seamless browsing
+
+## Buy Now Flow
+
+A single-product quick checkout flow enables in-feed purchases:
+- "Buy Now" button on product cards opens an in-feed checkout sheet
+- Uses `POST /api/checkout/quick` for streamlined single-product checkout
+- Supports Stripe Link for returning customers via stored `stripeCustomerId`
+
 ## Request Flow
 
 1. User request hits Next.js middleware
-2. Supabase session verified
-3. API route handler authenticates via `getUser()`
+2. Supabase session verified (if authenticated)
+3. API route handler authenticates via `getUser()` (or allows anonymous for feed endpoints)
 4. Business logic with Prisma queries
 5. External service calls (Stripe, Shopify, etc.) as needed
 6. JSON response returned

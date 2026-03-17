@@ -20,14 +20,16 @@ Update profile (username, name, bio, avatar).
 ## Feed
 
 ### GET /api/feed
-Returns personalized video feed.
+Returns personalized video feed. Accessible to anonymous users (no auth required).
 
 | Param | Type | Description |
 |-------|------|-------------|
 | cursor | string | Pagination cursor |
 | limit | number | Videos per page (default 10) |
 
-Response includes video data, creator info, tagged products, and engagement scores.
+Response includes video data, creator info, tagged products (with EUR-formatted prices), and engagement scores. Supports infinite scroll via cursor-based pagination.
+
+The `FeedVideoProduct` type includes an `images: string[] | null` field for product image galleries.
 
 ## Videos
 
@@ -48,13 +50,33 @@ Body: `{ "reason": "SEXUAL_CONTENT | VIOLENCE | ...", "details?": "..." }`
 ## Products
 
 ### GET /api/products
-List products.
+List products. Prices are returned in EUR.
 
 ### POST /api/products
 Create a product (creator).
 
 ### GET /api/products/{id}
 Get product details.
+
+### GET /api/products/related
+Get related products from the same merchant or category.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| merchantProductId | string | The product to find related items for |
+
+Returns a list of related products for the context panel.
+
+## Recommendations
+
+### GET /api/recommendations
+Algorithmic product recommendations based on video context.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| videoId | string | The video to get recommendations for |
+
+Returns recommended products relevant to the video content.
 
 ## Cart
 
@@ -73,7 +95,18 @@ Remove item from cart.
 ## Checkout
 
 ### POST /api/stripe/checkout
-Create Stripe checkout session.
+Create Stripe checkout session for standard cart checkout (EUR).
+
+### POST /api/checkout/quick
+Quick checkout (Buy Now) for a single product. Creates a Stripe PaymentIntent for immediate purchase.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| merchantProductId | string | Product to purchase |
+| videoId | string? | Source video (for attribution) |
+| creatorId | string? | Creator to attribute commission to |
+
+Supports Stripe Link for returning customers (uses stored `stripeCustomerId`).
 
 ### GET /api/shipping/rates
 Fetch shipping rates for cart items.
@@ -85,6 +118,19 @@ Get merchant storefront data.
 
 ### GET /api/store/{slug}/products
 List merchant's products.
+
+## Merchant
+
+### GET /api/merchant/sync-status
+Returns the current product sync status and product count for the authenticated merchant.
+
+Response:
+```json
+{
+  "syncStatus": "COMPLETE",
+  "productCount": 42
+}
+```
 
 ## Events / Analytics
 

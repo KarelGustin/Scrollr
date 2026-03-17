@@ -3,6 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import VideoFeed from "@/components/feed/VideoFeed";
+import FeedLayout from "@/components/feed/FeedLayout";
+import ContextPanel from "@/components/feed/ContextPanel";
 import CartButtonInline from "@/components/feed/CartButtonInline";
 import { Spinner } from "@/components/ui/Spinner";
 import type { FeedVideo } from "@/types";
@@ -48,13 +50,13 @@ export default function FeedPage() {
             Your feed is empty
           </h2>
           <p className="text-sm text-muted mb-6">
-            Follow creators to see their content here.
+            Follow stores to see their content here.
           </p>
           <Link
             href="/discover"
             className="inline-flex items-center gap-2 px-6 py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-full hover:bg-accent/90 transition-colors"
           >
-            Discover Creators
+            Discover Stores
           </Link>
         </div>
       </div>
@@ -62,9 +64,11 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Floating header — transparent over video */}
-      <div className="fixed top-0 left-0 right-0 md:left-[200px] z-30 pointer-events-none">
+    <FeedLayout
+      contextPanelSlot={<ContextPanel videos={videos} />}
+    >
+      {/* Floating header — inside feed column */}
+      <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
         <div
           className="pointer-events-none"
           style={{
@@ -89,13 +93,13 @@ export default function FeedPage() {
           {suggested && (
             <div className="px-4 pb-2 pointer-events-auto">
               <p className="text-xs text-white/60 text-center">
-                Suggested for you &middot; Follow creators to personalize
+                Suggested for you &middot; Follow stores to personalize
               </p>
             </div>
           )}
         </div>
       </div>
       <VideoFeed videos={videos} showBranding={false} showCreator hideCartButton />
-    </div>
+    </FeedLayout>
   );
 }

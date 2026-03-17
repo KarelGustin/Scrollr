@@ -100,6 +100,7 @@ async function getCreatorFeed(username: string) {
           vendor: mp?.vendor ?? null,
           inventoryQuantity: mp?.inventoryQuantity ?? null,
           compareAtPrice: mp?.compareAtPrice ?? null,
+          images: null,
           variants: null,
         };
       }),

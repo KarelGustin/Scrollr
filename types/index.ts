@@ -36,6 +36,7 @@ export type FeedVideoProduct = {
   price: number | null;
   priceDisplay: string | null;
   imageUrl: string | null;
+  images: string[] | null;
   affiliateUrl: string;
   description: string | null;
   sizes: string[] | null;

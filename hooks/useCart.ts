@@ -36,7 +36,7 @@ export function useAddToCart() {
       if (!res.ok) throw new Error("Failed to add to cart");
       return res.json();
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
@@ -75,7 +75,7 @@ export function useRemoveCartItem() {
       const res = await fetch(`/api/cart/${itemId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to remove cart item");
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });

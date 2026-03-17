@@ -1,6 +1,7 @@
 "use client";
 
 import type { FeedVideoProduct } from "@/types";
+import { formatPrice } from "@/lib/format";
 
 interface ProductRowProps {
   products: FeedVideoProduct[];
@@ -26,7 +27,7 @@ export default function ProductRow({ products, onProductClick }: ProductRowProps
                 e.stopPropagation();
                 onProductClick(product);
               }}
-              className="flex-shrink-0 group flex items-center gap-3 bg-black/50 backdrop-blur-xl border border-white/[0.12] rounded-2xl p-2.5 pr-4 text-left transition-all active:scale-[0.97] max-w-[260px] hover:bg-black/60 hover:border-white/20"
+              className="flex-shrink-0 group flex items-center gap-3 bg-black/50 backdrop-blur-xl border border-white/[0.12] rounded-2xl p-2.5 pr-4 text-left transition-all active:scale-[0.97] max-w-[260px] hover:bg-black/60 hover:border-white/20 lg:hover:scale-[1.02] lg:hover:shadow-lg"
             >
               {product.imageUrl && (
                 <img
@@ -45,9 +46,9 @@ export default function ProductRow({ products, onProductClick }: ProductRowProps
                   </p>
                 )}
                 <div className="flex items-center gap-1.5 mt-1">
-                  {product.priceDisplay && (
+                  {product.price != null && (
                     <span className="text-sm font-bold text-white">
-                      {product.priceDisplay}
+                      {formatPrice(product.price)}
                     </span>
                   )}
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-accent bg-accent/20 px-1.5 py-0.5 rounded-full">
