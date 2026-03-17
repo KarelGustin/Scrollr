@@ -1,21 +1,33 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Spinner } from "@/components/ui/Spinner";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 
 export default function RegisterPage() {
-  const { status } = useAuth();
+  const { user, status, refreshUser } = useAuth();
   const router = useRouter();
 
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login");
+      return;
+    }
+
+    if (user?.username) {
+      router.replace("/dashboard");
+    }
+  }, [router, status, user?.username]);
 
   const checkUniqueness = useCallback(async (value: string) => {
     if (!USERNAME_REGEX.test(value)) return;
@@ -86,6 +98,7 @@ export default function RegisterPage() {
         return;
       }
 
+      await refreshUser();
       router.push("/dashboard");
     } catch {
       setError("Something went wrong");
@@ -94,10 +107,12 @@ export default function RegisterPage() {
     }
   }
 
-  // Redirect to login if not authenticated
-  if (status === "unauthenticated") {
-    router.replace("/login");
-    return null;
+  if (status === "loading" || status === "authenticated" && !user) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" className="text-accent" />
+      </div>
+    );
   }
 
   return (

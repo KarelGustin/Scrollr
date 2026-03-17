@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Spinner } from "@/components/ui/Spinner";
@@ -35,6 +35,32 @@ export default function OnboardingPage() {
   const [error, setError] = useState("");
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
 
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login?callbackUrl=/onboarding");
+      return;
+    }
+
+    if (!user) return;
+
+    setUsername(user.username ?? "");
+    setName(user.name ?? "");
+    setBio(user.bio ?? "");
+    setHeightCm(user.heightCm != null ? String(user.heightCm) : "");
+    setUsernameAvailable(user.username ? true : null);
+
+    if (user.username) {
+      const hasProfileDetails = Boolean(
+        (user.name && user.name.trim()) ||
+        (user.bio && user.bio.trim()) ||
+        user.heightCm != null
+      );
+      setStep(hasProfileDetails ? 2 : 1);
+    } else {
+      setStep(0);
+    }
+  }, [router, status, user]);
+
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
@@ -43,22 +69,28 @@ export default function OnboardingPage() {
     );
   }
 
-  if (!user) {
-    router.replace("/login?callbackUrl=/onboarding");
-    return null;
+  if (status === "authenticated" && !user) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" className="text-accent" />
+      </div>
+    );
   }
+
+  if (!user) return null;
 
   const showHeightField = user.role === "CREATOR" || user.role === "ADMIN";
 
   const checkUsername = async (value: string) => {
     setUsername(value);
+    setError("");
     setUsernameAvailable(null);
     if (value.length < 3) return;
 
     try {
       const res = await fetch(`/api/user/username?username=${encodeURIComponent(value)}`);
       const data = await res.json();
-      setUsernameAvailable(data.available);
+      setUsernameAvailable(Boolean(data.available));
     } catch {
       // ignore
     }
@@ -85,6 +117,8 @@ export default function OnboardingPage() {
         return;
       }
 
+      await refreshUser();
+      setUsernameAvailable(true);
       setStep(1);
     } catch {
       setError("Something went wrong");

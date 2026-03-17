@@ -80,6 +80,8 @@ export function Sidebar() {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const isCreator = user?.role === "CREATOR" || user?.role === "ADMIN";
+  const profileLabel = user?.name || user?.username || "Profile";
+  const profileSubLabel = user?.username ? `@${user.username}` : user?.email ?? null;
 
   const isActive = (href: string) =>
     pathname === href || (href !== "/feed" && pathname.startsWith(href));
@@ -184,11 +186,13 @@ export function Sidebar() {
               className="flex items-center gap-3 px-3 py-3 rounded-md hover:bg-surface transition-colors retail-panel"
             >
               <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-xs font-bold text-text border border-border">
-                {(user.name || user.username || "?").charAt(0).toUpperCase()}
+                {profileLabel.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text truncate">{user.name || user.username}</p>
-                <p className="text-[10px] text-muted truncate">@{user.username}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text truncate">{profileLabel}</p>
+                {profileSubLabel && (
+                  <p className="text-[10px] text-muted truncate">{profileSubLabel}</p>
+                )}
               </div>
             </Link>
 
