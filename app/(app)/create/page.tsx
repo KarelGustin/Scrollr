@@ -450,7 +450,7 @@ export default function CreatePage() {
           </div>
         )}
 
-        {/* Step 4: Success */}
+        {/* Step 4: Success + Cross-posting */}
         {step === "success" && (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center mb-4">
@@ -461,12 +461,84 @@ export default function CreatePage() {
             <h2 className="text-xl font-display font-bold text-text mb-2">
               Video posted!
             </h2>
-            <p className="text-sm text-muted text-center mb-8 max-w-xs">
+            <p className="text-sm text-muted text-center mb-6 max-w-xs">
               Your video is being processed and will appear in the feed shortly.
               {taggedProducts.length > 0 && (
                 <> You tagged {taggedProducts.length} product{taggedProducts.length !== 1 ? "s" : ""} &mdash; earn 5% on every sale!</>
               )}
             </p>
+
+            {/* Cross-post section */}
+            {selectedFile && (
+              <div className="w-full bg-card rounded-2xl border border-border p-4 mb-6">
+                <p className="text-sm font-display font-bold text-text mb-1">
+                  Cross-post to grow your reach
+                </p>
+                <p className="text-xs text-muted mb-4">
+                  Share this video to your other platforms to drive traffic back to Scrollr
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={async () => {
+                      if (selectedFile && navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: caption || "Check this out on Scrollr!",
+                            text: `${caption}\n\nShop the look on Scrollr`,
+                            files: [selectedFile],
+                          });
+                        } catch {
+                          // User cancelled share
+                        }
+                      } else {
+                        // Fallback: download the file so user can upload manually
+                        const a = document.createElement("a");
+                        a.href = videoPreviewUrl || "";
+                        a.download = selectedFile.name;
+                        a.click();
+                      }
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                      <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" />
+                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                    </svg>
+                    Instagram
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (selectedFile && navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: caption || "Check this out on Scrollr!",
+                            text: `${caption}\n\nShop the look on Scrollr`,
+                            files: [selectedFile],
+                          });
+                        } catch {
+                          // User cancelled share
+                        }
+                      } else {
+                        const a = document.createElement("a");
+                        a.href = videoPreviewUrl || "";
+                        a.download = selectedFile.name;
+                        a.click();
+                      }
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-black text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity border border-white/10"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.88-2.88 2.89 2.89 0 012.88-2.88c.28 0 .56.04.82.11v-3.5a6.37 6.37 0 00-.82-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.73a8.19 8.19 0 004.76 1.52V6.69h-1z" />
+                    </svg>
+                    TikTok
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted mt-2 text-center">
+                  Uses your device&apos;s share sheet to post directly
+                </p>
+              </div>
+            )}
 
             <div className="flex gap-3 w-full">
               <button
