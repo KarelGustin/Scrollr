@@ -101,11 +101,7 @@ body {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Feed page */
-.feed-page html,
-.feed-page body {
-  overflow: hidden;
-}
+/* Feed page — no-op, overflow is locked by VideoFeed JS */
 
 /* ========== Landing page animations ========== */
 

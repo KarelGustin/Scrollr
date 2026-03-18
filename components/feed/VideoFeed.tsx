@@ -58,6 +58,20 @@ export default function VideoFeed({
     };
   }, []);
 
+  // Sync --slide-h to actual container height (fixes mobile Safari address bar)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const sync = () => {
+      container.style.setProperty("--slide-h", `${container.clientHeight}px`);
+    };
+
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, []);
+
   // Reset feed position when opening a new feed or deep link.
   useLayoutEffect(() => {
     if (videos.length === 0) {
@@ -172,7 +186,7 @@ export default function VideoFeed({
     <>
       <div
         ref={containerRef}
-        className="h-[100dvh] w-full overflow-y-scroll bg-black"
+        className="h-full w-full overflow-y-scroll bg-black"
         style={{
           scrollSnapType: "y mandatory",
           WebkitOverflowScrolling: "touch",
@@ -193,7 +207,7 @@ export default function VideoFeed({
                   onProductClick={handleProductClick}
                 />
               ) : (
-                <div className="h-[100dvh] w-full bg-black" />
+                <div className="w-full bg-black" style={{ height: "var(--slide-h, 100dvh)" }} />
               )}
             </div>
           );
@@ -201,7 +215,7 @@ export default function VideoFeed({
 
         {/* Loading skeleton while fetching more */}
         {hasMore && (
-          <div className="h-[100dvh] w-full bg-black flex items-center justify-center" data-slide-index={videos.length}>
+          <div className="w-full bg-black flex items-center justify-center" style={{ height: "var(--slide-h, 100dvh)" }} data-slide-index={videos.length}>
             <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
           </div>
         )}
