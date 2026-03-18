@@ -11,10 +11,16 @@ export async function GET() {
   const videos = await prisma.video.findMany({
     where: { userId: user.id },
     include: {
+      _count: {
+        select: { events: { where: { type: "VIDEO_START" } } },
+      },
       products: {
         include: {
           product: {
-            select: { id: true, name: true, brand: true, price: true, priceDisplay: true, imageUrl: true },
+            select: { id: true, name: true, brand: true, price: true, priceDisplay: true, imageUrl: true, affiliateUrl: true, description: true, sizes: true, published: true },
+          },
+          merchantProduct: {
+            select: { id: true, title: true, description: true, imageUrl: true, price: true, compareAtPrice: true, vendor: true, productUrl: true, inventoryQuantity: true, available: true },
           },
         },
         orderBy: { position: "asc" },

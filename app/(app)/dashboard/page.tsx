@@ -60,7 +60,7 @@ export default function DashboardPage() {
 
   const username =
     session?.username ?? "you";
-  const feedUrl = `scrollr.io/@${username}`;
+  const feedUrl = `scrollr.co/@${username}`;
 
   // Compute today's stats from analytics
   const todayViews =
@@ -115,7 +115,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 px-4 md:px-8 py-6 max-w-5xl mx-auto">
       {/* Creator application status */}
       <CreatorApplicationStatus />
 
@@ -271,9 +271,6 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4 mt-3 text-[11px] text-muted">
             <span>Max duration: {quota.maxDurationSeconds}s</span>
             <span>Max size: {quota.maxFileSizeMB}MB</span>
-            <span className="ml-auto uppercase tracking-wider font-semibold text-accent/70">
-              {quota.plan} plan
-            </span>
           </div>
         </div>
       )}

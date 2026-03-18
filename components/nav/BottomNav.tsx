@@ -85,6 +85,7 @@ const UploadIcon = () => (
 
 const unauthenticatedTabs: Tab[] = [
   { label: "Home", href: "/discover", icon: HomeIcon },
+  { label: "Discover", href: "/search", icon: DiscoverIcon },
   { label: "Cart", href: "/checkout", icon: CartIcon },
   { label: "Orders", href: "/orders", icon: OrdersIcon },
   { label: "Profile", href: "/login", icon: ProfileIcon },
@@ -92,7 +93,7 @@ const unauthenticatedTabs: Tab[] = [
 
 const consumerTabs: Tab[] = [
   { label: "Feed", href: "/feed", icon: HomeIcon },
-  { label: "Discover", href: "/discover", icon: DiscoverIcon },
+  { label: "Discover", href: "/search", icon: DiscoverIcon },
   { label: "Cart", href: "/checkout", icon: CartIcon },
   { label: "Orders", href: "/orders", icon: OrdersIcon },
   { label: "Profile", href: "/profile", icon: ProfileIcon },
@@ -100,10 +101,10 @@ const consumerTabs: Tab[] = [
 
 const creatorTabs: Tab[] = [
   { label: "Feed", href: "/feed", icon: HomeIcon },
-  { label: "Discover", href: "/discover", icon: DiscoverIcon },
+  { label: "Discover", href: "/search", icon: DiscoverIcon },
   { label: "", href: "/create", icon: UploadIcon },
-  { label: "Orders", href: "/orders", icon: OrdersIcon },
   { label: "Dashboard", href: "/dashboard", icon: DashboardIcon },
+  { label: "Profile", href: "/profile", icon: ProfileIcon },
 ];
 
 function getTabsForUser(user: AppSession | null): Tab[] {
@@ -111,6 +112,7 @@ function getTabsForUser(user: AppSession | null): Tab[] {
   switch (user.role) {
     case "CREATOR":
     case "ADMIN":
+      return creatorTabs;
     case "MERCHANT":
       return consumerTabs;
     default:
@@ -120,6 +122,7 @@ function getTabsForUser(user: AppSession | null): Tab[] {
 
 function isActiveTab(href: string, pathname: string): boolean {
   if (href === "/feed") return pathname === "/feed";
+  if (href === "/search") return pathname === "/search" || pathname.startsWith("/search/");
   if (href === "/discover") return pathname === "/discover" || pathname.startsWith("/discover/");
   if (href === "/dashboard") return pathname === "/dashboard" && !pathname.startsWith("/dashboard/");
   if (href === "/profile") return pathname.startsWith("/profile");

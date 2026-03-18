@@ -228,6 +228,7 @@ export default function CreatorProfile({ creator }: { creator: CreatorData }) {
         <CreatorReelsViewer
           videos={feedVideos}
           creatorUsername={creator.username}
+          creatorId={creator.id}
           initialIndex={activeIndex}
           onClose={() => setActiveIndex(null)}
         />

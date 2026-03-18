@@ -147,13 +147,13 @@ export default function ApplyPage() {
               Application under review
             </h1>
             <p className="text-sm text-muted mb-6">
-              We&apos;re reviewing your application. You&apos;ll hear back from us soon.
+              We&apos;re reviewing your application. You&apos;ll hear back within 72 hours.
             </p>
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/feed")}
               className="w-full py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-xl hover:bg-accent/90 transition-colors"
             >
-              Back to Dashboard
+              Enjoy Scrollr
             </button>
           </div>
         </div>
@@ -210,22 +210,14 @@ export default function ApplyPage() {
               Application submitted!
             </h1>
             <p className="text-sm text-muted mb-6">
-              We&apos;ll review your application and get back to you soon. In the meantime, feel free to explore.
+              Thanks for applying! We&apos;ll review your application and get back to you within 72 hours.
             </p>
-            <div className="space-y-3">
-              <button
-                onClick={() => router.push("/dashboard")}
-                className="w-full py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-xl hover:bg-accent/90 transition-colors"
-              >
-                Go to Dashboard
-              </button>
-              <button
-                onClick={() => router.push("/discover")}
-                className="w-full py-2.5 bg-card border border-border text-text text-sm font-semibold rounded-xl hover:bg-surface transition-colors"
-              >
-                Explore Content
-              </button>
-            </div>
+            <button
+              onClick={() => router.push("/feed")}
+              className="w-full py-2.5 bg-accent text-accent-fg text-sm font-semibold rounded-xl hover:bg-accent/90 transition-colors"
+            >
+              Enjoy Scrollr
+            </button>
           </div>
         </div>
       </div>

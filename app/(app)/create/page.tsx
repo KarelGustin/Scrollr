@@ -17,6 +17,7 @@ interface TaggedProduct {
   vendor: string | null;
   merchantName: string | null;
   creatorTaggedSize: string;
+  _externalUrl?: string; // Legacy: external product link (opens in new window)
 }
 
 interface MerchantOption {
@@ -43,6 +44,20 @@ export default function CreatePage() {
   const [productSearch, setProductSearch] = useState("");
   const [searchResults, setSearchResults] = useState<TaggedProduct[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+
+  // External product link state
+  const [tagMode, setTagMode] = useState<"merchant" | "link">("merchant");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkPreview, setLinkPreview] = useState<{
+    title: string;
+    imageUrl: string | null;
+    siteName: string;
+    price: number | null;
+    currency: string;
+    url: string;
+  } | null>(null);
+  const [linkError, setLinkError] = useState("");
 
   const { progress, uploading, error: uploadError, upload, reset: resetUpload } = useUpload();
 
@@ -143,6 +158,50 @@ export default function CreatePage() {
     setStep("preview");
   };
 
+  const handleScrapeUrl = async () => {
+    if (!linkUrl.trim()) return;
+    setLinkLoading(true);
+    setLinkError("");
+    setLinkPreview(null);
+
+    try {
+      const res = await fetch("/api/create/scrape-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: linkUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLinkError(data.error || "Failed to fetch product info");
+        return;
+      }
+      setLinkPreview(data);
+    } catch {
+      setLinkError("Failed to fetch product info");
+    } finally {
+      setLinkLoading(false);
+    }
+  };
+
+  const addExternalProduct = () => {
+    if (!linkPreview || taggedProducts.length >= 5) return;
+    const externalId = `ext_${Date.now()}`;
+    addProduct({
+      id: externalId,
+      merchantProductId: externalId,
+      title: linkPreview.title,
+      imageUrl: linkPreview.imageUrl,
+      price: linkPreview.price ?? 0,
+      vendor: linkPreview.siteName,
+      merchantName: linkPreview.siteName,
+      creatorTaggedSize: "",
+      _externalUrl: linkPreview.url,
+    });
+    setLinkUrl("");
+    setLinkPreview(null);
+    setShowProductSearch(false);
+  };
+
   const addProduct = (product: TaggedProduct) => {
     if (taggedProducts.length >= 5) return;
     if (taggedProducts.some((p) => p.merchantProductId === product.merchantProductId)) return;
@@ -168,11 +227,27 @@ export default function CreatePage() {
     if (!selectedFile) return;
 
     try {
+      // Separate merchant products from external link products
+      const merchantTagged = taggedProducts
+        .filter((p) => !p.merchantProductId.startsWith("ext_"))
+        .map((p) => ({
+          merchantProductId: p.merchantProductId,
+          creatorTaggedSize: p.creatorTaggedSize.trim() || null,
+        }));
+      const externalTagged = taggedProducts
+        .filter((p) => p.merchantProductId.startsWith("ext_"))
+        .map((p) => ({
+          title: p.title,
+          imageUrl: p.imageUrl,
+          price: p.price,
+          vendor: p.vendor,
+          url: p._externalUrl ?? "",
+          creatorTaggedSize: p.creatorTaggedSize.trim() || null,
+        }));
+
       const videoId = await upload(selectedFile, {
-        taggedMerchantProducts: taggedProducts.map((product) => ({
-          merchantProductId: product.merchantProductId,
-          creatorTaggedSize: product.creatorTaggedSize.trim() || null,
-        })),
+        taggedMerchantProducts: merchantTagged.length > 0 ? merchantTagged : undefined,
+        externalProducts: externalTagged.length > 0 ? externalTagged : undefined,
         caption,
       });
 
@@ -612,98 +687,209 @@ export default function CreatePage() {
                 Tag a Product
               </h3>
 
-              {/* Merchant filter */}
-              <select
-                value={selectedMerchant}
-                onChange={(e) => setSelectedMerchant(e.target.value)}
-                className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-sm text-text mb-2 focus:outline-none focus:border-accent/50"
-              >
-                <option value="">All Stores</option>
-                {merchants.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.storeName || "Unnamed Store"}
-                  </option>
-                ))}
-              </select>
-
-              {/* Product search */}
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <input
-                  type="text"
-                  value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
-                  placeholder="Search products..."
-                  className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm text-text focus:outline-none focus:border-accent/50 placeholder:text-muted/60"
-                  autoFocus
-                />
+              {/* Mode tabs */}
+              <div className="flex gap-1 bg-surface rounded-lg p-0.5 mb-3">
+                <button
+                  onClick={() => setTagMode("merchant")}
+                  className={`flex-1 py-2 text-xs font-semibold rounded-md transition-colors ${
+                    tagMode === "merchant"
+                      ? "bg-card text-text shadow-sm"
+                      : "text-muted"
+                  }`}
+                >
+                  From Stores
+                </button>
+                <button
+                  onClick={() => setTagMode("link")}
+                  className={`flex-1 py-2 text-xs font-semibold rounded-md transition-colors ${
+                    tagMode === "link"
+                      ? "bg-card text-text shadow-sm"
+                      : "text-muted"
+                  }`}
+                >
+                  Link URL
+                </button>
               </div>
+
+              {tagMode === "merchant" ? (
+                <>
+                  {/* Merchant filter */}
+                  <select
+                    value={selectedMerchant}
+                    onChange={(e) => setSelectedMerchant(e.target.value)}
+                    className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-sm text-text mb-2 focus:outline-none focus:border-accent/50"
+                  >
+                    <option value="">All Stores</option>
+                    {merchants.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.storeName || "Unnamed Store"}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Product search */}
+                  <div className="relative">
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      placeholder="Search products..."
+                      className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm text-text focus:outline-none focus:border-accent/50 placeholder:text-muted/60"
+                      autoFocus
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* URL input */}
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleScrapeUrl()}
+                      placeholder="Paste product URL..."
+                      className="flex-1 bg-card border border-border rounded-xl px-3 py-2.5 text-sm text-text focus:outline-none focus:border-accent/50 placeholder:text-muted/60"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleScrapeUrl}
+                      disabled={!linkUrl.trim() || linkLoading}
+                      className="px-4 py-2.5 bg-accent text-accent-fg rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-accent/90 transition-colors"
+                    >
+                      {linkLoading ? "..." : "Fetch"}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted mt-1.5">
+                    Paste a link from any online store (Represent, ASOS, Zara, etc.)
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Results */}
             <div className="flex-1 overflow-y-auto px-4 py-3">
-              {searchLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Spinner size="sm" className="text-accent" />
-                </div>
-              ) : searchResults.length === 0 ? (
-                <p className="text-sm text-muted text-center py-8">
-                  {productSearch || selectedMerchant
-                    ? "No products found"
-                    : "Search for products to tag"}
-                </p>
+              {tagMode === "merchant" ? (
+                <>
+                  {searchLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Spinner size="sm" className="text-accent" />
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <p className="text-sm text-muted text-center py-8">
+                      {productSearch || selectedMerchant
+                        ? "No products found"
+                        : "Search for products to tag"}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {searchResults.map((product) => {
+                        const isTagged = taggedProducts.some(
+                          (p) => p.merchantProductId === product.merchantProductId
+                        );
+                        return (
+                          <button
+                            key={product.merchantProductId}
+                            onClick={() => {
+                              if (isTagged) {
+                                removeProduct(product.merchantProductId);
+                              } else {
+                                addProduct(product);
+                              }
+                            }}
+                            disabled={!isTagged && taggedProducts.length >= 5}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors text-left ${
+                              isTagged
+                                ? "border-accent bg-accent/5"
+                                : "border-border bg-card hover:border-muted"
+                            } disabled:opacity-40`}
+                          >
+                            {product.imageUrl && (
+                              <img
+                                src={product.imageUrl}
+                                alt={product.title}
+                                className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-text truncate">
+                                {product.title}
+                              </p>
+                              <p className="text-xs text-muted">
+                                {product.merchantName} &middot; &euro;{product.price.toFixed(2)}
+                              </p>
+                            </div>
+                            {isTagged && (
+                              <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="space-y-2">
-                  {searchResults.map((product) => {
-                    const isTagged = taggedProducts.some(
-                      (p) => p.merchantProductId === product.merchantProductId
-                    );
-                    return (
-                      <button
-                        key={product.merchantProductId}
-                        onClick={() => {
-                          if (isTagged) {
-                            removeProduct(product.merchantProductId);
-                          } else {
-                            addProduct(product);
-                          }
-                        }}
-                        disabled={!isTagged && taggedProducts.length >= 5}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors text-left ${
-                          isTagged
-                            ? "border-accent bg-accent/5"
-                            : "border-border bg-card hover:border-muted"
-                        } disabled:opacity-40`}
-                      >
-                        {product.imageUrl && (
-                          <img
-                            src={product.imageUrl}
-                            alt={product.title}
-                            className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-text truncate">
-                            {product.title}
-                          </p>
-                          <p className="text-xs text-muted">
-                            {product.merchantName} &middot; &euro;{product.price.toFixed(2)}
-                          </p>
-                        </div>
-                        {isTagged && (
-                          <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
+                <>
+                  {linkError && (
+                    <p className="text-sm text-destructive text-center py-2">{linkError}</p>
+                  )}
+                  {linkLoading && (
+                    <div className="flex items-center justify-center py-8">
+                      <Spinner size="sm" className="text-accent" />
+                    </div>
+                  )}
+                  {!linkPreview && !linkLoading && !linkError && (
+                    <div className="text-center py-8">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted mx-auto mb-3">
+                        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                      </svg>
+                      <p className="text-sm text-muted">Paste a product URL above to get started</p>
+                    </div>
+                  )}
+                  {linkPreview && (
+                    <div className="space-y-3">
+                      <div className="bg-card rounded-xl border border-border p-4">
+                        <div className="flex gap-3">
+                          {linkPreview.imageUrl && (
+                            <img
+                              src={linkPreview.imageUrl}
+                              alt={linkPreview.title}
+                              className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-text line-clamp-2">
+                              {linkPreview.title}
+                            </p>
+                            <p className="text-xs text-muted mt-0.5">
+                              {linkPreview.siteName}
+                              {linkPreview.price != null && (
+                                <> &middot; {linkPreview.currency === "EUR" ? "€" : linkPreview.currency === "GBP" ? "£" : "$"}{linkPreview.price.toFixed(2)}</>
+                              )}
+                            </p>
                           </div>
-                        )}
+                        </div>
+                        <p className="text-[10px] text-muted mt-2 truncate">{linkPreview.url}</p>
+                      </div>
+                      <button
+                        onClick={addExternalProduct}
+                        disabled={taggedProducts.length >= 5}
+                        className="w-full py-3 bg-accent text-accent-fg rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50"
+                      >
+                        Tag This Product
                       </button>
-                    );
-                  })}
-                </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

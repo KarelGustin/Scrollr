@@ -56,7 +56,7 @@ const SettingsIcon = () => (
 
 const consumerLinks: NavLink[] = [
   { href: "/feed", label: "Feed", icon: <FeedIcon /> },
-  { href: "/discover", label: "Discover", icon: <DiscoverIcon /> },
+  { href: "/search", label: "Discover", icon: <DiscoverIcon /> },
   { href: "/orders", label: "Orders", icon: <OrdersIcon /> },
   { href: "/checkout", label: "Cart", icon: <CartIcon /> },
 ];
@@ -143,23 +143,22 @@ export function Sidebar() {
           </Link>
         ))}
 
-        {/* Creator nav hidden — merchant-first pivot */}
-        {false && isCreator && (
+        {isCreator && (
           <>
             <div className="h-px bg-border my-2" />
-            <p className="text-[10px] text-muted uppercase tracking-wider px-2 mb-1">Creator</p>
+            <p className="text-[10px] text-muted uppercase tracking-wider px-3 mb-1">Creator</p>
             {creatorLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 title={link.label}
-                className={`flex items-center gap-2.5 px-2 py-2.5 rounded-xl text-sm transition-colors ${
+                className={`flex items-center gap-3 px-3 py-3 rounded-md text-[0.8rem] uppercase tracking-[0.16em] transition-colors ${
                   isActive(link.href)
-                    ? "bg-accent/10 font-semibold text-accent"
-                    : "text-muted hover:text-text hover:bg-surface"
+                    ? "bg-text text-accent-fg"
+                    : "text-muted hover:text-text hover:bg-surface/75"
                 }`}
               >
-                <span className={`w-5 h-5 flex items-center justify-center ${isActive(link.href) ? "text-accent" : ""}`}>
+                <span className={`w-5 h-5 flex items-center justify-center ${isActive(link.href) ? "text-accent-fg" : ""}`}>
                   {link.icon}
                 </span>
                 <span>{link.label}</span>

@@ -53,10 +53,18 @@ export async function POST(req: NextRequest) {
     const thumbnailUrl = payload.thumbnail as string | undefined;
     const duration = payload.duration as number | undefined;
 
+    // Check if this video's creator should be held for review
+    const creator = await prisma.user.findUnique({
+      where: { id: video.userId },
+      select: { trustLevel: true },
+    });
+    const shouldPublish = creator?.trustLevel !== "NEW";
+
     await prisma.video.update({
       where: { cloudflareStreamId: streamMediaId },
       data: {
-        status: "READY",
+        status: shouldPublish ? "READY" : "PENDING_REVIEW",
+        published: shouldPublish,
         hlsUrl: hlsUrl ?? null,
         thumbnailUrl: thumbnailUrl ?? null,
         duration: duration ?? null,

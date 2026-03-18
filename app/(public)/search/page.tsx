@@ -130,7 +130,7 @@ export default function SearchPage() {
           {/* Back button + Search bar */}
           <div className="flex items-center gap-3">
             <Link
-              href="/discover"
+              href="/feed"
               className="flex-shrink-0 p-2 -ml-2 text-muted hover:text-text transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

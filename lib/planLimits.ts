@@ -11,7 +11,7 @@ export const CREATOR_LIMITS: PlanLimits = {
   branding: false,
   maxVideosPerDay: 25,
   maxVideosPerWeek: 100,
-  maxDurationSeconds: 600,
+  maxDurationSeconds: 180,
   maxFileSizeMB: 500,
 };
 
@@ -125,7 +125,7 @@ export async function getUploadQuota(userId: string) {
   ]);
 
   return {
-    plan: "PRO" as const,
+    plan: null,
     daily: { used: dailyUsed, limit: dailyLimit },
     weekly: { used: weeklyUsed, limit: limits.maxVideosPerWeek },
     maxDurationSeconds: limits.maxDurationSeconds,
