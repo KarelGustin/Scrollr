@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useRef, useState, useEffect, useLayoutEffect } from "react";
 
 interface AppSession {
   id: string;
@@ -20,6 +21,8 @@ interface Tab {
   requiresAuth?: boolean;
   icon: (active: boolean) => React.ReactNode;
 }
+
+/* ─── Icons ─── */
 
 const HomeIcon = (active: boolean) => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -78,6 +81,8 @@ const UploadIcon = () => (
   </div>
 );
 
+/* ─── Tab configs ─── */
+
 const unauthenticatedTabs: Tab[] = [
   { label: "Feed", href: "/discover", icon: HomeIcon },
   { label: "Discover", href: "/discover", icon: DiscoverIcon },
@@ -114,7 +119,7 @@ function getTabsForUser(user: AppSession | null): Tab[] {
   }
 }
 
-function isActive(href: string, pathname: string): boolean {
+function isActiveTab(href: string, pathname: string): boolean {
   if (href === "/feed") return pathname === "/feed";
   if (href === "/discover") return pathname === "/discover" || pathname.startsWith("/discover/");
   if (href === "/dashboard") return pathname === "/dashboard" && !pathname.startsWith("/dashboard/");
@@ -122,6 +127,8 @@ function isActive(href: string, pathname: string): boolean {
   if (href === "/merchant") return pathname.startsWith("/merchant");
   return pathname.startsWith(href);
 }
+
+/* ─── Component ─── */
 
 interface BottomNavProps {
   user: AppSession | null;
@@ -131,6 +138,38 @@ interface BottomNavProps {
 export function BottomNav({ user, pathname }: BottomNavProps) {
   const router = useRouter();
   const tabs = getTabsForUser(user);
+  const navRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const activeIndex = tabs.findIndex((t) => isActiveTab(t.href, pathname));
+
+  // Measure the active tab and position the sliding indicator
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    const activeEl = tabRefs.current[activeIndex];
+    if (!nav || !activeEl) return;
+
+    const navRect = nav.getBoundingClientRect();
+    const tabRect = activeEl.getBoundingClientRect();
+    setIndicator({
+      left: tabRect.left - navRect.left,
+      width: tabRect.width,
+    });
+  }, [activeIndex, tabs]);
+
+  // Re-measure on resize
+  useEffect(() => {
+    const sync = () => {
+      const nav = navRef.current;
+      const activeEl = tabRefs.current[activeIndex];
+      if (!nav || !activeEl) return;
+      const navRect = nav.getBoundingClientRect();
+      const tabRect = activeEl.getBoundingClientRect();
+      setIndicator({ left: tabRect.left - navRect.left, width: tabRect.width });
+    };
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, [activeIndex]);
 
   const handleTabClick = (e: React.MouseEvent, tab: Tab) => {
     if (tab.requiresAuth && !user) {
@@ -139,37 +178,67 @@ export function BottomNav({ user, pathname }: BottomNavProps) {
     }
   };
 
-  // Use transparent glass style on video pages (feed/discover)
   const isVideoPage = pathname === "/feed" || pathname === "/discover" || pathname.startsWith("/discover?");
 
   return (
-    <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-40 safe-bottom transition-colors ${
-      isVideoPage
-        ? "bg-black/35 backdrop-blur-xl border-t border-white/10"
-        : "bg-bg/92 backdrop-blur-xl border-t border-border"
-    }`}>
-      <div className="flex items-center justify-around max-w-lg mx-auto h-[58px] px-2">
-        {tabs.map((tab) => {
-          const active = isActive(tab.href, pathname);
-          return (
-            <Link
-              key={tab.href + tab.label}
-              href={tab.href}
-              onClick={(e) => handleTabClick(e, tab)}
-              className={`flex flex-col items-center justify-center gap-1 px-3 py-1 transition-colors ${
-                isVideoPage
-                  ? active ? "text-white" : "text-white/50"
-                  : active ? "text-text" : "text-muted"
-              }`}
-            >
-              {tab.icon(active)}
-              {tab.label && (
-                <span className="text-[9px] font-semibold uppercase tracking-[0.14em]">{tab.label}</span>
-              )}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-center safe-bottom pointer-events-none">
+      <nav
+        ref={navRef}
+        className={`relative pointer-events-auto mx-4 mb-2 rounded-[22px] overflow-hidden transition-colors ${
+          isVideoPage
+            ? "bg-black/30 border border-white/[0.08]"
+            : "bg-bg/70 border border-border/60"
+        }`}
+        style={{
+          backdropFilter: "blur(40px) saturate(180%)",
+          WebkitBackdropFilter: "blur(40px) saturate(180%)",
+        }}
+      >
+        {/* Sliding active indicator */}
+        {activeIndex >= 0 && indicator.width > 0 && (
+          <div
+            className={`absolute top-[5px] bottom-[5px] rounded-[17px] transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${
+              isVideoPage
+                ? "bg-white/[0.12]"
+                : "bg-text/[0.07]"
+            }`}
+            style={{
+              left: indicator.left,
+              width: indicator.width,
+            }}
+          />
+        )}
+
+        <div className="relative flex items-center px-1.5">
+          {tabs.map((tab, i) => {
+            const active = isActiveTab(tab.href, pathname);
+            return (
+              <Link
+                key={tab.href + tab.label}
+                ref={(el) => { tabRefs.current[i] = el; }}
+                href={tab.href}
+                onClick={(e) => handleTabClick(e, tab)}
+                className={`relative flex flex-col items-center justify-center gap-0.5 px-4 py-2.5 transition-all duration-200 ${
+                  isVideoPage
+                    ? active ? "text-white" : "text-white/40"
+                    : active ? "text-text" : "text-muted/60"
+                }`}
+              >
+                <span className={`transition-transform duration-200 ${active ? "scale-110" : "scale-100"}`}>
+                  {tab.icon(active)}
+                </span>
+                {tab.label && (
+                  <span className={`text-[9px] font-semibold uppercase tracking-[0.06em] transition-opacity duration-200 ${
+                    active ? "opacity-100" : "opacity-60"
+                  }`}>
+                    {tab.label}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
   );
 }
