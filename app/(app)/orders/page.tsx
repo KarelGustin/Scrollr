@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Spinner } from "@/components/ui/Spinner";
+import { OrdersSkeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
@@ -56,11 +56,7 @@ export default function OrdersPage() {
   });
 
   if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" className="text-accent" />
-      </div>
-    );
+    return <OrdersSkeleton />;
   }
 
   return (
@@ -104,8 +100,29 @@ export default function OrdersPage() {
             </div>
           </div>
         ) : isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Spinner size="lg" className="text-accent" />
+          <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="bg-card rounded-2xl border border-border p-4 animate-pulse">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-16 bg-surface rounded" />
+                    <div className="h-3 w-20 bg-surface rounded" />
+                  </div>
+                  <div className="h-5 w-16 bg-surface rounded-full" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    <div className="w-10 h-10 rounded-xl bg-surface" />
+                    <div className="w-10 h-10 rounded-xl bg-surface" />
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-4 w-3/4 bg-surface rounded" />
+                    <div className="h-3 w-1/2 bg-surface rounded" />
+                  </div>
+                  <div className="h-4 w-14 bg-surface rounded" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : !orders?.length ? (
           <div className="text-center py-20">

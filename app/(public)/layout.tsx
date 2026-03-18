@@ -12,7 +12,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   return (
     <>
       <Sidebar />
-      <main className="pb-[76px] md:pb-0 md:ml-[224px]">{children}</main>
+      <main className="pb-[72px] md:pb-0 md:ml-[224px]">{children}</main>
       <BottomNav user={user} pathname={pathname} />
     </>
   );

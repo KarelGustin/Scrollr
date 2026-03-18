@@ -6,7 +6,7 @@ import VideoFeed from "@/components/feed/VideoFeed";
 import FeedLayout from "@/components/feed/FeedLayout";
 import ContextPanel from "@/components/feed/ContextPanel";
 import CartButtonInline from "@/components/feed/CartButtonInline";
-import { Spinner } from "@/components/ui/Spinner";
+import { FeedSkeleton } from "@/components/ui/Skeleton";
 import type { FeedVideo } from "@/types";
 
 interface ConsumerFeedResponse {
@@ -25,11 +25,7 @@ export default function FeedPage() {
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spinner size="lg" className="text-accent" />
-      </div>
-    );
+    return <FeedSkeleton />;
   }
 
   const videos = data?.videos ?? [];

@@ -6,7 +6,7 @@ import { useTheme } from "@/lib/theme-context";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Spinner } from "@/components/ui/Spinner";
+import { SavedItemsSkeleton } from "@/components/ui/Skeleton";
 
 export default function AccountPage() {
   const { user, signOut } = useAuth();
@@ -172,9 +172,7 @@ export default function AccountPage() {
         {activeTab === "saved" && (
           <div>
             {savedLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Spinner className="text-accent" />
-              </div>
+              <SavedItemsSkeleton />
             ) : !savedItems?.length ? (
               <div className="text-center py-12">
                 <p className="text-sm text-muted">No saved items yet</p>

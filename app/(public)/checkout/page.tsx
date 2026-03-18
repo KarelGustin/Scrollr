@@ -10,7 +10,7 @@ import {
 } from "@/components/checkout/ShippingOptions";
 import { PaymentForm } from "@/components/checkout/PaymentForm";
 import { OrderConfirmation } from "@/components/checkout/OrderConfirmation";
-import { Spinner } from "@/components/ui/Spinner";
+import { CheckoutSkeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
 
 type Step = "email" | "address" | "shipping" | "payment" | "confirmation";
@@ -138,11 +138,7 @@ export default function PublicCheckoutPage() {
   }
 
   if (cartLoading) {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" className="text-accent" />
-      </div>
-    );
+    return <CheckoutSkeleton />;
   }
 
   if (!items.length && step !== "confirmation") {

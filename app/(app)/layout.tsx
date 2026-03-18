@@ -35,7 +35,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {user && <MessagePopup />}
       <Sidebar />
 
-      <main className="pb-[76px] md:pb-0 md:ml-[224px]">{children}</main>
+      <main className="pb-[72px] md:pb-0 md:ml-[224px]">{children}</main>
 
       <BottomNav user={user} pathname={pathname} />
     </div>
