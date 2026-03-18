@@ -139,7 +139,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="space-y-8 px-4 md:px-8 py-6 max-w-2xl mx-auto">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-display font-bold text-text">Settings</h1>

@@ -138,7 +138,7 @@ export type CartItemWithProduct = {
 };
 
 export type UploadQuota = {
-  plan: Plan;
+  plan: Plan | null;
   daily: { used: number; limit: number };
   weekly: { used: number; limit: number };
   maxDurationSeconds: number;

@@ -9,12 +9,22 @@ interface UploadState {
   videoId: string | null;
 }
 
+interface ExternalProduct {
+  title: string;
+  imageUrl: string | null;
+  price: number;
+  vendor: string | null;
+  url: string;
+  creatorTaggedSize?: string | null;
+}
+
 interface UploadOptions {
   merchantProductIds?: string[];
   taggedMerchantProducts?: {
     merchantProductId: string;
     creatorTaggedSize?: string | null;
   }[];
+  externalProducts?: ExternalProduct[];
   caption?: string;
   location?: string;
 }
@@ -42,6 +52,7 @@ export function useUpload() {
             options?.taggedMerchantProducts?.map(
               (product) => product.merchantProductId
             ),
+          externalProducts: options?.externalProducts,
           title: options?.caption,
           description: options?.caption,
           location: options?.location,

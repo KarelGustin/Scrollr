@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import type { FeedVideo } from "@/types";
 import VideoFeed from "@/components/feed/VideoFeed";
@@ -8,27 +8,73 @@ import VideoFeed from "@/components/feed/VideoFeed";
 interface CreatorReelsViewerProps {
   videos: FeedVideo[];
   creatorUsername: string;
+  creatorId?: string;
   initialIndex?: number;
   onClose?: () => void;
   backHref?: string;
 }
 
 export default function CreatorReelsViewer({
-  videos,
+  videos: creatorVideos,
   creatorUsername,
+  creatorId,
   initialIndex = 0,
   onClose,
   backHref,
 }: CreatorReelsViewerProps) {
   const safeInitialIndex = useMemo(
-    () => Math.max(0, Math.min(initialIndex, Math.max(videos.length - 1, 0))),
-    [initialIndex, videos.length]
+    () => Math.max(0, Math.min(initialIndex, Math.max(creatorVideos.length - 1, 0))),
+    [initialIndex, creatorVideos.length]
   );
   const [activeIndex, setActiveIndex] = useState(safeInitialIndex);
+  const [suggestedVideos, setSuggestedVideos] = useState<FeedVideo[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingSuggested, setIsLoadingSuggested] = useState(false);
+  const cursorRef = useRef<string | null>(null);
+  const creatorVideoIds = useMemo(
+    () => new Set(creatorVideos.map((v) => v.id)),
+    [creatorVideos]
+  );
 
-  if (videos.length === 0) {
+  const allVideos = useMemo(
+    () => [...creatorVideos, ...suggestedVideos],
+    [creatorVideos, suggestedVideos]
+  );
+
+  const loadMore = useCallback(async () => {
+    if (isLoadingSuggested || !hasMore) return;
+    setIsLoadingSuggested(true);
+
+    try {
+      const params = new URLSearchParams({ limit: "10" });
+      if (cursorRef.current) params.set("cursor", cursorRef.current);
+
+      const res = await fetch(`/api/feed?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+
+      const data = await res.json();
+      const newVideos: FeedVideo[] = (data.items ?? []).filter(
+        (v: FeedVideo) => !creatorVideoIds.has(v.id)
+      );
+
+      setSuggestedVideos((prev) => [...prev, ...newVideos]);
+      cursorRef.current = data.nextCursor ?? null;
+      setHasMore(!!data.nextCursor && newVideos.length > 0);
+    } catch {
+      setHasMore(false);
+    } finally {
+      setIsLoadingSuggested(false);
+    }
+  }, [isLoadingSuggested, hasMore, creatorVideoIds]);
+
+  if (creatorVideos.length === 0) {
     return null;
   }
+
+  const isInSuggestedSection = activeIndex >= creatorVideos.length;
+  const displayLabel = isInSuggestedSection
+    ? "Suggested"
+    : `${activeIndex + 1}/${creatorVideos.length}`;
 
   const shellClassName = onClose
     ? "fixed inset-0 z-[80] bg-black md:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08)_0%,rgba(0,0,0,0.96)_65%)]"
@@ -68,16 +114,22 @@ export default function CreatorReelsViewer({
                 </Link>
               )}
 
-              <p className="text-sm font-semibold text-white drop-shadow-md">
+              <p className={`text-sm font-semibold text-white drop-shadow-md transition-opacity ${isInSuggestedSection ? "opacity-0" : "opacity-100"}`}>
                 @{creatorUsername}
               </p>
 
-              <div className="rounded-full bg-black/35 backdrop-blur-md border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-white/85">
-                {activeIndex + 1}/{videos.length}
+              <div className={`rounded-full backdrop-blur-md border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                isInSuggestedSection
+                  ? "bg-accent/30 border-accent/30 text-white"
+                  : "bg-black/35 border-white/15 text-white/85"
+              }`}>
+                {displayLabel}
               </div>
             </div>
 
-            <div className="pointer-events-none pb-2 text-center text-[11px] tracking-[0.04em] text-white/65">
+            <div className={`pointer-events-none pb-2 text-center text-[11px] tracking-[0.04em] text-white/65 transition-opacity ${
+              activeIndex === safeInitialIndex ? "opacity-100" : "opacity-0"
+            }`}>
               Swipe up or down to browse
             </div>
           </div>
@@ -85,12 +137,14 @@ export default function CreatorReelsViewer({
       </div>
 
       <VideoFeed
-        videos={videos}
+        videos={allVideos}
         showBranding={false}
         showCreator
         hideCartButton
         initialIndex={safeInitialIndex}
         onIndexChange={setActiveIndex}
+        onLoadMore={loadMore}
+        hasMore={hasMore}
       />
     </div>
   );

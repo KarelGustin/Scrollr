@@ -188,6 +188,7 @@ export default async function SingleVideoPage({ params }: PageProps) {
     <CreatorReelsViewer
       videos={data.feedVideos}
       creatorUsername={data.user.username}
+      creatorId={data.user.id}
       initialIndex={videoIndex}
       backHref={`/@${data.user.username}`}
     />

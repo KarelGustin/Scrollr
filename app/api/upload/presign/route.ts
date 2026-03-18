@@ -21,10 +21,11 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { productIds, merchantProductIds, taggedMerchantProducts, title, description, location, fileSizeMB } = body as {
+  const { productIds, merchantProductIds, taggedMerchantProducts, externalProducts, title, description, location, fileSizeMB } = body as {
     productIds?: string[];
     merchantProductIds?: string[];
     taggedMerchantProducts?: { merchantProductId: string; creatorTaggedSize?: string | null }[];
+    externalProducts?: { title: string; imageUrl: string | null; price: number; vendor: string | null; url: string; creatorTaggedSize?: string | null }[];
     title?: string;
     description?: string;
     location?: string;
@@ -103,6 +104,34 @@ export async function POST(req: NextRequest) {
         position: startPosition + index,
       })),
     });
+  }
+
+  // If external products were provided, create Product records and link them
+  if (externalProducts && externalProducts.length > 0) {
+    const startPos = (productIds?.length ?? 0) + merchantProductsToCreate.length;
+    for (let i = 0; i < externalProducts.length; i++) {
+      const ext = externalProducts[i];
+      const product = await prisma.product.create({
+        data: {
+          userId: user.id,
+          name: ext.title,
+          imageUrl: ext.imageUrl,
+          price: ext.price,
+          priceDisplay: ext.price > 0 ? `€${ext.price.toFixed(2)}` : null,
+          brand: ext.vendor,
+          affiliateUrl: ext.url,
+          published: true,
+        },
+      });
+      await prisma.videoProduct.create({
+        data: {
+          videoId: video.id,
+          productId: product.id,
+          creatorTaggedSize: ext.creatorTaggedSize?.trim() || null,
+          position: startPos + i,
+        },
+      });
+    }
   }
 
   return NextResponse.json({
