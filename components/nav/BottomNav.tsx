@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useRef, useState, useEffect, useLayoutEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useRef, useState, useEffect, useLayoutEffect, useMemo } from "react";
 
 interface AppSession {
   id: string;
@@ -84,8 +84,7 @@ const UploadIcon = () => (
 /* ─── Tab configs ─── */
 
 const unauthenticatedTabs: Tab[] = [
-  { label: "Feed", href: "/discover", icon: HomeIcon },
-  { label: "Discover", href: "/discover", icon: DiscoverIcon },
+  { label: "Home", href: "/discover", icon: HomeIcon },
   { label: "Cart", href: "/checkout", icon: CartIcon },
   { label: "Orders", href: "/orders", icon: OrdersIcon },
   { label: "Profile", href: "/login", icon: ProfileIcon },
@@ -132,44 +131,39 @@ function isActiveTab(href: string, pathname: string): boolean {
 
 interface BottomNavProps {
   user: AppSession | null;
-  pathname: string;
+  pathname?: string; // kept for compat, but we read from usePathname()
 }
 
-export function BottomNav({ user, pathname }: BottomNavProps) {
+export function BottomNav({ user }: BottomNavProps) {
   const router = useRouter();
-  const tabs = getTabsForUser(user);
+  const pathname = usePathname();
+  const tabs = useMemo(() => getTabsForUser(user), [user]);
   const navRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
   const activeIndex = tabs.findIndex((t) => isActiveTab(t.href, pathname));
 
+  // Reset refs array when tabs change (e.g. after login)
+  useEffect(() => {
+    tabRefs.current = tabRefs.current.slice(0, tabs.length);
+  }, [tabs.length]);
+
   // Measure the active tab and position the sliding indicator
-  useLayoutEffect(() => {
+  const syncIndicator = () => {
     const nav = navRef.current;
     const activeEl = tabRefs.current[activeIndex];
     if (!nav || !activeEl) return;
-
     const navRect = nav.getBoundingClientRect();
     const tabRect = activeEl.getBoundingClientRect();
-    setIndicator({
-      left: tabRect.left - navRect.left,
-      width: tabRect.width,
-    });
-  }, [activeIndex, tabs]);
+    setIndicator({ left: tabRect.left - navRect.left, width: tabRect.width });
+  };
 
-  // Re-measure on resize
+  useLayoutEffect(syncIndicator, [activeIndex, tabs]);
+
   useEffect(() => {
-    const sync = () => {
-      const nav = navRef.current;
-      const activeEl = tabRefs.current[activeIndex];
-      if (!nav || !activeEl) return;
-      const navRect = nav.getBoundingClientRect();
-      const tabRect = activeEl.getBoundingClientRect();
-      setIndicator({ left: tabRect.left - navRect.left, width: tabRect.width });
-    };
-    window.addEventListener("resize", sync);
-    return () => window.removeEventListener("resize", sync);
-  }, [activeIndex]);
+    window.addEventListener("resize", syncIndicator);
+    return () => window.removeEventListener("resize", syncIndicator);
+  }, [activeIndex, tabs]);
 
   const handleTabClick = (e: React.MouseEvent, tab: Tab) => {
     if (tab.requiresAuth && !user) {
@@ -181,10 +175,12 @@ export function BottomNav({ user, pathname }: BottomNavProps) {
   const isVideoPage = pathname === "/feed" || pathname === "/discover" || pathname.startsWith("/discover?");
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-center safe-bottom pointer-events-none">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-center pointer-events-none"
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 8px)" }}
+    >
       <nav
         ref={navRef}
-        className={`relative pointer-events-auto mx-4 mb-2 rounded-[22px] overflow-hidden transition-colors ${
+        className={`relative pointer-events-auto mx-4 mb-1 rounded-[22px] overflow-hidden transition-colors ${
           isVideoPage
             ? "bg-black/30 border border-white/[0.08]"
             : "bg-bg/70 border border-border/60"
