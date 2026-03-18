@@ -23,7 +23,7 @@ export default function ProductRow({ products, onProductClick }: ProductRowProps
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-20 pb-[calc(70px+env(safe-area-inset-bottom,0px))] md:pb-7 lg:hidden">
+    <div className="absolute bottom-0 left-0 right-0 z-20 pb-[calc(68px+env(safe-area-inset-bottom,0px))] md:pb-7 lg:hidden">
       <div
         className="flex gap-2.5 px-4 pb-1.5 overflow-x-auto scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch" }}

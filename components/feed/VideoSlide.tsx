@@ -330,7 +330,7 @@ export default function VideoSlide({
       )}
 
       {/* Right side actions — above product cards */}
-      <div className={`absolute right-3 z-20 flex flex-col gap-3 ${hasProducts ? "bottom-[calc(176px+env(safe-area-inset-bottom,0px))] md:bottom-32 lg:bottom-20" : "bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-20"}`}>
+      <div className={`absolute right-3 z-20 flex flex-col gap-3 ${hasProducts ? "bottom-[calc(174px+env(safe-area-inset-bottom,0px))] md:bottom-32 lg:bottom-20" : "bottom-[calc(88px+env(safe-area-inset-bottom,0px))] md:bottom-20"}`}>
         <SaveButton videoId={video.id} />
         <ShareButton
           url={video.user?.username ? `/@${video.user.username}/${video.id}` : `/discover`}
@@ -342,7 +342,7 @@ export default function VideoSlide({
 
       {/* Creator info — bottom left, above product cards */}
       {showCreator && video.user && (
-        <div className={`absolute left-4 z-20 flex items-center gap-2 ${hasProducts ? "bottom-[calc(176px+env(safe-area-inset-bottom,0px))] md:bottom-32 lg:bottom-20" : "bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-20"}`}>
+        <div className={`absolute left-4 z-20 flex items-center gap-2 ${hasProducts ? "bottom-[calc(174px+env(safe-area-inset-bottom,0px))] md:bottom-32 lg:bottom-20" : "bottom-[calc(88px+env(safe-area-inset-bottom,0px))] md:bottom-20"}`}>
           <Link
             href={creatorHref}
             className="flex items-center gap-2 min-w-0 hover:opacity-90 transition-opacity"

@@ -216,7 +216,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
         </div>
       </main>
 
-      <BottomNav user={user} pathname={pathname} />
+      <BottomNav user={user} />
     </div>
   );
 }
