@@ -238,8 +238,8 @@ export default function VideoSlide({
 
   return (
     <div
-      className="relative h-[100dvh] w-full flex-shrink-0 bg-black overflow-hidden select-none"
-      style={{ scrollSnapAlign: "start" }}
+      className="relative w-full flex-shrink-0 bg-black overflow-hidden select-none"
+      style={{ scrollSnapAlign: "start", height: "var(--slide-h, 100dvh)" }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
